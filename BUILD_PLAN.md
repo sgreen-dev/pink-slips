@@ -15,7 +15,7 @@
 
 | Phase | Name | Status | Commit |
 |---|---|---|---|
-| 0 | Tooling and deploy | todo | |
+| 0 | Tooling and deploy | done | 578e048 |
 | 1 | Card data | todo | |
 | 2 | Engine core | todo | |
 | 3 | Engine mods | todo | |
