@@ -29,7 +29,12 @@ export function RaceTrack({ state, names, lanes }: RaceTrackProps) {
         const pending = state.players[player].pendingSabotage
         const sabotaged = pending.flatReductionFt > 0 || pending.halve || pending.skipAdvance
         return (
-          <div key={player} className={`lane lane--${car?.type ?? 'empty'}`}>
+          <div
+            key={player}
+            className={`lane lane--${car?.type ?? 'empty'}`}
+            role="group"
+            aria-label={`${names[player]}: ${car ? car.name : 'no car staged'} at ${ft} ft`}
+          >
             <div className="lane__label">
               <span className="lane__player">{names[player]}</span>
               <span className="lane__car">{car ? car.name : 'No car staged'}</span>

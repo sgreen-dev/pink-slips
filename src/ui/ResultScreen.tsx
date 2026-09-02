@@ -43,7 +43,12 @@ export function ResultScreen({
         </section>
       )}
       <div className="result__actions">
-        <button type="button" className="button button--primary button--big" onClick={onRematch}>
+        <button
+          type="button"
+          className="button button--primary button--big"
+          onClick={onRematch}
+          autoFocus
+        >
           Rematch
         </button>
         <button type="button" className="button button--big" onClick={onNewMatch}>

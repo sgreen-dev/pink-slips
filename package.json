@@ -1,7 +1,7 @@
 {
   "name": "pink-slips",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "A web trading card game where real cars drag race a quarter mile.",
   "license": "MIT",
   "type": "module",

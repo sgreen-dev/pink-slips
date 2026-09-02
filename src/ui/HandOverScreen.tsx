@@ -11,7 +11,12 @@ export function HandOverScreen({ name, note, onReveal }: HandOverScreenProps) {
       <p className="handover__note">{note}</p>
       <h1 className="handover__title">Pass to {name}</h1>
       <p className="handover__hint">The other player should look away before you continue.</p>
-      <button type="button" className="button button--primary button--big" onClick={onReveal}>
+      <button
+        type="button"
+        className="button button--primary button--big"
+        onClick={onReveal}
+        autoFocus
+      >
         I am {name}, show my hand
       </button>
     </main>

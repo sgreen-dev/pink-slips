@@ -922,3 +922,83 @@ h2 {
     max-height: none;
   }
 }
+
+/* Keyboard focus and motion */
+
+.button:focus-visible,
+.card--clickable:focus-visible,
+.mod:focus-visible,
+.builder__name input:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+.picker__option:focus-within {
+  border-color: #fff;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lane__marker,
+  .card,
+  .mod {
+    transition: none;
+  }
+  .card--target {
+    animation: none;
+  }
+}
+
+/* Phone sizing */
+
+@media (max-width: 720px) {
+  .board {
+    padding: 0.5rem 0.6rem 2rem;
+  }
+  .garage__cars .card {
+    --w: 7rem;
+  }
+  .hand__cards .mod {
+    width: 8.5rem;
+    min-height: 7.5rem;
+  }
+  .button {
+    min-height: 2.6rem;
+  }
+  .controls__buttons .button {
+    flex: 1 1 auto;
+  }
+  .track {
+    padding: 0.6rem 0.6rem 0.8rem;
+  }
+  .lane__distance {
+    font-size: 0.95rem;
+  }
+  .garage__header {
+    flex-direction: column;
+    gap: 0;
+  }
+}
+
+/* Grid children must be allowed to shrink so scrolling rows scroll instead of widening the page */
+
+.board > *,
+.track > *,
+.builder__layout > *,
+.builder__browse > * {
+  min-width: 0;
+}
+.board__brand {
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .builder__header {
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .builder__title {
+    font-size: 1.4rem;
+  }
+  .builder__header .button {
+    font-size: 0.9rem;
+    padding: 0.35rem 0.7rem;
+  }
+}

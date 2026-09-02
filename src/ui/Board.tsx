@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { getMod } from '../data/mods.ts'
 import { otherPlayer, type Action, type MatchState, type PlayerIndex } from '../engine/index.ts'
 import { Garage } from './Garage.tsx'
@@ -82,6 +83,19 @@ export function Board({
     }
   }
 
+  // Escape backs out of a Part, Tow Truck, or Sponsor selection.
+  useEffect(() => {
+    if (!busy) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onSelect({ kind: 'none' })
+        onOptions(null)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [busy, onSelect, onOptions])
+
   const log = state.log
     .map((entry) => describeLogEntry(entry, names))
     .filter((line): line is string => line !== null)
@@ -113,7 +127,9 @@ export function Board({
       />
 
       <section className="controls">
-        <p className="controls__prompt">{prompt(state, viewer, selection, names)}</p>
+        <p className="controls__prompt" aria-live="polite">
+          {prompt(state, viewer, selection, names)}
+        </p>
         <div className="controls__buttons">
           {options
             ? options.map((action) => (
