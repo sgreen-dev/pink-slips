@@ -23,7 +23,7 @@
 | 5 | Simulator and balance | done | a298e64 |
 | 6 | UI foundation and hotseat | done | 9c23c85 |
 | 7 | CPU play and match flow | done | ebd7797 |
-| 8 | Deck builder | todo | |
+| 8 | Deck builder | done | 6fbc20f |
 | 9 | Polish and release | todo | |
 
 ---
