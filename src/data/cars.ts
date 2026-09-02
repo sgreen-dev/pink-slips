@@ -27,7 +27,7 @@ const SPORTS: readonly Car[] = [
     engine: '2.0L Skyactiv-G I4',
     productionYears: '2019–present',
     source: 'Mazda USA, 2019 MX-5 Miata spec deck (Sport soft top, 6MT)',
-    imageUrl: '',
+    imageUrl: '/art/mazda-mx-5-miata.webp',
   },
   {
     id: 'toyota-gr86',
@@ -46,7 +46,7 @@ const SPORTS: readonly Car[] = [
     engine: '2.4L FA24 flat-4',
     productionYears: '2022–present',
     source: 'Toyota USA Newsroom, 2022 GR86 release (base, 6MT)',
-    imageUrl: '',
+    imageUrl: '/art/toyota-gr86.webp',
   },
   {
     id: 'porsche-911-carrera-s',
@@ -64,7 +64,7 @@ const SPORTS: readonly Car[] = [
     engine: '3.0L twin-turbo flat-6',
     productionYears: '2020–2024',
     source: 'Porsche USA, 911 Carrera S (992) data sheet (PDK; 450 PS)',
-    imageUrl: '',
+    imageUrl: '/art/porsche-911-carrera-s.webp',
   },
   {
     id: 'lotus-emira',
@@ -81,7 +81,7 @@ const SPORTS: readonly Car[] = [
     engine: '3.5L supercharged V6',
     productionYears: '2022–present',
     source: 'Lotus Cars, Emira V6 First Edition specifications (405 PS; DIN kerb weight 1,458 kg)',
-    imageUrl: '',
+    imageUrl: '/art/lotus-emira.webp',
   },
   {
     id: 'ferrari-f430',
@@ -98,7 +98,7 @@ const SPORTS: readonly Car[] = [
     engine: '4.3L V8',
     productionYears: '2004–2009',
     source: 'Ferrari, F430 technical specifications (490 CV; dry weight 1,450 kg)',
-    imageUrl: '',
+    imageUrl: '/art/ferrari-f430.webp',
   },
   {
     id: 'ferrari-458-italia',
@@ -115,7 +115,7 @@ const SPORTS: readonly Car[] = [
     engine: '4.5L V8',
     productionYears: '2009–2015',
     source: 'Ferrari, 458 Italia technical specifications (570 CV; kerb weight 1,485 kg)',
-    imageUrl: '',
+    imageUrl: '/art/ferrari-458-italia.webp',
   },
   {
     id: 'lamborghini-murcielago-lp640',
@@ -132,7 +132,7 @@ const SPORTS: readonly Car[] = [
     engine: '6.5L V12',
     productionYears: '2006–2010',
     source: 'Lamborghini, Murciélago LP640 technical specifications (640 CV; dry weight 1,665 kg)',
-    imageUrl: '',
+    imageUrl: '/art/lamborghini-murcielago-lp640.webp',
   },
   {
     id: 'lamborghini-aventador-svj',
@@ -167,7 +167,7 @@ const SPORTS: readonly Car[] = [
     productionYears: '2025–present',
     source:
       'Lamborghini, Temerario technical specifications (920 CV combined; dry weight 1,690 kg)',
-    imageUrl: '',
+    imageUrl: '/art/lamborghini-temerario.webp',
   },
   {
     id: 'mclaren-765lt',
@@ -184,7 +184,7 @@ const SPORTS: readonly Car[] = [
     engine: '4.0L twin-turbo V8',
     productionYears: '2020–2022',
     source: 'McLaren press release, 765LT launch (765 PS; DIN kerb weight 1,339 kg)',
-    imageUrl: '',
+    imageUrl: '/art/mclaren-765lt.webp',
   },
 ]
 
@@ -204,7 +204,7 @@ const LUXURY: readonly Car[] = [
     engine: '2.0L turbo I4',
     productionYears: '2021–present',
     source: 'Lexus USA, 2021 IS 300 RWD specifications',
-    imageUrl: '',
+    imageUrl: '/art/lexus-is-300.webp',
   },
   {
     id: 'mercedes-benz-c-300',
@@ -222,7 +222,7 @@ const LUXURY: readonly Car[] = [
     engine: '2.0L turbo I4 mild hybrid',
     productionYears: '2022–present',
     source: 'Mercedes-Benz USA, 2022 C-Class Sedan quick reference guide (C 300)',
-    imageUrl: '',
+    imageUrl: '/art/mercedes-benz-c-300.webp',
   },
   {
     id: 'rolls-royce-wraith',
@@ -240,7 +240,7 @@ const LUXURY: readonly Car[] = [
     productionYears: '2013–2023',
     source:
       'Rolls-Royce Motor Cars, Wraith press kit and technical specifications (624 bhp; 2,440 kg)',
-    imageUrl: '',
+    imageUrl: '/art/rolls-royce-wraith.webp',
   },
   {
     id: 'lexus-lc-500',
@@ -257,7 +257,7 @@ const LUXURY: readonly Car[] = [
     engine: '5.0L V8',
     productionYears: '2018–present',
     source: 'Lexus USA Newsroom, LC 500 coupe release and specifications',
-    imageUrl: '',
+    imageUrl: '/art/lexus-lc-500.webp',
   },
   {
     id: 'bmw-m5-competition',
@@ -275,7 +275,7 @@ const LUXURY: readonly Car[] = [
     engine: '4.4L twin-turbo V8',
     productionYears: '2019–2023',
     source: 'BMW Group PressClub USA, 2019 M5 Competition Sedan specifications',
-    imageUrl: '',
+    imageUrl: '/art/bmw-m5-competition.webp',
   },
   {
     id: 'mercedes-amg-gt-r',
@@ -292,7 +292,7 @@ const LUXURY: readonly Car[] = [
     engine: '4.0L twin-turbo V8',
     productionYears: '2017–2021',
     source: 'Mercedes-Benz Group media, AMG GT R press release (585 PS; DIN kerb weight 1,555 kg)',
-    imageUrl: '',
+    imageUrl: '/art/mercedes-amg-gt-r.webp',
   },
   {
     id: 'aston-martin-dbs-superleggera',
@@ -310,7 +310,7 @@ const LUXURY: readonly Car[] = [
     productionYears: '2018–2023',
     source:
       'Aston Martin, DBS Superleggera launch release and specifications (725 PS; kerb weight 1,845 kg)',
-    imageUrl: '',
+    imageUrl: '/art/aston-martin-dbs-superleggera.webp',
   },
   {
     id: 'ferrari-812-superfast',
@@ -327,7 +327,7 @@ const LUXURY: readonly Car[] = [
     engine: '6.5L V12',
     productionYears: '2017–2020',
     source: 'Ferrari, 812 Superfast technical specifications (800 CV; kerb weight 1,630 kg)',
-    imageUrl: '',
+    imageUrl: '/art/ferrari-812-superfast.webp',
   },
   {
     id: 'ferrari-12cilindri',
@@ -344,7 +344,7 @@ const LUXURY: readonly Car[] = [
     engine: '6.5L V12',
     productionYears: '2024–present',
     source: 'Ferrari, 12Cilindri technical specifications (830 CV; dry weight 1,560 kg)',
-    imageUrl: '',
+    imageUrl: '/art/ferrari-12cilindri.webp',
   },
 ]
 
@@ -365,7 +365,7 @@ const MUSCLE: readonly Car[] = [
     engine: '3.6L Pentastar V6',
     productionYears: '2015–2023',
     source: 'Stellantis media, 2015 Dodge Charger specifications (SXT RWD)',
-    imageUrl: '',
+    imageUrl: '/art/dodge-charger-sxt.webp',
   },
   {
     id: 'ford-mustang-289',
@@ -384,7 +384,7 @@ const MUSCLE: readonly Car[] = [
     productionYears: '1967',
     source:
       'Ford, 1967 Mustang specifications (289 2V C-code, 200 hp SAE gross; V8 hardtop curb weight from period spec reprints)',
-    imageUrl: '',
+    imageUrl: '/art/ford-mustang-289.webp',
   },
   {
     id: 'chevrolet-camaro-ss-1le',
@@ -403,7 +403,7 @@ const MUSCLE: readonly Car[] = [
     productionYears: '2017–2024',
     source:
       'Chevrolet, 2021 Camaro SS specifications (1SS 6MT coupe; no separate 1LE curb weight is published)',
-    imageUrl: '',
+    imageUrl: '/art/chevrolet-camaro-ss-1le.webp',
   },
   {
     id: 'ford-mustang-gt',
@@ -421,7 +421,7 @@ const MUSCLE: readonly Car[] = [
     engine: '5.0L Coyote V8',
     productionYears: '2018–2023',
     source: 'Ford, Mustang GT Fastback specifications (6MT)',
-    imageUrl: '',
+    imageUrl: '/art/ford-mustang-gt.webp',
   },
   {
     id: 'dodge-challenger-srt8',
@@ -439,7 +439,7 @@ const MUSCLE: readonly Car[] = [
     engine: '6.1L HEMI V8',
     productionYears: '2008–2010',
     source: 'Dodge, 2008 Challenger SRT8 specifications',
-    imageUrl: '',
+    imageUrl: '/art/dodge-challenger-srt8.webp',
   },
   {
     id: 'plymouth-hemi-cuda',
@@ -476,7 +476,7 @@ const MUSCLE: readonly Car[] = [
     engine: '7.0L LS7 V8',
     productionYears: '2006–2013',
     source: 'Chevrolet, 2006 Corvette Z06 specifications',
-    imageUrl: '',
+    imageUrl: '/art/chevrolet-corvette-z06-c6.webp',
   },
   {
     id: 'dodge-viper',
@@ -495,7 +495,7 @@ const MUSCLE: readonly Car[] = [
     productionYears: '2013–2017',
     source:
       'Stellantis media, 2013 SRT Viper specifications (base curb weight; 645 hp from the 2015 model year on)',
-    imageUrl: '',
+    imageUrl: '/art/dodge-viper.webp',
   },
   {
     id: 'dodge-challenger-srt-demon-170',
@@ -513,7 +513,7 @@ const MUSCLE: readonly Car[] = [
     productionYears: '2023',
     source:
       'Dodge, 2023 Challenger SRT Demon 170 specifications (1,025 hp on E85; curb weight on standard wheels)',
-    imageUrl: '',
+    imageUrl: '/art/dodge-challenger-srt-demon-170.webp',
   },
   {
     id: 'chevrolet-corvette-zr1-c8',
@@ -531,7 +531,7 @@ const MUSCLE: readonly Car[] = [
     engine: '5.5L twin-turbo LT7 V8',
     productionYears: '2025–present',
     source: 'Chevrolet Newsroom, 2025 Corvette ZR1 announcement (July 2024)',
-    imageUrl: '',
+    imageUrl: '/art/chevrolet-corvette-zr1-c8.webp',
   },
 ]
 
@@ -569,7 +569,7 @@ const JDM: readonly Car[] = [
     engine: '1.8L B18C5 I4',
     productionYears: '1997–1998, 2000–2001',
     source: 'Honda News, 1998 Acura Integra Type R specifications',
-    imageUrl: '',
+    imageUrl: '/art/acura-integra-type-r.webp',
   },
   {
     id: 'nissan-altima',
@@ -587,7 +587,7 @@ const JDM: readonly Car[] = [
     engine: '2.5L I4',
     productionYears: '2019–present',
     source: 'Nissan News, 2019 Altima specifications (2.5 S FWD)',
-    imageUrl: '',
+    imageUrl: '/art/nissan-altima.webp',
   },
   {
     id: 'honda-s2000',
@@ -605,7 +605,7 @@ const JDM: readonly Car[] = [
     engine: '2.0L F20C I4',
     productionYears: '2000–2003',
     source: 'Honda News, 2001 S2000 specifications',
-    imageUrl: '',
+    imageUrl: '/art/honda-s2000.webp',
   },
   {
     id: 'mazda-rx-7',
@@ -623,7 +623,7 @@ const JDM: readonly Car[] = [
     engine: '1.3L twin-turbo 13B-REW rotary',
     productionYears: '1993–1995',
     source: 'Mazda, 1993 RX-7 US specifications (base 5MT)',
-    imageUrl: '',
+    imageUrl: '/art/mazda-rx-7.webp',
   },
   {
     id: 'nissan-gt-r',
@@ -641,7 +641,7 @@ const JDM: readonly Car[] = [
     engine: '3.8L twin-turbo VR38DETT V6',
     productionYears: '2017–2024',
     source: 'Nissan, 2017 GT-R Premium specifications',
-    imageUrl: '',
+    imageUrl: '/art/nissan-gt-r.webp',
   },
   {
     id: 'nissan-gt-r-nismo',
@@ -659,7 +659,7 @@ const JDM: readonly Car[] = [
     engine: '3.8L twin-turbo VR38DETT V6',
     productionYears: '2020–2024',
     source: 'Nissan, 2020 GT-R NISMO specifications',
-    imageUrl: '',
+    imageUrl: '/art/nissan-gt-r-nismo.webp',
   },
   {
     id: 'acura-nsx',
@@ -677,7 +677,7 @@ const JDM: readonly Car[] = [
     engine: '3.5L twin-turbo V6 hybrid',
     productionYears: '2017–2022',
     source: 'Acura, 2019 NSX specifications (combined system output; 2019–2022 curb weight)',
-    imageUrl: '',
+    imageUrl: '/art/acura-nsx.webp',
   },
 ]
 
@@ -699,7 +699,7 @@ const EV: readonly Car[] = [
     productionYears: '2023–present',
     source:
       'Toyota USA Newsroom, 2023 Prius release (194 hp combined); LE FWD curb weight from Toyota spec reprints',
-    imageUrl: '',
+    imageUrl: '/art/toyota-prius.webp',
   },
   {
     id: 'nissan-leaf',
@@ -717,7 +717,7 @@ const EV: readonly Car[] = [
     engine: '110 kW electric motor, 40 kWh',
     productionYears: '2018–2025',
     source: 'Nissan News, 2018 Leaf press kit (110 kW motor; S curb weight 1,557 kg)',
-    imageUrl: '',
+    imageUrl: '/art/nissan-leaf.webp',
   },
   {
     id: 'tesla-model-3-performance',
@@ -734,7 +734,7 @@ const EV: readonly Car[] = [
     engine: 'Dual electric motors',
     productionYears: '2024–present',
     source: 'Tesla, 2024 Model 3 Performance specifications',
-    imageUrl: '',
+    imageUrl: '/art/tesla-model-3-performance.webp',
   },
   {
     id: 'hyundai-ioniq-5-n',
@@ -751,7 +751,7 @@ const EV: readonly Car[] = [
     engine: 'Dual electric motors',
     productionYears: '2024–present',
     source: 'Hyundai News, 2025 Ioniq 5 N specifications (641 hp with N Grin Boost)',
-    imageUrl: '',
+    imageUrl: '/art/hyundai-ioniq-5-n.webp',
   },
   {
     id: 'porsche-taycan-turbo-s',
@@ -769,7 +769,7 @@ const EV: readonly Car[] = [
     productionYears: '2020–2023',
     source:
       'Porsche Newsroom, Taycan Turbo S technical data (750 hp overboost with Launch Control; DIN 2,295 kg)',
-    imageUrl: '',
+    imageUrl: '/art/porsche-taycan-turbo-s.webp',
   },
   {
     id: 'lucid-air-grand-touring',
@@ -786,7 +786,7 @@ const EV: readonly Car[] = [
     engine: 'Dual electric motors',
     productionYears: '2022–present',
     source: 'Lucid Motors, 2025 Air Grand Touring technical specifications (20-inch wheels)',
-    imageUrl: '',
+    imageUrl: '/art/lucid-air-grand-touring.webp',
   },
   {
     id: 'tesla-model-s-plaid',
@@ -821,7 +821,7 @@ const EV: readonly Car[] = [
     productionYears: '2021–present',
     source:
       'Rimac Automobili, Nevera technical specifications (1,408 kW, which Rimac quotes as 1,914 hp in metric units; 2,300 kg)',
-    imageUrl: '',
+    imageUrl: '/art/rimac-nevera.webp',
   },
 ]
 
@@ -843,7 +843,7 @@ const OFFROAD: readonly Car[] = [
     productionYears: '2018–present',
     source:
       'Stellantis media, 2018 Jeep Wrangler specifications (Unlimited Rubicon 3.6L, 6MT base weight)',
-    imageUrl: '',
+    imageUrl: '/art/jeep-wrangler-rubicon.webp',
   },
   {
     id: 'toyota-tacoma-trd',
@@ -862,7 +862,7 @@ const OFFROAD: readonly Car[] = [
     productionYears: '2016–2023',
     source:
       'Toyota USA Newsroom, 2020 Tacoma release (278 hp); TRD Off-Road Double Cab 4x4 V6 curb weight from Toyota spec reprints',
-    imageUrl: '',
+    imageUrl: '/art/toyota-tacoma-trd.webp',
   },
   {
     id: 'ford-f-150-raptor',
@@ -899,7 +899,7 @@ const OFFROAD: readonly Car[] = [
     engine: '2.5L turbo EJ257 flat-4',
     productionYears: '2015–2021',
     source: 'Subaru U.S. Media Center, 2020 WRX STI specifications (310 hp from 2019; base 6MT)',
-    imageUrl: '',
+    imageUrl: '/art/subaru-wrx-sti.webp',
   },
   {
     id: 'ford-f-150-raptor-r',
@@ -916,7 +916,7 @@ const OFFROAD: readonly Car[] = [
     engine: '5.2L supercharged V8',
     productionYears: '2023–present',
     source: 'Ford Media, 2024 Raptor and Raptor R tech specs (720 hp); curb weight per Ford',
-    imageUrl: '',
+    imageUrl: '/art/ford-f-150-raptor-r.webp',
   },
   {
     id: 'ram-1500-trx',
@@ -933,7 +933,7 @@ const OFFROAD: readonly Car[] = [
     engine: '6.2L supercharged HEMI V8',
     productionYears: '2021–2024',
     source: 'Stellantis media, 2021 Ram 1500 TRX specifications',
-    imageUrl: '',
+    imageUrl: '/art/ram-1500-trx.webp',
   },
   {
     id: 'lamborghini-urus',
@@ -951,7 +951,7 @@ const OFFROAD: readonly Car[] = [
     productionYears: '2018–2022',
     source:
       'Lamborghini media center, Urus launch release (650 CV; 3.38 kg/CV gives the 2,200 kg dry weight)',
-    imageUrl: '',
+    imageUrl: '/art/lamborghini-urus.webp',
   },
 ]
 

@@ -20,6 +20,7 @@ Only CC0, public domain, CC BY, and CC BY-SA photographs are accepted.
 from __future__ import annotations
 
 import csv
+import hashlib
 import html
 import io
 import json
@@ -48,6 +49,7 @@ BACKDROP = (0xF3, 0xE7, 0xC9)  # the card cream from src/index.css
 SIZE = (800, 600)
 MAX_BYTES = 60_000
 START_QUALITY = 82
+DOWNLOAD_WIDTH = 1920  # a standard Commons thumbnail width; originals are refused in bulk
 
 Image.MAX_IMAGE_PIXELS = None  # Commons originals can be very large; they are trusted downloads
 
@@ -72,15 +74,15 @@ def car_names() -> dict[str, str]:
 
 def open_url(url: str, timeout: int) -> bytes:
     """Fetches with a User-Agent, backing off and retrying when Commons rate-limits."""
-    for attempt in range(5):
+    for attempt in range(6):
         req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         try:
             with urllib.request.urlopen(req, timeout=timeout) as res:
                 return res.read()
         except urllib.error.HTTPError as error:
-            if error.code != 429 or attempt == 4:
+            if error.code != 429 or attempt == 5:
                 raise
-            time.sleep(5 * (attempt + 1))
+            time.sleep(15 * (attempt + 1))
     raise SystemExit("unreachable")
 
 
@@ -96,7 +98,13 @@ def strip_tags(value: str) -> str:
 def commons_info(title: str) -> dict[str, str]:
     """Original file URL and credit fields for one Commons file title."""
     data = fetch_json(
-        {"action": "query", "prop": "imageinfo", "titles": title, "iiprop": "url|extmetadata"}
+        {
+            "action": "query",
+            "prop": "imageinfo",
+            "titles": title,
+            "iiprop": "url|extmetadata",
+            "iiurlwidth": str(DOWNLOAD_WIDTH),
+        }
     )
     pages = data["query"]["pages"]
     page = next(iter(pages.values()))
@@ -110,7 +118,8 @@ def commons_info(title: str) -> dict[str, str]:
         raise SystemExit(f"{title}: license {license_name!r} is not in the accepted list")
     return {
         "title": page["title"],
-        "url": info["url"],
+        # A standard thumbnail size: plenty for the card and kinder to Commons than originals.
+        "url": info.get("thumburl") or info["url"],
         "page": "https://commons.wikimedia.org/wiki/" + urllib.parse.quote(page["title"]),
         "author": field("Artist") or field("Credit") or "unknown",
         "license": license_name,
@@ -131,8 +140,45 @@ def cut_out(photo: Image.Image, session) -> Image.Image:
     photo.thumbnail((2400, 2400))  # plenty for 800 by 600 and keeps the model fast
     cut = remove(photo, session=session).convert("RGBA")
     alpha = cut.getchannel("A").point(lambda v: 255 if v > ALPHA_CUTOFF else 0)
+    alpha = largest_region(alpha)
     cut.putalpha(alpha.filter(ImageFilter.GaussianBlur(1.2)))
     return cut
+
+
+def largest_region(mask: Image.Image) -> Image.Image:
+    """Keeps the biggest connected blob of the cutout, dropping fragments of nearby cars."""
+    import numpy as np
+    from collections import deque
+
+    scale = 4
+    small = mask.resize((max(1, mask.width // scale), max(1, mask.height // scale)), Image.Resampling.NEAREST)
+    grid = np.array(small) > 0
+    h, w = grid.shape
+    labels = np.zeros((h, w), dtype=np.int32)
+    sizes: dict[int, int] = {}
+    label = 0
+    for y in range(h):
+        for x in range(w):
+            if not grid[y, x] or labels[y, x]:
+                continue
+            label += 1
+            queue = deque([(y, x)])
+            labels[y, x] = label
+            count = 0
+            while queue:
+                cy, cx = queue.popleft()
+                count += 1
+                for ny, nx in ((cy - 1, cx), (cy + 1, cx), (cy, cx - 1), (cy, cx + 1)):
+                    if 0 <= ny < h and 0 <= nx < w and grid[ny, nx] and not labels[ny, nx]:
+                        labels[ny, nx] = label
+                        queue.append((ny, nx))
+            sizes[label] = count
+    if not sizes:
+        return mask
+    keep = max(sizes, key=sizes.get)
+    kept = Image.fromarray((labels == keep).astype(np.uint8) * 255).resize(mask.size, Image.Resampling.NEAREST)
+    kept = kept.filter(ImageFilter.MaxFilter(scale * 2 + 1))
+    return ImageChops.multiply(mask, kept)
 
 
 def stylize(car: Image.Image) -> Image.Image:
@@ -190,6 +236,19 @@ def save_webp(image: Image.Image, target: Path) -> int:
         quality -= 6
 
 
+def credit_name(raw: str) -> str:
+    """The photographer's name from an Artist field that may carry a whole paragraph."""
+    text = re.sub(r"\S+@\S+", "", raw)
+    text = re.sub(
+        r"^(?:this (?:picture|photo|image) (?:has been|was) taken by|photo(?:graph)? by|by)\s+",
+        "",
+        text,
+        flags=re.I,
+    )
+    first = re.split(r"[.\n]", text, maxsplit=1)[0].strip(" ,;")
+    return (first or raw.strip())[:60]
+
+
 def write_credits(credits: dict[str, dict[str, str]], names: dict[str, str]) -> None:
     lines = [
         "# Card art credits",
@@ -205,10 +264,11 @@ def write_credits(credits: dict[str, dict[str, str]], names: dict[str, str]) -> 
         if not (OUT / f"{car_id}.webp").exists():
             continue
         c = credits[car_id]
+        author = credit_name(c["author"])
         license_cell = f"[{c['license']}]({c['licenseUrl']})" if c["licenseUrl"] else c["license"]
         lines.append(
             f"| {car_id} | {names.get(car_id, car_id)} | [{c['title'].removeprefix('File:')}]({c['page']}) "
-            f"| {c['author']} | {license_cell} |"
+            f"| {author} | {license_cell} |"
         )
     (OUT / "CREDITS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -216,6 +276,7 @@ def write_credits(credits: dict[str, dict[str, str]], names: dict[str, str]) -> 
 def main(only: list[str]) -> None:
     from rembg import new_session
 
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     OUT.mkdir(parents=True, exist_ok=True)
     CACHE.mkdir(exist_ok=True)
     names = car_names()
@@ -236,13 +297,16 @@ def main(only: list[str]) -> None:
             raise SystemExit(f"{car_id}: not a car id in cars.ts")
         info = commons_info(row["commonsFile"].strip())
         suffix = Path(urllib.parse.urlparse(info["url"]).path).suffix or ".jpg"
-        photo_path = download(info["url"], CACHE / f"{car_id}{suffix}")
+        stamp = hashlib.sha1(info["title"].encode("utf-8")).hexdigest()[:8]
+        photo_path = download(info["url"], CACHE / f"{car_id}-{stamp}{suffix}")
         with Image.open(photo_path) as photo:
             photo = ImageOps.exif_transpose(photo).convert("RGB")
             cut = cut_out(photo, session)
         image = compose(cut, row.get("flip", "").strip().lower() == "y")
         size = save_webp(image, OUT / f"{car_id}.webp")
         credits[car_id] = info
+        time.sleep(1)
+        CREDITS_DATA.write_text(json.dumps(credits, indent=2), encoding="utf-8")
         print(f"{car_id}: {size:,} bytes, {info['license']}, {info['author']}")
 
     CREDITS_DATA.write_text(json.dumps(credits, indent=2), encoding="utf-8")
