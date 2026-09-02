@@ -5,6 +5,7 @@
 **How to use this plan**
 
 - One phase per working session. Each phase ends with something runnable and a commit.
+- Phases 10 and up change the design. Each starts by writing its "Design to record first" decisions into `DESIGN.md`, adjusted if the evidence says otherwise, before any code.
 - Start every session by reading `DESIGN.md` and this file, then the phase's prompt line.
 - A phase is done when every item under "Done when" is true. Not before.
 - When a phase finishes, update its row in the status table and commit.
@@ -25,6 +26,12 @@
 | 7 | CPU play and match flow | done | ebd7797 |
 | 8 | Deck builder | done | 6fbc20f |
 | 9 | Polish and release | done | 8619114 |
+| 10 | Illustrated card art | todo | |
+| 11 | Collection and packs | todo | |
+| 12 | Holo and foil variants | todo | |
+| 13 | CPU difficulty levels | todo | |
+| 14 | Online play, part 1: the engine behind a server | todo | |
+| 15 | Online play, part 2: accounts and matchmaking | todo | |
 
 ---
 
@@ -239,11 +246,186 @@
 
 ---
 
-## Post-v1 backlog
+## Phase 10 — Illustrated card art
 
-In likely order. Each becomes a phase when picked up.
+**Goal**: every car card carries an illustration in one consistent style, and the silhouette becomes a fallback.
 
-1. Illustrated card art in one consistent style, filling `imageUrl`
-2. Packs and a collection, with holo and foil variants
-3. CPU difficulty levels
-4. Online play: engine moves behind a server, accounts, matchmaking
+**Design to record first** (`DESIGN.md` section 8): one style for all 52 cars; a 4:3 image sized 800 by 600; a side three-quarter view facing right, the direction the track runs; a plain backdrop close to the card's cream so the type-colored frame does the color work; WebP under 60 KB each and under 3 MB in total. The illustrations are supplied by the owner to that spec. This phase covers the spec, the wiring, and the checks.
+
+**Deliverables**
+
+- The spec above written into `DESIGN.md` section 8
+- `public/art/<carId>.webp` for all 52 cars, and `imageUrl` set on every car in `src/data/cars.ts`. The phase 1 test that `imageUrl` is empty flips to require a path under `/art/`.
+- `CarCard` shows the image lazily, keeps the silhouette underneath until the image has loaded, and falls back to it if the image fails
+- Art license stated in `README.md` under Legal, separate from the MIT code license
+
+**Tests**
+
+- Every car has a non-empty, unique `imageUrl` under `/art/`
+- Every referenced file exists in `public/` and the total stays under the size budget
+- The card's fallback state: no image, loading, loaded, failed
+
+**Done when**: every card on the live URL shows its illustration, the Cars tab of the deck builder transfers under 3 MB on first load, and the art tests pass.
+
+**Prompt**: Do phase 10 of BUILD_PLAN.md.
+
+---
+
+## Phase 11 — Collection and packs
+
+**Goal**: players earn packs by playing, open them, and build garages from what they own.
+
+**Design to record first** (new `DESIGN.md` section 12, and section 10 moves "every card unlocked" into v1 history):
+
+- The collection is per browser, in `localStorage` next to the garages, with the same try/catch wrapper. It holds a count per card id, cars and mods alike.
+- A fresh browser owns every card in the three starter garages, so the starters stay fully playable. Everything else has to be opened.
+- Finishing a match against the CPU earns 1 pack, winning it earns 2. A hotseat match earns 1. Packs wait in a stack until opened.
+- A pack holds 2 cars and 3 mods. Car odds follow the tier's rarity label: Common 55%, Uncommon 30%, Rare 12%, Ultra Rare 3%. Mods are uniform across the 32. Duplicates count.
+- The deck builder adds only owned cards. A car needs one copy; a mod can go in up to the smaller of 3 and the copies owned. On first load after this phase, a one-time migration grants every card in an already saved garage, so nothing a v1 player built stops working.
+- The odds and rewards are tunables. They live in `src/engine/tunables.ts` under `collection`, so every number stays in one file, and a change gets a balance-log line.
+
+**Deliverables**
+
+- `DESIGN.md` section 12 with the rules above
+- `src/collection/`: the collection model, pack opening through the seeded generator, persistence through the storage wrapper, and the migration
+- A collection screen: all 84 cards, owned ones in color with counts, unowned ones dimmed, the builder's filters, and an Open pack button that reveals the five cards
+- Packs awarded on the result screen and counted on the start screen
+- Deck builder ownership limits with messages that say what is missing
+- `npm run sim -- --packs 10000`: expected packs to own every card, and to open the first Ultra Rare car
+
+**Tests**
+
+- Pack contents follow the odds within tolerance over 10,000 packs at a fixed seed
+- Starter cards are owned from the start; the migration grants saved-garage cards once and never twice
+- The builder rejects an unowned car and caps mod copies at the copies owned
+- Collection data survives corrupt storage the way garages do
+- The engine's match config still takes card ids only; ownership never reaches it
+
+**Done when**: a fresh browser starts with the starter cards only, earns a pack by finishing a CPU match on the live URL, opens it, and builds with a card from it.
+
+**Prompt**: Do phase 11 of BUILD_PLAN.md.
+
+---
+
+## Phase 12 — Holo and foil variants
+
+**Goal**: packs can turn up a foil or a holo, and the card shows it.
+
+**Design to record first** (`DESIGN.md` section 12 addendum): two cosmetic variants, cosmetic only. Foil is a shimmer on the frame; holo is a shimmer across the image area and is the rarer of the two. Each card pulled from a pack has a 10% chance to be foil and a 2% chance to be holo. The collection counts each variant separately. The best variant a player owns is the one that shows, in the builder, on the board, and on the result screen. The treatment is CSS only, moves on hover, stays still under reduced-motion settings, and never touches the engine.
+
+**Deliverables**
+
+- The odds and rules in `DESIGN.md` section 12 and in `tunables.ts` under `collection`
+- Variant counts in the collection model and variant rolls in pack opening
+- Foil and holo treatments on `CarCard` and `ModCard`, and variant badges on the collection screen
+- The pack reveal marks a foil or holo when one appears
+
+**Tests**
+
+- Variant odds over 10,000 packs at a fixed seed
+- Best-variant selection with mixed counts
+- Match config and `MatchState` carry no variant data
+
+**Done when**: a foil and a holo can be opened on the live URL, look different from the base card and from each other, and a match plays with them showing.
+
+**Prompt**: Do phase 12 of BUILD_PLAN.md.
+
+---
+
+## Phase 13 — CPU difficulty levels
+
+**Goal**: three CPU levels that measurably differ, chosen at match start.
+
+**Design to record first** (`DESIGN.md` section 6):
+
+- **Rookie** fuels and stages by the section 6 rules but never uses the win rule or the stop rule, and spends a Boost or Sabotage only when it is worth twice the usual threshold. It stages by highest advance alone, ignoring wear.
+- **Street** is the v1 CPU, unchanged.
+- **Pro** adds three things: it holds a first-advance stall such as Red Light until the opponent's car is fueled and about to make its first advance; it values a bench car's fuel by the race it will be needed in, so a Hyper stays on the bench until it can move; and it reads coin flips at their expected value instead of as tails.
+- Levels are a parameter to `chooseAction`, and the simulator reports level against level.
+
+**Deliverables**
+
+- `Level` on `chooseAction` and `playCpuMatch` in `src/cpu/`
+- The start screen offers the level, default Street
+- `npm run sim -- --levels`: a level-against-level table
+
+**Tests**
+
+- Rookie never plays the win or stop rule in the phase 4 scenarios where Street does
+- Pro holds Red Light in a scenario where Street plays it at once
+- Over 2,000 matches at a fixed seed: Pro beats Street at least 60%, Street beats Rookie at least 65%
+- No level takes more than 50 ms per action on the 1,000-match run
+
+**Done when**: those tests pass and all three levels can be picked and beaten on the live URL.
+
+**Prompt**: Do phase 13 of BUILD_PLAN.md.
+
+---
+
+## Phase 14 — Online play, part 1: the engine behind a server
+
+**Goal**: two people on different machines play a match through the live URL, with the server as the only holder of the truth.
+
+**Design to record first** (new `DESIGN.md` section 13, and section 9 loses "no backend"):
+
+- The server owns each `MatchState`. A client sends an `Action`; the server checks it with `legalActions`, applies it, and sends each player a redacted view: their own hand, the opponent's hand as a count, both decks as counts, everything on the table as is. The engine gains `redact(state, viewer)`, and the board renders from a redacted view.
+- Transport is a WebSocket. Each match is one room reached by a link or a six-character code. No accounts in this phase. A reconnect token in `localStorage` resumes a match after a refresh or a dropped connection.
+- Hosting is a small WebSocket service that keeps one object per match. The plan assumes a serverless platform with durable per-object state on a free tier; the owner picks the provider before the phase starts, and the choice goes in section 13.
+- CPU and hotseat play keep working offline and unchanged.
+
+**Deliverables**
+
+- `redact` in `src/engine/` with the rule that a view never contains the opponent's hand or either deck's order
+- `src/server/`: the room service, the message protocol as typed data in `src/protocol/` shared with the client, validation on every message, and reconnect
+- Online mode on the start screen: create a room and share the link, or join by code, then pick a garage; the board drives the match through the protocol
+- Deploy of the service alongside the Pages site, with the URL recorded in section 13
+
+**Tests**
+
+- `redact` never leaks: a property test over played-out matches finds no opponent hand card or deck order in any view
+- Two fake clients play a full match through the protocol to a winner
+- An illegal or out-of-turn action is rejected with a reason and changes nothing
+- A client that disconnects mid-turn reconnects with its token and continues
+
+**Done when**: two browsers on different machines play a full match through the live URL, and the server tests pass.
+
+**Prompt**: Do phase 14 of BUILD_PLAN.md.
+
+---
+
+## Phase 15 — Online play, part 2: accounts and matchmaking
+
+**Goal**: a stranger at the live URL signs in, presses Play online, and gets an opponent.
+
+**Design to record first** (`DESIGN.md` section 13 addendum):
+
+- Accounts through the hosting provider's sign-in, one display name per account. The collection and saved garages move to the account and sync on sign-in; `localStorage` stays the guest fallback and the guest data is claimed on first sign-in.
+- Matchmaking is a queue that pairs the two longest-waiting players. Each account carries a rating, Elo with K of 32, updated after every online match. Once more than 50 players hold a rating, the queue prefers pairs within 200 points when both have waited under 30 seconds.
+- A profile page shows the name, rating, record, and collection size. A leaderboard shows the top 50.
+
+**Deliverables**
+
+- Sign-in, profile, and collection sync in the service and the UI
+- The queue, the rating, and the leaderboard
+- Packs earned online are awarded by the server, not the client
+
+**Tests**
+
+- Rating updates match Elo by hand for a win, a loss, and an upset
+- The queue pairs the two longest-waiting players and never pairs a player with themselves
+- Guest data is claimed once on first sign-in and not again
+- A client cannot award itself a pack
+
+**Done when**: two signed-in strangers queue from different machines and are matched into a match that counts toward their ratings.
+
+**Prompt**: Do phase 15 of BUILD_PLAN.md.
+
+---
+
+## Backlog
+
+Anything new goes here first and becomes a phase when picked up.
+
+1. Trading duplicates, or converting them, once the collection has been live long enough to show how many duplicates players hold
+2. Spectating a friend's online match
+3. Seasonal starter garages built from the collection's most-opened cards

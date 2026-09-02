@@ -453,12 +453,12 @@ The engine is deterministic given a seed. Every rule in section 3 is a unit test
 - Simulator and tuned numbers
 - Live URL
 
-**Post-v1 backlog, in likely order**
+**Post-v1, in likely order** (phases 10 to 15 in `BUILD_PLAN.md`)
 
-1. Illustrated card art in one consistent style
-2. Packs and a collection, with holo and foil variants
-3. CPU difficulty levels
-4. Online play
+1. Illustrated card art in one consistent style (phase 10)
+2. Packs and a collection, with holo and foil variants (phases 11 and 12)
+3. CPU difficulty levels (phase 13)
+4. Online play (phases 14 and 15)
 
 ---
 
