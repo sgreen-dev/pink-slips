@@ -4,4 +4,4 @@ compatibility_date = "2026-09-01"
 
 [[kv_namespaces]]
 binding = "COUNTS"
-id = "replace-with-the-id-from-wrangler-kv-namespace-create"
+id = "51615ae10c94475ea97fb00d6039eddc"
