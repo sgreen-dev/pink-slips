@@ -18,7 +18,7 @@
 | 0 | Tooling and deploy | done | 578e048 |
 | 1 | Card data | done | 4de5699 |
 | 2 | Engine core | done | c8febad |
-| 3 | Engine mods | todo | |
+| 3 | Engine mods | done | bb3d90c |
 | 4 | CPU opponent | todo | |
 | 5 | Simulator and balance | todo | |
 | 6 | UI foundation and hotseat | todo | |
