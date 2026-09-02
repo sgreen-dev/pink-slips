@@ -133,6 +133,7 @@ export type LogEntry =
       heads: boolean
       forcedBySports: boolean
     }
+  | { kind: 'turnStart'; player: PlayerIndex; number: number }
   | { kind: 'draw'; player: PlayerIndex; count: number }
   | { kind: 'reshuffle'; player: PlayerIndex; count: number }
   | { kind: 'stage'; player: PlayerIndex; carId: string }

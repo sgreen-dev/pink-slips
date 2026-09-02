@@ -228,6 +228,10 @@ export function partValue(car: CarState, modId: string): number {
   let value = readyAdvance(withPart) - readyAdvance(without)
   for (const effect of getMod(modId).effects) {
     switch (effect.kind) {
+      case 'flatDistance':
+        // A bonus that only applies past a distance is worth about half its face on average.
+        if (effect.window.when === 'fromDistance') value += effect.ft * 0.5
+        break
       case 'fuelCostDelta':
         if (fuelCost(withPart) < fuelCost(without)) value += VALUE.fuelCostPoint
         break
@@ -397,9 +401,9 @@ export const VALUE = {
   /** One fuel token. */
   fuel: 60,
   /** One card drawn. */
-  card: 20,
+  card: 30,
   /** A Part fetched from the deck when a car has a slot for it. */
-  sponsor: 30,
+  sponsor: 60,
   /** Lowering a car's fuel cost by one. */
   fuelCostPoint: 120,
   rollCage: 50,
@@ -407,7 +411,7 @@ export const VALUE = {
   /** A wear point on a car, in feet of future advances lost. */
   wearPoint: 40,
   /** Denying the opponent a Boost on a turn they can advance. */
-  roadblock: 30,
+  roadblock: 50,
   /** Minimum worth before the CPU spends a Boost or Sabotage outside the win-and-stop rules. */
   playThreshold: 50,
 } as const

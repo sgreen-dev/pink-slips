@@ -1,4 +1,4 @@
-import type { Tier } from '../data/types.ts'
+import type { CarType, Tier } from '../data/types.ts'
 
 /**
  * Every tunable from DESIGN.md section 4. Nothing else in the engine hardcodes these values.
@@ -12,10 +12,22 @@ export const TUNABLES = {
   trackLengthFt: 1320,
   /** K in base = floor(K × hp ÷ weight). */
   advanceK: 3000,
-  /** Fuel a car needs before it can advance, by tier. */
-  fuelCostByTier: { daily: 1, performance: 2, super: 3, hyper: 5 } as Readonly<
+  /** Fuel a car needs before it can advance, by tier. Tuned in phase 5 from 1/2/3/5. */
+  fuelCostByTier: { daily: 1, performance: 2, super: 4, hyper: 6 } as Readonly<
     Record<Tier, number>
   >,
+  /**
+   * Multiplies the base advance by car type. The first lever for heavy types (DESIGN.md 7),
+   * set in phase 5 so Off-road, JDM, and Luxury garages can compete.
+   */
+  typeDistanceMultiplier: {
+    sports: 1,
+    luxury: 1.1,
+    muscle: 1,
+    jdm: 1.2,
+    ev: 1,
+    offroad: 1.2,
+  } as Readonly<Record<CarType, number>>,
   /** Advance multiplier lost per wear point. */
   wearRate: 0.1,
   partSlots: 2,
@@ -30,8 +42,8 @@ export const TUNABLES = {
   sabotagePerTurn: 1,
   /** Type identity magnitudes from DESIGN.md 2.3. */
   typeIdentity: {
-    /** EV: added to the car's first advance of each race. */
-    evFirstAdvanceFt: 100,
+    /** EV: added to the car's first advance of each race. Tuned in phase 5 from 100. */
+    evFirstAdvanceFt: 75,
     /** Muscle: added to any advance that starts at or past muscleTopEndFromFt. */
     muscleTopEndFt: 75,
     muscleTopEndFromFt: 660,

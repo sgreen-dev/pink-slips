@@ -15,7 +15,7 @@ const plain = (carId: string, overrides: Partial<Parameters<typeof computeAdvanc
 describe('advance formula (DESIGN.md 3.3)', () => {
   it('matches the worked example at K = 3000 with no mods', () => {
     const examples: Array<[string, number, number]> = [
-      ['honda-civic-si', 203, 7],
+      ['honda-civic-si', 243, 6],
       ['ford-mustang-gt', 372, 4],
       ['lamborghini-aventador-svj', 677, 2],
       ['rimac-nevera', 1132, 2],
@@ -29,9 +29,10 @@ describe('advance formula (DESIGN.md 3.3)', () => {
     }
   })
 
-  it('step 3 floors K × hp ÷ weight to whole feet', () => {
+  it('step 3 floors K × hp × type multiplier ÷ weight to whole feet', () => {
     const car = getCar('honda-civic-si')
-    const exact = (TUNABLES.advanceK * car.hp) / car.weightLb
+    const exact =
+      (TUNABLES.advanceK * car.hp * TUNABLES.typeDistanceMultiplier[car.type]) / car.weightLb
     expect(Number.isInteger(exact)).toBe(false)
     expect(plain(car.id).baseFt).toBe(Math.floor(exact))
   })
@@ -88,7 +89,7 @@ describe('advance formula (DESIGN.md 3.3)', () => {
 
   it('keeps wear math exact where floating point would round down', () => {
     // 1 - 0.1 × 8 is 0.19999999999999996 in floating point; 100 ft × that must still be 20.
-    const car = { ...getCar('honda-civic-si'), hp: 100, weightLb: 3000 }
+    const car = { ...getCar('ford-mustang-gt'), hp: 100, weightLb: 3000 }
     const result = computeAdvance({ car, wear: 8, startFt: 0, isFirstAdvanceOfRace: false })
     expect(result.baseFt).toBe(100)
     expect(result.finalFt).toBe(20)

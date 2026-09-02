@@ -21,10 +21,10 @@ import type { Action, MatchState, PlayerIndex } from './types.ts'
 const CIVIC = 'honda-civic-si' // JDM, Daily, cost 1
 const MIATA = 'mazda-mx-5-miata' // Sports, Daily, cost 1
 const MUSTANG = 'ford-mustang-gt' // Muscle, Performance, cost 2
-const PLAID = 'tesla-model-s-plaid' // EV, Hyper, cost 5
+const PLAID = 'tesla-model-s-plaid' // EV, Hyper, cost 6
 const LC500 = 'lexus-lc-500' // Luxury, Performance, cost 2
 const WRX = 'subaru-wrx-sti' // Off-road, Performance, cost 2
-const GTR = 'nissan-gt-r' // JDM, Super, cost 3
+const GTR = 'nissan-gt-r' // JDM, Super, cost 4
 
 function baseFt(carId: string, overrides: Partial<AdvanceInput> = {}): number {
   return computeAdvance({
@@ -132,7 +132,7 @@ describe('Parts', () => {
     expect(cost(MUSTANG, [])).toBe(2)
     expect(cost(MUSTANG, ['fuel-cell'])).toBe(1)
     expect(cost(CIVIC, ['fuel-cell'])).toBe(1)
-    expect(cost(GTR, ['fuel-cell', 'fuel-cell'])).toBe(1)
+    expect(cost(GTR, ['fuel-cell', 'fuel-cell'])).toBe(2)
     // A Mustang with one fuel and a Fuel Cell can advance.
     const state = duel({ cars: [{ id: MUSTANG, fuel: 1, parts: ['fuel-cell'] }] })
     expect(advanceFt(state)).toBe(baseFt(MUSTANG))
@@ -141,7 +141,7 @@ describe('Parts', () => {
   it('roll-cage stops the car gaining wear when it wins a race', () => {
     const win = (parts: string[]) => {
       const state = duel(
-        { cars: [{ id: PLAID, fuel: 5, parts }, { id: CIVIC }] },
+        { cars: [{ id: PLAID, fuel: 6, parts }, { id: CIVIC }] },
         {},
         { distanceFt: [700, 0], advances: [1, 0] },
       )
@@ -487,7 +487,7 @@ describe('Sabotage', () => {
 
   it('pending sabotage is cleared at race end (DESIGN.md 3.4)', () => {
     const state = duel(
-      { cars: [{ id: PLAID, fuel: 5 }, { id: CIVIC }], pending: { flatReductionFt: 10 } },
+      { cars: [{ id: PLAID, fuel: 6 }, { id: CIVIC }], pending: { flatReductionFt: 10 } },
       { pending: { halve: true, flatReductionFt: 100, skipAdvance: true } },
       { distanceFt: [700, 0], advances: [1, 0] },
     )
@@ -507,7 +507,7 @@ describe('Sabotage', () => {
 
   it("a captured car's parts go to the loser's discard pile", () => {
     const state = duel(
-      { cars: [{ id: PLAID, fuel: 5 }, { id: CIVIC }] },
+      { cars: [{ id: PLAID, fuel: 6 }, { id: CIVIC }] },
       { cars: [{ id: MIATA, parts: ['turbo-kit'] }, { id: LC500 }] },
       { distanceFt: [700, 0], advances: [1, 0] },
     )

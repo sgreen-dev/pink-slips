@@ -20,10 +20,10 @@ import { chooseAction } from './cpu.ts'
 import { playCpuMatch } from './play.ts'
 import { forecastOpponentAdvance, forecastOwnAdvance, readyAdvance } from './predict.ts'
 
-const CIVIC = 'honda-civic-si' // JDM, Daily, cost 1, 203 ft
+const CIVIC = 'honda-civic-si' // JDM, Daily, cost 1, 243 ft
 const MIATA = 'mazda-mx-5-miata' // Sports, Daily, cost 1, 232 ft
 const MUSTANG = 'ford-mustang-gt' // Muscle, Performance, cost 2, 372 ft
-const GTR = 'nissan-gt-r' // JDM, Super, cost 3, 430 ft
+const GTR = 'nissan-gt-r' // JDM, Super, cost 4, 517 ft
 const WRX = 'subaru-wrx-sti' // Off-road, Performance, cost 2
 
 function duel(
@@ -110,16 +110,16 @@ describe('CPU priorities (DESIGN.md section 6)', () => {
   })
 
   it('3: otherwise fuels the garage car with the best advance per fuel remaining', () => {
-    // Civic: 203 ft for 1 fuel. GT-R: 430 ft for 3 fuel, so 143 per fuel.
+    // Civic: 243 ft for 1 fuel. GT-R: 517 ft for 4 fuel, so 129 per fuel.
     const far = duel(
       { cars: [{ id: MUSTANG, fuel: 2 }, { id: CIVIC }, { id: GTR }] },
       {},
       { step: 'fuel' },
     )
     expect(chooseAction(far, 0)).toEqual({ type: 'fuel', player: 0, carId: CIVIC })
-    // With two fuel already on it the GT-R is 430 ft for 1 more.
+    // With three fuel already on it the GT-R is 517 ft for 1 more.
     const near = duel(
-      { cars: [{ id: MUSTANG, fuel: 2 }, { id: CIVIC }, { id: GTR, fuel: 2 }] },
+      { cars: [{ id: MUSTANG, fuel: 2 }, { id: CIVIC }, { id: GTR, fuel: 3 }] },
       {},
       { step: 'fuel' },
     )
@@ -163,7 +163,7 @@ describe('CPU priorities (DESIGN.md section 6)', () => {
       cars: [
         { id: CIVIC, fuel: 1 },
         { id: MUSTANG, fuel: 2 },
-        { id: GTR, fuel: 3 },
+        { id: GTR, fuel: 4 },
       ],
     })
     const staging = { ...base, phase: { kind: 'staging' as const, pending: [0 as const] } }
@@ -173,14 +173,20 @@ describe('CPU priorities (DESIGN.md section 6)', () => {
       cars: [
         { id: CIVIC, fuel: 1 },
         { id: MUSTANG, fuel: 2 },
-        { id: GTR, fuel: 3, wear: 3 },
+        { id: GTR, fuel: 4, wear: 3 },
       ],
     })
     const wornStaging = { ...worn, phase: { kind: 'staging' as const, pending: [0 as const] } }
-    // 430 × 0.7 is 301 ft, below the Mustang's 372.
-    expect(readyAdvance({ carId: GTR, fuel: 3, wear: 3, parts: [], tractionShield: false })).toBe(
-      301,
-    )
+    // Three wear points take the GT-R below the Mustang's 372 ft.
+    const wornGtr = readyAdvance({ carId: GTR, fuel: 4, wear: 3, parts: [], tractionShield: false })
+    const mustang = readyAdvance({
+      carId: MUSTANG,
+      fuel: 2,
+      wear: 0,
+      parts: [],
+      tractionShield: false,
+    })
+    expect(wornGtr).toBeLessThan(mustang)
     expect(chooseAction(wornStaging, 0)).toEqual({ type: 'stage', player: 0, carId: MUSTANG })
 
     const unready = duel({

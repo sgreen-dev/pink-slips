@@ -57,8 +57,8 @@ Tier is assigned by **power-to-weight** in hp per pound, because that is what th
 |---|---|---|---|
 | **Daily** | Common | below 0.080 | 1 |
 | **Performance** | Uncommon | 0.080 to 0.139 | 2 |
-| **Super** | Rare | 0.140 to 0.199 | 3 |
-| **Hyper** | Ultra Rare | 0.200 and up | 5 |
+| **Super** | Rare | 0.140 to 0.199 | 4 |
+| **Hyper** | Ultra Rare | 0.200 and up | 6 |
 
 Bands are guidelines. A car sitting within 0.005 of a boundary may be placed by judgment, and the placement is recorded in the data with a note.
 
@@ -76,7 +76,7 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 
 | Type | Identity | Mechanic (magnitudes tunable) |
 |---|---|---|
-| **EV** | instant torque | +100 ft on the car's first advance of each race |
+| **EV** | instant torque | +75 ft on the car's first advance of each race |
 | **Muscle** | top end | +75 ft on any advance that starts at or past 660 ft |
 | **JDM** | tuner | 3 part slots instead of 2 |
 | **Sports** | precision | the first coin flip this car makes each race is heads |
@@ -265,13 +265,13 @@ Computed in this order. All results floor to whole feet, minimum 0.
 
 1. Effective hp = `hp × (1 + sum of percentage hp modifiers from Parts and Boosts)`
 2. Effective weight = `weightLb − sum of weight reductions`
-3. Base = `floor(K × effective hp ÷ effective weight)` where **K = 3000** (tunable)
+3. Base = `floor(K × effective hp × type multiplier ÷ effective weight)` where **K = 3000** (tunable) and the type multiplier is 1 for Sports, Muscle, and EV, 1.1 for Luxury, and 1.2 for JDM and Off-road (tunable, set in phase 5)
 4. Add flat bonuses: type identity, Parts, Boosts
 5. Apply Sabotage pending on this car: flat reductions first, then halving
 6. Apply wear: `× (1 − wearRate × wearCount)` where **wearRate = 0.10** (tunable). Luxury uses half the rate.
 7. If the car's distance reaches or passes **1320 ft**, the race ends immediately.
 
-Worked example at K = 3000, no mods, using the verified figures in `src/data/cars.ts`: Civic Si (200 hp, 2,952 lb) advances 203 ft and needs 7 advances. Mustang GT (460 hp, 3,705 lb) advances 372 ft and needs 4. Aventador SVJ (759 hp, 3,362 lb dry) advances 677 ft and needs 2. Rimac Nevera (1,914 hp, 5,071 lb) advances 1,132 ft and needs 2.
+Worked example at K = 3000, no mods, using the verified figures in `src/data/cars.ts`: Civic Si (200 hp, 2,952 lb, JDM ×1.2) advances 243 ft and needs 6 advances. Mustang GT (460 hp, 3,705 lb) advances 372 ft and needs 4. Aventador SVJ (759 hp, 3,362 lb dry) advances 677 ft and needs 2. Rimac Nevera (1,914 hp, 5,071 lb) advances 1,132 ft and needs 2.
 
 ### 3.4 Race end
 
@@ -298,8 +298,9 @@ Every value here is a starting point. Phase 5 runs the simulator and adjusts the
 | Tunable | Start | Rationale |
 |---|---|---|
 | Track length | 1320 ft | a quarter mile, fixed by theme |
-| K (advance constant) | 3000 | a Daily car finishes in about 7 advances, a Hyper in about 3 |
-| Fuel cost by tier | 1 / 2 / 3 / 5 | Hyper's jump to 5 is deliberate: it should need bench time |
+| K (advance constant) | 3000 | a Daily car finishes in about 6 advances, a Hyper in 2 or 3 |
+| Fuel cost by tier | 1 / 2 / 4 / 6 | started at 1 / 2 / 3 / 5; phase 5 found the top two tiers needed a steeper step |
+| Per-type distance multiplier | 1 / 1.1 / 1 / 1.2 / 1 / 1.2 (Sports, Luxury, Muscle, JDM, EV, Off-road) | phase 5 lever for the heavy and low-tier types; 1 everywhere to start |
 | Wear rate | 10% per win | three wins cost a car nearly a third of its speed |
 | Part slots | 2, JDM 3 | |
 | Garage size | 5 | |
@@ -310,7 +311,7 @@ Every value here is a starting point. Phase 5 runs the simulator and adjusts the
 | Copies of one mod | 3 | |
 | Boosts per turn | 1 | |
 | Sabotage per turn | 1 | |
-| Type bonus magnitudes | as listed in 2.3 | |
+| Type bonus magnitudes | as listed in 2.3 | EV launch bonus started at 100 ft; phase 5 cut it to 75 |
 | Mod values | as listed in 2.5 | |
 
 ---
@@ -366,6 +367,14 @@ A headless command, `npm run sim`, that plays CPU against CPU for thousands of m
 - Heavy types (Off-road, Luxury at low tiers) may be unplayable on pure power-to-weight. First lever if so: a per-type distance multiplier. Second lever: tier fuel costs.
 - Hyper fuel cost 5 may be too slow to ever matter, or bench fueling may make it free. First lever: K and the cost step.
 - Wear at 10% may make swapping always correct, which removes the decision. First lever: wear rate.
+
+**Phase 5 findings** (5,000-match runs, details in `docs/balance-log.md`)
+
+- Heavy types: confirmed. Off-road won 15% against the field and JDM 29% on pure power-to-weight. The per-type distance multiplier fixed it: Off-road 1.2, JDM 1.2, Luxury 1.1 put every type between 49% and 59%.
+- Hyper fuel cost: confirmed that bench fueling makes it nearly free. Hyper cars made their first advance 1.4 turns after staging, and Daily-only won 4% against Hyper-only. The cost step was the lever: 1/2/4/6 brought that to about 50%. The matchup is sensitive to the Hyper cost, since it turns on whether a fueled Hyper finishes race 1 before a Daily car does: 7 gave Daily 59% and 8 gave it 77%.
+- Wear: not a problem at 10%. Race winners kept their car 58% of the time, so the swap is a real decision. Raising wear to 15% or 20% lowered that to about 50% without helping the other targets.
+- EV was the strongest type at 62% through its launch bonus; 75 ft brought it to 58%.
+- Matches run about 14 turns per player with the CPU, well under the 25-turn target.
 
 ---
 

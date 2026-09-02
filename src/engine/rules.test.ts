@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { getCar } from '../data/cars.ts'
+import { computeAdvance } from './advance.ts'
 import { STARTERS } from '../data/starters.ts'
 import {
   apply,
@@ -246,7 +247,11 @@ describe('3.2 turn', () => {
     let next = apply(state, { type: 'fuel', player, carId: bench?.carId ?? '' })
     next = apply(next, { type: 'endMods', player })
     expect(next.turn.player).toBe(otherPlayer(player))
-    expect(next.log.at(-2)).toEqual({ kind: 'advanceSkipped', player, reason: 'notFueled' })
+    expect(next.log.filter((e) => e.kind === 'advanceSkipped').at(-1)).toEqual({
+      kind: 'advanceSkipped',
+      player,
+      reason: 'notFueled',
+    })
     expect(next.race.distanceFt).toEqual([0, 0])
 
     // Fuel the staged car and it advances.
@@ -293,7 +298,12 @@ describe('3.3 advance in a match', () => {
     const player = state.turn.player
     const car = getCar(stagedCar(state, player)?.carId ?? '')
     state = playTurn(state)
-    const expected = Math.floor((TUNABLES.advanceK * car.hp) / car.weightLb)
+    const expected = computeAdvance({
+      car,
+      wear: 0,
+      startFt: 0,
+      isFirstAdvanceOfRace: true,
+    }).finalFt
     expect(state.race.distanceFt[player]).toBe(expected)
     const entry = state.log.findLast((e) => e.kind === 'advance')
     expect(entry?.kind === 'advance' && entry.breakdown.finalFt).toBe(expected)
@@ -324,11 +334,13 @@ describe('3.4 race end', () => {
       const car = stagedCar(s, s.turn.player)
       const start = s.race.distanceFt[s.turn.player]
       if (!car) return false
-      const cfg = getCar(car.carId)
-      return (
-        car.fuel >= fuelCost(car) &&
-        start + Math.floor((TUNABLES.advanceK * cfg.hp) / cfg.weightLb) >= TUNABLES.trackLengthFt
-      )
+      const next = computeAdvance({
+        car: getCar(car.carId),
+        wear: car.wear,
+        startFt: start,
+        isFirstAdvanceOfRace: s.race.advances[s.turn.player] === 0,
+      }).finalFt
+      return car.fuel >= fuelCost(car) && start + next >= TUNABLES.trackLengthFt
     })
     const winner = before.turn.player
     const after = playTurn(before)

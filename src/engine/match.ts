@@ -426,6 +426,7 @@ function beginTurn(state: MatchState, player: PlayerIndex, number: number): Matc
   const boostBlocked = state.players[player].boostBlockedNextTurn
   let next = setPlayer(state, player, (p) => ({ ...p, boostBlockedNextTurn: false }))
   next = { ...next, phase: { kind: 'turn' }, turn: newTurn(player, number, boostBlocked) }
+  next = withLog(next, { kind: 'turnStart', player, number })
   return drawForPlayer(next, player, TUNABLES.drawPerTurn)
 }
 

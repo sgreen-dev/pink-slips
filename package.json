@@ -17,7 +17,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "data:report": "node src/data/report.ts"
+    "data:report": "node src/data/report.ts",
+    "sim": "node src/sim/cli.ts"
   },
   "dependencies": {
     "react": "^19.2.8",

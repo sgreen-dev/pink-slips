@@ -33,11 +33,11 @@ function advanceFt(state: MatchState): number {
 }
 
 describe('type identities (DESIGN.md 2.3)', () => {
-  it('EV: instant torque adds 100 ft to the first advance of each race', () => {
+  it('EV: instant torque adds the launch bonus to the first advance of each race', () => {
     const bonus = TUNABLES.typeIdentity.evFirstAdvanceFt
-    expect(bonus).toBe(100)
-    expect(advanceFt(versusCivic({ cars: [{ id: PLAID, fuel: 5 }] }))).toBe(base(PLAID) + bonus)
-    expect(advanceFt(versusCivic({ cars: [{ id: PLAID, fuel: 5 }] }, { advances: [1, 0] }))).toBe(
+    expect(bonus).toBe(75)
+    expect(advanceFt(versusCivic({ cars: [{ id: PLAID, fuel: 6 }] }))).toBe(base(PLAID) + bonus)
+    expect(advanceFt(versusCivic({ cars: [{ id: PLAID, fuel: 6 }] }, { advances: [1, 0] }))).toBe(
       base(PLAID),
     )
   })
@@ -109,7 +109,7 @@ describe('type identities (DESIGN.md 2.3)', () => {
   it('Sports: the forced flip resets with each new race', () => {
     const state = scenario({
       players: [
-        { cars: [{ id: PLAID, fuel: 5 }, { id: MIATA }] },
+        { cars: [{ id: PLAID, fuel: 6 }, { id: MIATA }] },
         { cars: [{ id: CIVIC, fuel: 1 }, { id: MUSTANG }] },
       ],
       distanceFt: [700, 0],

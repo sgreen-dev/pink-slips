@@ -92,9 +92,10 @@ export function computeAdvance(input: AdvanceInput): AdvanceBreakdown {
   const effectiveWeightLb = Math.max(1, car.weightLb - weightReductionLb)
 
   // 3: base distance. The epsilon keeps an exact integer from flooring down after float error.
+  const typeMultiplier = TUNABLES.typeDistanceMultiplier[car.type]
   const baseFt = Math.max(
     0,
-    Math.floor((TUNABLES.advanceK * effectiveHp) / effectiveWeightLb + 1e-9),
+    Math.floor((TUNABLES.advanceK * effectiveHp * typeMultiplier) / effectiveWeightLb + 1e-9),
   )
 
   // 4: flat bonuses, then any Boost multiplier on this advance
