@@ -1,28 +1,32 @@
 import { useState } from 'react'
-import { STARTERS } from '../data/starters.ts'
 import type { MatchConfig } from '../engine/index.ts'
+import { garageOptions, type GarageOption } from './builder.ts'
 import { CarCard } from './CarCard.tsx'
 import type { Mode } from './Match.tsx'
+import { loadGarages } from './storage.ts'
 
 interface StartScreenProps {
   onStart: (mode: Mode, config: MatchConfig, names: [string, string]) => void
+  onBuilder: () => void
 }
 
-function StarterPicker({
+function GaragePicker({
   label,
+  options,
   value,
   onChange,
 }: {
   label: string
+  options: readonly GarageOption[]
   value: number
   onChange: (index: number) => void
 }) {
   return (
     <fieldset className="picker">
       <legend className="picker__legend">{label}</legend>
-      {STARTERS.map((starter, index) => (
+      {options.map((option, index) => (
         <label
-          key={starter.id}
+          key={option.id}
           className={`picker__option ${index === value ? 'picker__option--selected' : ''}`}
         >
           <input
@@ -31,10 +35,10 @@ function StarterPicker({
             checked={index === value}
             onChange={() => onChange(index)}
           />
-          <span className="picker__title">{starter.name}</span>
-          <span className="picker__style">{starter.style}</span>
+          <span className="picker__title">{option.name}</span>
+          <span className="picker__style">{option.style}</span>
           <span className="picker__cars">
-            {starter.cars.map((carId) => (
+            {option.cars.map((carId) => (
               <CarCard key={carId} carId={carId} size="sm" />
             ))}
           </span>
@@ -44,15 +48,16 @@ function StarterPicker({
   )
 }
 
-export function StartScreen({ onStart }: StartScreenProps) {
+export function StartScreen({ onStart, onBuilder }: StartScreenProps) {
+  const [options] = useState<GarageOption[]>(() => garageOptions(loadGarages()))
   const [mode, setMode] = useState<Mode>('cpu')
   const [first, setFirst] = useState(0)
   const [second, setSecond] = useState(1)
   const labels: [string, string] =
     mode === 'cpu' ? ['Your garage', 'CPU garage'] : ['Player 1 garage', 'Player 2 garage']
   const start = () => {
-    const a = STARTERS[first]
-    const b = STARTERS[second]
+    const a = options[first]
+    const b = options[second]
     if (!a || !b) return
     onStart(
       mode,
@@ -89,10 +94,13 @@ export function StartScreen({ onStart }: StartScreenProps) {
         >
           Hotseat: two players, one screen
         </button>
+        <button type="button" className="button button--ghost" onClick={onBuilder}>
+          Deck builder
+        </button>
       </div>
       <div className="start__pickers">
-        <StarterPicker label={labels[0]} value={first} onChange={setFirst} />
-        <StarterPicker label={labels[1]} value={second} onChange={setSecond} />
+        <GaragePicker label={labels[0]} options={options} value={first} onChange={setFirst} />
+        <GaragePicker label={labels[1]} options={options} value={second} onChange={setSecond} />
       </div>
       <button type="button" className="button button--primary button--big" onClick={start}>
         Start the match

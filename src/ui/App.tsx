@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import type { MatchConfig } from '../engine/index.ts'
+import { BuilderScreen } from './BuilderScreen.tsx'
 import { Match, type Mode } from './Match.tsx'
 import { StartScreen } from './StartScreen.tsx'
 
 type Screen =
   | { kind: 'start' }
+  | { kind: 'builder' }
   | { kind: 'match'; mode: Mode; config: MatchConfig; names: [string, string]; seed: number }
 
 function newSeed(): number {
@@ -19,8 +21,12 @@ export function App() {
         onStart={(mode, config, names) =>
           setScreen({ kind: 'match', mode, config, names, seed: newSeed() })
         }
+        onBuilder={() => setScreen({ kind: 'builder' })}
       />
     )
+  }
+  if (screen.kind === 'builder') {
+    return <BuilderScreen onBack={() => setScreen({ kind: 'start' })} />
   }
   return (
     <Match
