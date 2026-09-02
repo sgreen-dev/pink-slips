@@ -20,7 +20,7 @@
 | 2 | Engine core | done | c8febad |
 | 3 | Engine mods | done | bb3d90c |
 | 4 | CPU opponent | done | 54b5613 |
-| 5 | Simulator and balance | todo | |
+| 5 | Simulator and balance | done | a298e64 |
 | 6 | UI foundation and hotseat | todo | |
 | 7 | CPU play and match flow | todo | |
 | 8 | Deck builder | todo | |
