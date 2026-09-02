@@ -24,7 +24,7 @@
 | 6 | UI foundation and hotseat | done | 9c23c85 |
 | 7 | CPU play and match flow | done | ebd7797 |
 | 8 | Deck builder | done | 6fbc20f |
-| 9 | Polish and release | todo | |
+| 9 | Polish and release | done | 8619114 |
 
 ---
 
