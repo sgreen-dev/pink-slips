@@ -1,38 +1,752 @@
+/* Pink Slips theme. Palette and type are recorded in DESIGN.md section 8. */
+
 :root {
+  --asphalt: #17171a;
+  --asphalt-2: #232327;
+  --line: #3a3a40;
+  --cream: #f3e7c9;
+  --cream-2: #e6d7b0;
+  --ink: #2b2118;
+  --paper-ink: #f4f1ea;
+  --muted: #a8a49c;
+  --pink: #ff5ca8;
+  --pink-2: #d63d85;
+  --gold: #f2c14e;
+  --type-sports: #d7263d;
+  --type-luxury: #7a3e9d;
+  --type-muscle: #e8731c;
+  --type-jdm: #1e6fd9;
+  --type-ev: #1fa37a;
+  --type-offroad: #8c6b2f;
+  --part: #6b7f99;
+  --boost: #2e9e5b;
+  --sabotage: #c0392b;
+  --font-display: 'Bebas Neue', 'Oswald', Impact, 'Arial Narrow', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
   color-scheme: dark;
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
-  line-height: 1.5;
-  background: #141216;
-  color: #f4f1f5;
+  font-family: var(--font-body);
+  background: var(--asphalt);
+  color: var(--paper-ink);
+  line-height: 1.4;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+}
+
+h1,
+h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+/* Buttons */
+
+.button {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 2px solid var(--line);
+  background: var(--asphalt-2);
+  color: var(--paper-ink);
+  cursor: pointer;
+}
+.button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.button--primary {
+  background: var(--pink);
+  border-color: var(--pink);
+  color: #fff;
+}
+.button--primary:hover:not(:disabled) {
+  background: var(--pink-2);
+  border-color: var(--pink-2);
+}
+.button--ghost {
+  background: transparent;
+}
+.button--big {
+  font-size: 1.4rem;
+  padding: 0.75rem 1.5rem;
+}
+
+/* Car card: Top Trumps stat block on Base Set stock, border colored by type */
+
+.card {
+  --w: 11rem;
+  --type-color: var(--line);
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  width: var(--w);
+  font-size: calc(var(--w) / 12);
+  padding: 0.5em;
+  border: 0;
+  border-radius: 0.6em;
+  background: var(--type-color);
+  color: var(--ink);
+  text-align: left;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 50%);
+  transition: transform 0.15s ease;
+}
+.card--sm {
+  --w: 8rem;
+}
+.card--md {
+  --w: 11rem;
+}
+.card--lg {
+  --w: 14rem;
+}
+.card--sports {
+  --type-color: var(--type-sports);
+}
+.card--luxury {
+  --type-color: var(--type-luxury);
+}
+.card--muscle {
+  --type-color: var(--type-muscle);
+}
+.card--jdm {
+  --type-color: var(--type-jdm);
+}
+.card--ev {
+  --type-color: var(--type-ev);
+}
+.card--offroad {
+  --type-color: var(--type-offroad);
+}
+.card__body {
+  background: var(--cream);
+  border-radius: 0.35em;
+  padding: 0.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+}
+.card__name {
+  font-family: var(--font-display);
+  font-size: 1.35em;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card__art {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--type-color) 30%, #fff) 0%,
+    color-mix(in srgb, var(--type-color) 70%, #000) 100%
+  );
+  border: 0.15em solid var(--ink);
+  border-radius: 0.2em;
   display: grid;
   place-items: center;
+  overflow: hidden;
+}
+.card__silhouette {
+  width: 92%;
+}
+.card__silhouette-body {
+  fill: var(--type-color);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.card__silhouette-glass {
+  fill: var(--cream);
+  opacity: 0.85;
+}
+.card__silhouette-wheel {
+  fill: var(--ink);
+}
+.card__silhouette-hub {
+  fill: var(--cream);
+}
+.card__type {
+  position: absolute;
+  bottom: 0.15em;
+  right: 0.3em;
+  font-family: var(--font-display);
+  font-size: 0.95em;
+  letter-spacing: 0.06em;
+  color: var(--cream);
+  text-shadow: 0 1px 0 #000;
+}
+.card__stats {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 0.5em;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.8em;
+  line-height: 1.4;
+}
+.card__stats dt {
+  text-transform: uppercase;
+  opacity: 0.7;
+  padding-left: 0.2em;
+}
+.card__stats dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
+  padding-right: 0.2em;
+}
+.card__stats dt:nth-of-type(odd),
+.card__stats dd:nth-of-type(odd) {
+  background: var(--cream-2);
+}
+.card__footer {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.7em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+}
+.card__tokens {
+  margin-top: 0.4em;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3em;
+  align-items: center;
+  font-size: 0.85em;
+  color: var(--paper-ink);
+  min-height: 1.2em;
+}
+.pip {
+  display: inline-block;
+  width: 0.75em;
+  height: 0.75em;
+  border-radius: 50%;
+  border: 1px solid var(--paper-ink);
+  margin-right: 0.15em;
+  vertical-align: middle;
+}
+.pip--fuel {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+.pip--extra {
+  border-style: dashed;
+}
+.card__wear {
+  color: #fff;
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 0.3em var(--pink);
+}
+.chip {
+  background: var(--part);
+  color: #fff;
+  font-size: 0.7em;
+  padding: 0.1em 0.4em;
+  border-radius: 0.3em;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.chip--shield {
+  background: var(--boost);
+}
+.card__badge {
+  position: absolute;
+  top: -0.6em;
+  left: 0.5em;
+  background: var(--pink);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 0.9em;
+  letter-spacing: 0.05em;
+  padding: 0.1em 0.5em;
+  border-radius: 0.3em;
+}
+.card__badge--staged {
+  background: var(--gold);
+  color: var(--ink);
+}
+.card--staged {
+  outline: 0.25em solid var(--gold);
+  outline-offset: 0.15em;
+}
+.card--clickable {
+  cursor: pointer;
+}
+.card--clickable:hover {
+  transform: translateY(-0.25em);
+}
+.card--target {
+  outline: 0.25em solid var(--pink);
+  outline-offset: 0.15em;
+  animation: pulse 1.2s infinite;
+}
+.card--selected {
+  outline: 0.3em solid #fff;
+  animation: none;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    outline-color: var(--pink);
+  }
+  50% {
+    outline-color: #fff;
+  }
 }
 
-main {
-  max-width: 36rem;
-  padding: 2rem;
+/* Mod card */
+
+.mod {
+  --family: var(--line);
+  width: 9.5rem;
+  min-height: 8.5rem;
+  flex: 0 0 auto;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background: var(--cream);
+  color: var(--ink);
+  border: 0.3rem solid var(--family);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  font-family: var(--font-body);
+}
+.mod--part {
+  --family: var(--part);
+}
+.mod--boost {
+  --family: var(--boost);
+}
+.mod--sabotage {
+  --family: var(--sabotage);
+}
+.mod__family {
+  font-family: var(--font-mono);
+  font-size: 0.7em;
+  text-transform: uppercase;
+  color: var(--family);
+  font-weight: 700;
+}
+.mod__name {
+  font-family: var(--font-display);
+  font-size: 1.6em;
+  line-height: 1;
+}
+.mod__text {
+  font-size: 0.95em;
+  line-height: 1.3;
+}
+.mod__cost,
+.mod__lock {
+  font-family: var(--font-mono);
+  font-size: 0.75em;
+  opacity: 0.8;
+  margin-top: auto;
+}
+.mod--playable {
+  cursor: pointer;
+  box-shadow: 0 0 0 0.15rem var(--pink);
+}
+.mod--playable:hover {
+  transform: translateY(-0.25rem);
+}
+.mod--unplayable {
+  opacity: 0.5;
+}
+.mod--selected {
+  box-shadow: 0 0 0 0.25rem #fff;
+}
+
+/* Race track */
+
+.track {
+  background: var(--asphalt-2);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem 1rem;
+  display: grid;
+  gap: 0.5rem;
+}
+.track__marks {
+  position: relative;
+  height: 1rem;
+  margin-left: 11.75rem;
+  margin-right: 5.25rem;
+}
+.track__mark {
+  position: absolute;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+}
+.lane {
+  --lane-color: var(--pink);
+  display: grid;
+  grid-template-columns: 11rem 1fr 4.5rem;
+  align-items: center;
+  gap: 0.75rem;
+}
+.lane--sports {
+  --lane-color: var(--type-sports);
+}
+.lane--luxury {
+  --lane-color: var(--type-luxury);
+}
+.lane--muscle {
+  --lane-color: var(--type-muscle);
+}
+.lane--jdm {
+  --lane-color: var(--type-jdm);
+}
+.lane--ev {
+  --lane-color: var(--type-ev);
+}
+.lane--offroad {
+  --lane-color: var(--type-offroad);
+}
+.lane__label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8rem;
+  min-width: 0;
+}
+.lane__player {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.05em;
+}
+.lane__car {
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lane__flag {
+  color: var(--sabotage);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+.lane__road {
+  position: relative;
+  height: 2.2rem;
+  background: repeating-linear-gradient(90deg, #2c2c31 0 2rem, #26262b 2rem 4rem);
+  border-top: 2px dashed #55555c;
+  border-bottom: 2px dashed #55555c;
+  border-radius: 0.2rem;
+}
+.lane__finish {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 0.6rem;
+  background: repeating-conic-gradient(#fff 0 25%, #111 0 50%) 0 0 / 0.6rem 0.6rem;
+}
+.lane__marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transition: left 0.6s ease-out;
+}
+.lane__dot {
+  display: block;
+  width: 2.4rem;
+  height: 1.2rem;
+  border-radius: 0.6rem 0.9rem 0.9rem 0.6rem;
+  background: var(--lane-color);
+  box-shadow: 0 0 0.6rem var(--lane-color);
+}
+.lane__distance {
+  font-family: var(--font-mono);
+  text-align: right;
+  font-size: 1.1rem;
+}
+
+/* Board */
+
+.board {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0.75rem 1rem 2rem;
+  display: grid;
+  gap: 0.75rem;
+}
+.board__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+.board__brand {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  color: var(--pink);
+  letter-spacing: 0.08em;
+}
+.board__status {
+  font-family: var(--font-mono);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.garage {
+  background: var(--asphalt-2);
+  border-radius: 0.75rem;
+  padding: 0.6rem 0.8rem;
+}
+.garage__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+}
+.garage__name {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  letter-spacing: 0.05em;
+}
+.garage__meta {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+.garage__cars {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding: 0.6rem 0.3rem 0.4rem;
+}
+.controls {
+  display: grid;
+  gap: 0.5rem;
+}
+.controls__prompt {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.controls__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.hand__header,
+.log__header {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+.hand__cards {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding: 0.5rem 0.3rem;
+}
+.hand__slot {
+  position: relative;
+  flex: 0 0 auto;
+}
+.hand__count {
+  position: absolute;
+  top: -0.4rem;
+  right: -0.4rem;
+  background: var(--gold);
+  color: var(--ink);
+  border-radius: 1rem;
+  padding: 0 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.hand__empty {
+  color: var(--muted);
+  margin: 0.5rem 0;
+}
+.log {
+  background: var(--asphalt-2);
+  border-radius: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
+}
+.log__lines {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--muted);
+}
+.log__lines li:last-child {
+  color: var(--paper-ink);
+}
+
+/* Start, hand-over, result screens */
+
+.start,
+.handover,
+.result {
+  max-width: 70rem;
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
   text-align: center;
 }
-
-h1 {
-  font-size: 3rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  margin: 0 0 1rem;
-  color: #f472b6;
+.start__title {
+  font-size: 5rem;
+  color: var(--pink);
+  letter-spacing: 0.1em;
+  line-height: 1;
+}
+.start__tagline {
+  color: var(--muted);
+  max-width: 34rem;
+  margin: 0.5rem auto 1.5rem;
+}
+.start__modes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+.start__soon {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.start__pickers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  text-align: left;
+  margin: 1.5rem 0;
+}
+.picker {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+.picker__legend {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+.picker__option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.6rem;
+  align-items: center;
+  padding: 0.6rem;
+  border-radius: 0.6rem;
+  background: var(--asphalt-2);
+  border: 2px solid var(--line);
+  cursor: pointer;
+}
+.picker__option--selected {
+  border-color: var(--pink);
+}
+.picker__title {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  letter-spacing: 0.05em;
+}
+.picker__style {
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.picker__cars {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 0.3rem 0.1rem;
+}
+.picker__cars .card {
+  --w: 6rem;
+}
+.handover {
+  min-height: 80vh;
+  display: grid;
+  place-content: center;
+  gap: 1rem;
+}
+.handover__title {
+  font-size: 4rem;
+  color: var(--pink);
+}
+.handover__note,
+.handover__hint {
+  color: var(--muted);
+  margin: 0;
+}
+.result__title {
+  font-size: 4rem;
+  color: var(--pink);
+}
+.result__sub {
+  color: var(--muted);
+}
+.result__slips {
+  margin: 1.5rem 0;
+}
+.result__slips h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+.result__cards {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-top: 0.6rem;
+}
+.result__actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
 }
 
-.status {
-  opacity: 0.6;
-  font-size: 0.9rem;
+/* Phone */
+
+@media (max-width: 720px) {
+  .start__title {
+    font-size: 3.5rem;
+  }
+  .start__pickers {
+    grid-template-columns: 1fr;
+  }
+  .board__header {
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .lane {
+    grid-template-columns: 1fr 4rem;
+  }
+  .lane__label {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    gap: 0.6rem;
+    align-items: baseline;
+  }
+  .track__marks {
+    margin-left: 0;
+    margin-right: 4.75rem;
+  }
+  .handover__title,
+  .result__title {
+    font-size: 2.8rem;
+  }
 }

@@ -389,6 +389,21 @@ A headless command, `npm run sim`, that plays CPU against CPU for thousands of m
 - Desktop first. Usable on a phone.
 - Palette and type choices are made in phase 6 and recorded here.
 
+**Palette and type** (phase 6)
+
+| Role | Value |
+|---|---|
+| Table | asphalt `#17171a`, panels `#232327`, lines `#3a3a40` |
+| Card stock | cream `#f3e7c9`, stat bands `#e6d7b0`, ink `#2b2118` |
+| Accent | pink `#ff5ca8` for pink slips, prompts, and targets; gold `#f2c14e` for the staged car and fuel |
+| Type borders | Sports `#d7263d`, Luxury `#7a3e9d`, Muscle `#e8731c`, JDM `#1e6fd9`, EV `#1fa37a`, Off-road `#8c6b2f` |
+| Mod families | Part `#6b7f99`, Boost `#2e9e5b`, Sabotage `#c0392b` |
+| Display face | Bebas Neue, falling back to Oswald, Impact, Arial Narrow |
+| Stat face | IBM Plex Mono, falling back to Courier New |
+| Body face | the system UI stack |
+
+Fonts load from Google Fonts. The card is a portrait 5:7 with a thick type-colored frame, a cream body, the name across the top in the display face, a boxed image area holding a tinted silhouette, a striped stat block in the mono face, and tier and fuel cost along the bottom. Fuel, wear, parts, and Launch Control show as tokens on the frame below the body. The engine defines every interaction: a card lights up pink only when `legalActions` lists a play for it.
+
 ---
 
 ## 9. Architecture
