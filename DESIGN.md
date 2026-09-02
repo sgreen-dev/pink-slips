@@ -337,6 +337,8 @@ One rule-based opponent, used both in play and by the simulator. It never cheats
 4. Attach Parts to the car with the most races likely left in it.
 5. Between races, stage the car with the highest ready advance, preferring lower wear.
 
+When none of those applies, the CPU still uses its turn. It attaches any Part that improves a car. It plays a Boost worth at least 50 ft on an advance it will make this turn, counting fuel and cards a Boost gives as worth something too, and a Sabotage that takes at least 50 ft off an advance the opponent is ready to make. It never plays a Boost that would leave its staged car unable to advance. It reads every coin flip as tails unless the Sports rule makes heads certain, and assumes the opponent's hand is empty. Exact ties between equal choices are broken by a seed, so the CPU is deterministic given a state and a seed.
+
 Difficulty levels are post-v1.
 
 ---
