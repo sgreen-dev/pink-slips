@@ -57,3 +57,5 @@ Pushes to `main` build and deploy to GitHub Pages automatically.
 Code is MIT licensed. See `LICENSE`.
 
 Car names and marques are trademarks of their respective manufacturers. This project is unaffiliated with and not endorsed by any of them.
+
+The card illustrations are derived from photographs on Wikimedia Commons and are published under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). `public/art/CREDITS.md` names each photographer and the license of each source photograph.

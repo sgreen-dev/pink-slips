@@ -250,11 +250,12 @@
 
 **Goal**: every car card carries an illustration in one consistent style, and the silhouette becomes a fallback.
 
-**Design to record first** (`DESIGN.md` section 8): one style for all 52 cars; a 4:3 image sized 800 by 600; a side three-quarter view facing right, the direction the track runs; a plain backdrop close to the card's cream so the type-colored frame does the color work; WebP under 60 KB each and under 3 MB in total. The illustrations are supplied by the owner to that spec. This phase covers the spec, the wiring, and the checks.
+**Design to record first** (`DESIGN.md` section 8): one style for all 52 cars; a 4:3 image sized 800 by 600; a side three-quarter view facing right, the direction the track runs; a plain backdrop close to the card's cream so the type-colored frame does the color work; WebP under 60 KB each and under 3 MB in total. The illustrations come from `scripts/art/`, a pipeline that turns one Wikimedia Commons photograph per car into the card style and writes the credits file. The first session built the pipeline and proved it on five cars; the rest is sourcing one photograph per car into `scripts/art/sources.csv` and rerunning it.
 
 **Deliverables**
 
 - The spec above written into `DESIGN.md` section 8
+- `scripts/art/` with the pipeline, its dependency list, and the sources sheet, and `public/art/CREDITS.md` naming each photographer and license
 - `public/art/<carId>.webp` for all 52 cars, and `imageUrl` set on every car in `src/data/cars.ts`. The phase 1 test that `imageUrl` is empty flips to require a path under `/art/`.
 - `CarCard` shows the image lazily, keeps the silhouette underneath until the image has loaded, and falls back to it if the image fails
 - Art license stated in `README.md` under Legal, separate from the MIT code license

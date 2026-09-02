@@ -23,3 +23,7 @@ npm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Card art pipeline working files
+scripts/art/.venv/
+scripts/art/cache/

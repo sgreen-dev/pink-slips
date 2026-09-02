@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { getCar } from '../data/cars.ts'
 import { getMod } from '../data/mods.ts'
 import { TIER_LABEL } from '../data/tiers.ts'
 import { CAR_TYPE_LABEL } from '../data/types.ts'
 import { fuelCost, type CarState } from '../engine/index.ts'
+import { initialArtState, nextArtState, showsImage } from './artState.ts'
 
 export type CardSize = 'sm' | 'md' | 'lg'
 
@@ -81,6 +83,7 @@ export function CarCard({
   badge,
 }: CarCardProps) {
   const car = getCar(carId)
+  const [art, setArt] = useState(() => initialArtState(car.imageUrl))
   const cost = state ? fuelCost(state) : undefined
   const className = [
     'card',
@@ -101,6 +104,17 @@ export function CarCard({
         </div>
         <div className="card__art">
           <Silhouette />
+          {showsImage(art) && (
+            <img
+              className={`card__image ${art === 'loaded' ? 'card__image--loaded' : ''}`}
+              src={import.meta.env.BASE_URL + car.imageUrl.slice(1)}
+              alt={car.name}
+              loading="lazy"
+              decoding="async"
+              onLoad={() => setArt((s) => nextArtState(s, 'load'))}
+              onError={() => setArt((s) => nextArtState(s, 'error'))}
+            />
+          )}
           <span className="card__type">{CAR_TYPE_LABEL[car.type]}</span>
         </div>
         <dl className="card__stats">

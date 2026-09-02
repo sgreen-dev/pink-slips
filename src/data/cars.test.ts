@@ -1,7 +1,11 @@
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { CARS, getCar } from './cars.ts'
 import { isJudgmentPlacement, powerToWeight, tierForRatio } from './tiers.ts'
 import { CAR_TYPES, TIERS, type CarType, type Tier } from './types.ts'
+
+const PUBLIC = join(process.cwd(), 'public')
 
 /** The 30 cars marked ★ in DESIGN.md 2.4. Requested by name and fixed. */
 const STARRED = [
@@ -89,10 +93,36 @@ describe('cars', () => {
     }
   })
 
-  it('leaves imageUrl empty in v1', () => {
+  it('points imageUrl at an existing illustration under /art/, or leaves it empty', () => {
+    const used = new Set<string>()
     for (const car of CARS) {
-      expect(car.imageUrl).toBe('')
+      if (car.imageUrl === '') continue
+      expect(car.imageUrl, car.id).toMatch(/^\/art\/[a-z0-9-]+\.webp$/)
+      expect(used.has(car.imageUrl), `${car.imageUrl} is used twice`).toBe(false)
+      used.add(car.imageUrl)
+      expect(existsSync(join(PUBLIC, car.imageUrl)), `${car.imageUrl} is missing`).toBe(true)
     }
+  })
+
+  it('keeps every illustration under budget and credited', () => {
+    const dir = join(PUBLIC, 'art')
+    if (!existsSync(dir)) return
+    const files = readdirSync(dir).filter((file) => file.endsWith('.webp'))
+    const creditsPath = join(dir, 'CREDITS.md')
+    const credits = existsSync(creditsPath) ? readFileSync(creditsPath, 'utf8') : ''
+    let total = 0
+    for (const file of files) {
+      const size = statSync(join(dir, file)).size
+      expect(size, `${file} is over 60 KB`).toBeLessThanOrEqual(60_000)
+      total += size
+      const carId = file.replace(/\.webp$/, '')
+      expect(
+        CARS.some((car) => car.id === carId),
+        `${file} is not a car`,
+      ).toBe(true)
+      expect(credits, `${file} has no credit line`).toContain(`| ${carId} |`)
+    }
+    expect(total, 'art over 3 MB in total').toBeLessThanOrEqual(3_000_000)
   })
 
   it('has a unique display name per car', () => {

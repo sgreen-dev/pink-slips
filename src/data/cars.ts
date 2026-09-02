@@ -149,7 +149,7 @@ const SPORTS: readonly Car[] = [
     engine: '6.5L V12',
     productionYears: '2018–2021',
     source: 'Lamborghini, Aventador SVJ technical specifications (770 CV; dry weight 1,525 kg)',
-    imageUrl: '',
+    imageUrl: '/art/lamborghini-aventador-svj.webp',
   },
   {
     id: 'lamborghini-temerario',
@@ -458,7 +458,7 @@ const MUSCLE: readonly Car[] = [
     productionYears: '1970',
     source:
       'Chrysler, 1970 Plymouth Barracuda specifications (426 HEMI, 425 hp SAE gross); curb weight is the as-tested figure from period road tests, Chrysler published only shipping weight',
-    imageUrl: '',
+    imageUrl: '/art/plymouth-hemi-cuda.webp',
   },
   {
     id: 'chevrolet-corvette-z06-c6',
@@ -551,7 +551,7 @@ const JDM: readonly Car[] = [
     engine: '1.5L turbo I4',
     productionYears: '2022–present',
     source: 'Honda News, 2022 Civic Si specifications and features',
-    imageUrl: '',
+    imageUrl: '/art/honda-civic-si.webp',
   },
   {
     id: 'acura-integra-type-r',
@@ -803,7 +803,7 @@ const EV: readonly Car[] = [
     engine: 'Tri electric motors',
     productionYears: '2021–present',
     source: 'Tesla, 2021 Model S Plaid specifications',
-    imageUrl: '',
+    imageUrl: '/art/tesla-model-s-plaid.webp',
   },
   {
     id: 'rimac-nevera',
@@ -881,7 +881,7 @@ const OFFROAD: readonly Car[] = [
     productionYears: '2021–present',
     source:
       'Ford Media, 2024 Raptor and Raptor R tech specs (450 hp); curb weight on 35-inch tires per Ford',
-    imageUrl: '',
+    imageUrl: '/art/ford-f-150-raptor.webp',
   },
   {
     id: 'subaru-wrx-sti',
