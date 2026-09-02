@@ -1,9 +1,9 @@
 import type { StarterGarage } from './types.ts'
 
 /**
- * The three starter garages from DESIGN.md 5. The car lists are fixed by the design doc.
- * The decks are placeholders built for each style; the final lists are set in phase 7 after
- * the simulator has tuned the numbers.
+ * The three starter garages from DESIGN.md 5. The car lists are fixed by the design doc. The
+ * decks were finalized in phase 7 against the tuned numbers: with the CPU on both sides the
+ * three garages win about half their matches overall, and each beats the next in a cycle.
  */
 
 /** Expands [modId, copies] pairs into a flat deck list. */
@@ -77,17 +77,19 @@ export const STARTERS: readonly StarterGarage[] = [
     ],
     deck: deck([
       ['regen', 3],
-      ['drag-slicks', 3],
-      ['perfect-launch', 3],
-      ['launch-control', 3],
+      ['drag-slicks', 2],
+      ['perfect-launch', 2],
+      ['launch-control', 2],
       ['wheelie-bar', 2],
       ['weight-reduction', 2],
       ['extra-tank', 2],
       ['aero-package', 2],
       ['overdrive', 2],
-      ['oil-slick', 3],
-      ['red-light', 2],
-      ['bad-tune', 3],
+      ['oil-slick', 2],
+      ['red-light', 1],
+      ['bad-tune', 2],
+      ['pit-crew', 3],
+      ['sponsor', 3],
     ]),
   },
 ]

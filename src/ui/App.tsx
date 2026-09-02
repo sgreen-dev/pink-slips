@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import type { MatchConfig } from '../engine/index.ts'
-import { Match } from './Match.tsx'
+import { Match, type Mode } from './Match.tsx'
 import { StartScreen } from './StartScreen.tsx'
 
 type Screen =
-  { kind: 'start' } | { kind: 'match'; config: MatchConfig; names: [string, string]; seed: number }
+  | { kind: 'start' }
+  | { kind: 'match'; mode: Mode; config: MatchConfig; names: [string, string]; seed: number }
 
 function newSeed(): number {
   return (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0
@@ -15,13 +16,16 @@ export function App() {
   if (screen.kind === 'start') {
     return (
       <StartScreen
-        onStart={(config, names) => setScreen({ kind: 'match', config, names, seed: newSeed() })}
+        onStart={(mode, config, names) =>
+          setScreen({ kind: 'match', mode, config, names, seed: newSeed() })
+        }
       />
     )
   }
   return (
     <Match
       key={screen.seed}
+      mode={screen.mode}
       config={screen.config}
       seed={screen.seed}
       names={screen.names}

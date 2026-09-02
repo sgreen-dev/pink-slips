@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { STARTERS } from '../data/starters.ts'
 import type { MatchConfig } from '../engine/index.ts'
 import { CarCard } from './CarCard.tsx'
+import type { Mode } from './Match.tsx'
 
 interface StartScreenProps {
-  onStart: (config: MatchConfig, names: [string, string]) => void
+  onStart: (mode: Mode, config: MatchConfig, names: [string, string]) => void
 }
 
 function StarterPicker({
@@ -44,20 +45,24 @@ function StarterPicker({
 }
 
 export function StartScreen({ onStart }: StartScreenProps) {
+  const [mode, setMode] = useState<Mode>('cpu')
   const [first, setFirst] = useState(0)
   const [second, setSecond] = useState(1)
+  const labels: [string, string] =
+    mode === 'cpu' ? ['Your garage', 'CPU garage'] : ['Player 1 garage', 'Player 2 garage']
   const start = () => {
     const a = STARTERS[first]
     const b = STARTERS[second]
     if (!a || !b) return
     onStart(
+      mode,
       {
         players: [
           { garage: a.cars, deck: a.deck },
           { garage: b.cars, deck: b.deck },
         ],
       },
-      ['Player 1', 'Player 2'],
+      mode === 'cpu' ? ['Player', 'CPU'] : ['Player 1', 'Player 2'],
     )
   }
   return (
@@ -67,15 +72,27 @@ export function StartScreen({ onStart }: StartScreenProps) {
         Real cars drag race a quarter mile. Win the race, take the car. First to three pink slips
         wins.
       </p>
-      <div className="start__modes">
-        <button type="button" className="button button--primary" disabled>
+      <div className="start__modes" role="group" aria-label="Mode">
+        <button
+          type="button"
+          className={`button ${mode === 'cpu' ? 'button--primary' : ''}`}
+          aria-pressed={mode === 'cpu'}
+          onClick={() => setMode('cpu')}
+        >
+          Play the CPU
+        </button>
+        <button
+          type="button"
+          className={`button ${mode === 'hotseat' ? 'button--primary' : ''}`}
+          aria-pressed={mode === 'hotseat'}
+          onClick={() => setMode('hotseat')}
+        >
           Hotseat: two players, one screen
         </button>
-        <span className="start__soon">Play against the CPU arrives in the next phase.</span>
       </div>
       <div className="start__pickers">
-        <StarterPicker label="Player 1 garage" value={first} onChange={setFirst} />
-        <StarterPicker label="Player 2 garage" value={second} onChange={setSecond} />
+        <StarterPicker label={labels[0]} value={first} onChange={setFirst} />
+        <StarterPicker label={labels[1]} value={second} onChange={setSecond} />
       </div>
       <button type="button" className="button button--primary button--big" onClick={start}>
         Start the match

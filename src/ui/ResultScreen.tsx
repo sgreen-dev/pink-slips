@@ -5,15 +5,24 @@ interface ResultScreenProps {
   state: MatchState
   winner: PlayerIndex
   names: readonly [string, string]
+  /** Headline, such as "You win" or "Player 2 wins". */
+  title: string
   onRematch: () => void
   onNewMatch: () => void
 }
 
-export function ResultScreen({ state, winner, names, onRematch, onNewMatch }: ResultScreenProps) {
+export function ResultScreen({
+  state,
+  winner,
+  names,
+  title,
+  onRematch,
+  onNewMatch,
+}: ResultScreenProps) {
   const loser: PlayerIndex = winner === 0 ? 1 : 0
   return (
     <main className="result">
-      <h1 className="result__title">{names[winner]} wins</h1>
+      <h1 className="result__title">{title}</h1>
       <p className="result__sub">Three pink slips in {Math.ceil(state.turn.number / 2)} turns.</p>
       <section className="result__slips">
         <h2>{names[winner]}&rsquo;s pink slips</h2>
