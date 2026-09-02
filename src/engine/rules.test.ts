@@ -90,7 +90,13 @@ describe('3.1 setup', () => {
     for (const player of state.players) {
       expect(player.garage).toHaveLength(TUNABLES.garageSize)
       for (const car of player.garage) {
-        expect(car).toEqual({ carId: car.carId, fuel: 0, wear: 0, parts: [] })
+        expect(car).toEqual({
+          carId: car.carId,
+          fuel: 0,
+          wear: 0,
+          parts: [],
+          tractionShield: false,
+        })
       }
     }
   })
@@ -115,7 +121,9 @@ describe('3.1 setup', () => {
       firsts.add(state.firstPlayer)
       const flip = state.log.find((entry) => entry.kind === 'coinFlip')
       expect(flip).toBeDefined()
-      if (flip?.kind === 'coinFlip') expect(flip.firstPlayer).toBe(state.firstPlayer)
+      if (flip?.kind === 'coinFlip' && flip.purpose === 'firstPlayer') {
+        expect(flip.firstPlayer).toBe(state.firstPlayer)
+      }
     }
     expect(firsts).toEqual(new Set<PlayerIndex>([0, 1]))
   })
@@ -138,7 +146,7 @@ describe('3.1 setup', () => {
     expect(stagedCar(state, 1)?.carId).toBe(STARTERS[1]?.cars[0])
     expect(state.phase).toEqual({ kind: 'turn' })
     expect(state.race.distanceFt).toEqual([0, 0])
-    expect(state.turn).toEqual({ player: first, number: 1, step: 'fuel' })
+    expect(state.turn).toMatchObject({ player: first, number: 1, step: 'fuel' })
   })
 })
 
@@ -218,7 +226,11 @@ describe('3.2 turn', () => {
     const player = state.turn.player
     state = apply(state, { type: 'fuel', player, carId: state.players[player].stagedCarId ?? '' })
     expect(state.turn.step).toBe('mods')
-    expect(legalActions(state, player)).toEqual([{ type: 'endMods', player }])
+    const actions = legalActions(state, player)
+    expect(actions).toContainEqual({ type: 'endMods', player })
+    for (const action of actions) {
+      expect(['endMods', 'playPart', 'playBoost', 'playSabotage']).toContain(action.type)
+    }
   })
 
   it('step 4: the staged car advances only when its fuel is at or above its cost', () => {
@@ -255,7 +267,7 @@ describe('3.2 turn', () => {
       true,
     )
     expect(state.race.distanceFt).toEqual([0, 0])
-    expect(state.turn).toEqual({ player: otherPlayer(first), number: 2, step: 'fuel' })
+    expect(state.turn).toMatchObject({ player: otherPlayer(first), number: 2, step: 'fuel' })
 
     state = playTurn(state) // second player advances on turn 2
     expect(state.race.distanceFt[otherPlayer(first)]).toBeGreaterThan(0)
@@ -377,7 +389,7 @@ describe('3.4 race end', () => {
     expect(after.turn.number).toBe(before.turn.number + 1)
     expect(after.turn.player).toBe(loser)
     const next = stageBoth(after)
-    expect(next.turn).toEqual({ player: loser, number: before.turn.number + 1, step: 'fuel' })
+    expect(next.turn).toMatchObject({ player: loser, number: before.turn.number + 1, step: 'fuel' })
     expect(next.players[loser].hand).toHaveLength(after.players[loser].hand.length + 1)
     expect(currentPlayer(next)).toBe(loser)
     expect(legalActions(next, winner)).toEqual([])

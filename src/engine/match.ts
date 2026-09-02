@@ -1,18 +1,33 @@
 import { getCar } from '../data/cars.ts'
-import { MOD_BY_ID } from '../data/mods.ts'
-import { computeAdvance } from './advance.ts'
+import { getMod, MOD_BY_ID } from '../data/mods.ts'
+import type { Mod, ModEffect } from '../data/types.ts'
+import { computeAdvance, windowApplies } from './advance.ts'
+import {
+  fuelCost,
+  gainsWearFromWinning,
+  isTractionImmune,
+  openSlots,
+  partModifiers,
+} from './mods.ts'
 import { flipCoin, seedRng, shuffle, type RngState } from './rng.ts'
 import { TUNABLES } from './tunables.ts'
-import type {
-  Action,
-  CarState,
-  LogEntry,
-  MatchConfig,
-  MatchState,
-  PlayerConfig,
-  PlayerIndex,
-  PlayerState,
+import {
+  NO_ADVANCE_MODIFIERS,
+  NO_PENDING_SABOTAGE,
+  type Action,
+  type AdvanceModifiers,
+  type CarState,
+  type LogEntry,
+  type MatchConfig,
+  type MatchState,
+  type PendingSabotage,
+  type PlayerConfig,
+  type PlayerIndex,
+  type PlayerState,
+  type TurnState,
 } from './types.ts'
+
+export { fuelCost } from './mods.ts'
 
 /**
  * The match state machine (DESIGN.md sections 3 and 9). Four functions form the public API:
@@ -25,11 +40,6 @@ export function otherPlayer(player: PlayerIndex): PlayerIndex {
   return player === 0 ? 1 : 0
 }
 
-/** Fuel a car needs before it can advance (DESIGN.md 2.2). Parts that change it arrive in phase 3. */
-export function fuelCost(car: CarState): number {
-  return TUNABLES.fuelCostByTier[getCar(car.carId).tier]
-}
-
 /** The player whose decision the match is waiting on, or null when the match is over. */
 export function currentPlayer(state: MatchState): PlayerIndex | null {
   switch (state.phase.kind) {
@@ -37,6 +47,8 @@ export function currentPlayer(state: MatchState): PlayerIndex | null {
       return null
     case 'staging':
       return state.phase.pending[0] ?? null
+    case 'choice':
+      return state.phase.player
     case 'turn':
       return state.turn.player
   }
@@ -52,6 +64,17 @@ function requireStagedCar(state: MatchState, player: PlayerIndex): CarState {
   const car = stagedCar(state, player)
   if (!car) throw new Error(`Player ${player + 1} has no staged car`)
   return car
+}
+
+/** Whether pending Traction sabotage would be ignored by this car right now. */
+function tractionProtection(car: CarState): 'immune' | 'shield' | null {
+  if (isTractionImmune(car)) return 'immune'
+  if (car.tractionShield) return 'shield'
+  return null
+}
+
+function hasPendingSabotage(pending: PendingSabotage): boolean {
+  return pending.flatReductionFt > 0 || pending.halve || pending.skipAdvance
 }
 
 // Setup (DESIGN.md 3.1)
@@ -85,15 +108,36 @@ function setupPlayer(config: PlayerConfig, rng: RngState): [PlayerState, RngStat
   const deck = shuffled.slice(TUNABLES.startingHandSize)
   return [
     {
-      garage: config.garage.map((carId) => ({ carId, fuel: 0, wear: 0, parts: [] })),
+      garage: config.garage.map((carId) => ({
+        carId,
+        fuel: 0,
+        wear: 0,
+        parts: [],
+        tractionShield: false,
+      })),
       stagedCarId: null,
       hand,
       deck,
       discard: [],
       pinkSlips: [],
+      pendingSabotage: NO_PENDING_SABOTAGE,
+      boostBlockedNextTurn: false,
     },
     next,
   ]
+}
+
+function newTurn(player: PlayerIndex, number: number, boostBlocked: boolean): TurnState {
+  return {
+    player,
+    number,
+    step: 'fuel',
+    boostsPlayed: 0,
+    sabotagePlayed: 0,
+    boostBlocked,
+    extraFuel: 0,
+    advance: NO_ADVANCE_MODIFIERS,
+  }
 }
 
 export function createMatch(config: MatchConfig, seed: number): MatchState {
@@ -107,8 +151,8 @@ export function createMatch(config: MatchConfig, seed: number): MatchState {
     players: [p0, p1],
     firstPlayer,
     phase: { kind: 'staging', pending: [firstPlayer, otherPlayer(firstPlayer)] },
-    turn: { player: firstPlayer, number: 1, step: 'fuel' },
-    race: { number: 1, distanceFt: [0, 0], advances: [0, 0] },
+    turn: newTurn(firstPlayer, 1, false),
+    race: { number: 1, distanceFt: [0, 0], advances: [0, 0], coinFlips: [0, 0] },
     rng,
     log: [
       { kind: 'draw', player: 0, count: p0.hand.length },
@@ -132,6 +176,45 @@ function setPlayer(
   return { ...state, players }
 }
 
+function updateCar(
+  state: MatchState,
+  player: PlayerIndex,
+  carId: string,
+  update: (car: CarState) => CarState,
+): MatchState {
+  return setPlayer(state, player, (p) => ({
+    ...p,
+    garage: p.garage.map((car) => (car.carId === carId ? update(car) : car)),
+  }))
+}
+
+function updateStagedCar(
+  state: MatchState,
+  player: PlayerIndex,
+  update: (car: CarState) => CarState,
+): MatchState {
+  return updateCar(state, player, requireStagedCar(state, player).carId, update)
+}
+
+function setPending(
+  state: MatchState,
+  player: PlayerIndex,
+  update: (pending: PendingSabotage) => PendingSabotage,
+): MatchState {
+  return setPlayer(state, player, (p) => ({ ...p, pendingSabotage: update(p.pendingSabotage) }))
+}
+
+function setTurn(state: MatchState, patch: Partial<TurnState>): MatchState {
+  return { ...state, turn: { ...state.turn, ...patch } }
+}
+
+function patchAdvanceModifiers(
+  state: MatchState,
+  update: (mods: AdvanceModifiers) => AdvanceModifiers,
+): MatchState {
+  return setTurn(state, { advance: update(state.turn.advance) })
+}
+
 function withLog(state: MatchState, entry: LogEntry): MatchState {
   return { ...state, log: [...state.log, entry] }
 }
@@ -144,37 +227,132 @@ function setPair(
   return player === 0 ? [value, pair[1]] : [pair[0], value]
 }
 
+function removeOne(items: readonly string[], item: string): string[] {
+  const index = items.indexOf(item)
+  if (index === -1) throw new Error(`${item} is not present`)
+  return [...items.slice(0, index), ...items.slice(index + 1)]
+}
+
 // Legal actions
+
+function fuelActions(state: MatchState, player: PlayerIndex): Action[] {
+  return state.players[player].garage.map((car) => ({ type: 'fuel', player, carId: car.carId }))
+}
+
+function boostActions(state: MatchState, player: PlayerIndex, mod: Mod): Action[] {
+  const garage = state.players[player].garage
+  for (const effect of mod.effects) {
+    if (effect.kind === 'moveAllFuel') {
+      const actions: Action[] = []
+      for (const from of garage) {
+        if (from.fuel === 0) continue
+        for (const to of garage) {
+          if (to.carId === from.carId) continue
+          actions.push({
+            type: 'playBoost',
+            player,
+            modId: mod.id,
+            fromCarId: from.carId,
+            toCarId: to.carId,
+          })
+        }
+      }
+      return actions
+    }
+    if (effect.kind === 'searchDeck') {
+      const targets = new Set(
+        state.players[player].deck.filter((id) => getMod(id).family === effect.family),
+      )
+      if (targets.size === 0) return [{ type: 'playBoost', player, modId: mod.id }]
+      return [...targets].map((targetModId) => ({
+        type: 'playBoost',
+        player,
+        modId: mod.id,
+        targetModId,
+      }))
+    }
+  }
+  return [{ type: 'playBoost', player, modId: mod.id }]
+}
+
+/** Mod plays available in the mod step (DESIGN.md 2.5 limits and 3.2 step 3). */
+function modActions(state: MatchState, player: PlayerIndex): Action[] {
+  const p = state.players[player]
+  const turn = state.turn
+  const staged = requireStagedCar(state, player)
+  const stagedType = getCar(staged.carId).type
+  const actions: Action[] = []
+  for (const modId of new Set(p.hand)) {
+    const mod = getMod(modId)
+    switch (mod.family) {
+      case 'part':
+        for (const car of p.garage) {
+          if (openSlots(car) <= 0) continue
+          if (mod.typeLock && getCar(car.carId).type !== mod.typeLock) continue
+          actions.push({ type: 'playPart', player, modId, carId: car.carId })
+        }
+        break
+      case 'boost':
+        if (turn.boostsPlayed >= TUNABLES.boostsPerTurn || turn.boostBlocked) break
+        if (mod.typeLock && stagedType !== mod.typeLock) break
+        if ((mod.fuelCost ?? 0) > staged.fuel) break
+        actions.push(...boostActions(state, player, mod))
+        break
+      case 'sabotage':
+        if (turn.sabotagePlayed >= TUNABLES.sabotagePerTurn) break
+        actions.push({ type: 'playSabotage', player, modId })
+        break
+    }
+  }
+  return actions
+}
 
 export function legalActions(state: MatchState, player: PlayerIndex): Action[] {
   const { phase } = state
-  if (phase.kind === 'over') return []
-  const garage = state.players[player].garage
-  if (phase.kind === 'staging') {
-    if (phase.pending[0] !== player) return []
-    return garage.map((car) => ({ type: 'stage', player, carId: car.carId }))
+  switch (phase.kind) {
+    case 'over':
+      return []
+    case 'staging':
+      if (phase.pending[0] !== player) return []
+      return state.players[player].garage.map((car) => ({
+        type: 'stage',
+        player,
+        carId: car.carId,
+      }))
+    case 'choice': {
+      if (phase.player !== player) return []
+      const car = state.players[player].garage.find((c) => c.carId === phase.choice.carId)
+      return [...new Set(car?.parts ?? [])].map((modId) => ({ type: 'discardPart', player, modId }))
+    }
+    case 'turn':
+      break
   }
   if (state.turn.player !== player) return []
   switch (state.turn.step) {
     case 'fuel':
-      return garage.map((car) => ({ type: 'fuel', player, carId: car.carId }))
-    case 'mods':
-      return [{ type: 'endMods', player }]
+      return fuelActions(state, player)
+    case 'mods': {
+      const owed = state.turn.extraFuel > 0
+      return [
+        ...(owed ? fuelActions(state, player) : []),
+        ...modActions(state, player),
+        ...(owed ? [] : [{ type: 'endMods', player } as const]),
+      ]
+    }
     case 'advance':
       return [{ type: 'advance', player }]
   }
 }
 
-function carIdOf(action: Action): string | undefined {
-  return 'carId' in action ? action.carId : undefined
-}
-
-function sameAction(a: Action, b: Action): boolean {
-  return a.type === b.type && a.player === b.player && carIdOf(a) === carIdOf(b)
+function canonical(action: Action): string {
+  const entries = Object.entries(action).filter(([, value]) => value !== undefined)
+  entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+  return JSON.stringify(Object.fromEntries(entries))
 }
 
 export function isLegal(state: MatchState, action: Action): boolean {
-  return legalActions(state, action.player).some((legal) => sameAction(legal, action))
+  const wanted = canonical(action)
+  return legalActions(state, action.player).some((legal) => canonical(legal) === wanted)
 }
 
 // Apply
@@ -188,6 +366,14 @@ export function apply(state: MatchState, action: Action): MatchState {
       return applyStage(state, action.player, action.carId)
     case 'fuel':
       return applyFuel(state, action.player, action.carId)
+    case 'playPart':
+      return applyPlayPart(state, action.player, action.modId, action.carId)
+    case 'playBoost':
+      return applyPlayBoost(state, action)
+    case 'playSabotage':
+      return applyPlaySabotage(state, action.player, action.modId)
+    case 'discardPart':
+      return applyDiscardPart(state, action.player, action.modId)
     case 'endMods':
       return applyEndMods(state)
     case 'advance':
@@ -225,15 +411,22 @@ function drawCards(
   return { player: { ...player, hand, deck, discard }, rng: next, drawn, reshuffled }
 }
 
-/** Starts a turn: the draw step runs automatically, then the player is at the fuel step. */
-function beginTurn(state: MatchState, player: PlayerIndex, number: number): MatchState {
-  const draw = drawCards(state.players[player], TUNABLES.drawPerTurn, state.rng)
+function drawForPlayer(state: MatchState, player: PlayerIndex, count: number): MatchState {
+  const draw = drawCards(state.players[player], count, state.rng)
   let next = setPlayer(state, player, () => draw.player)
-  next = { ...next, rng: draw.rng, phase: { kind: 'turn' }, turn: { player, number, step: 'fuel' } }
+  next = { ...next, rng: draw.rng }
   if (draw.reshuffled > 0) {
     next = withLog(next, { kind: 'reshuffle', player, count: draw.reshuffled })
   }
   return withLog(next, { kind: 'draw', player, count: draw.drawn })
+}
+
+/** Starts a turn: the draw step runs automatically, then the player is at the fuel step. */
+function beginTurn(state: MatchState, player: PlayerIndex, number: number): MatchState {
+  const boostBlocked = state.players[player].boostBlockedNextTurn
+  let next = setPlayer(state, player, (p) => ({ ...p, boostBlockedNextTurn: false }))
+  next = { ...next, phase: { kind: 'turn' }, turn: newTurn(player, number, boostBlocked) }
+  return drawForPlayer(next, player, TUNABLES.drawPerTurn)
 }
 
 function endTurn(state: MatchState): MatchState {
@@ -250,51 +443,325 @@ function applyStage(state: MatchState, player: PlayerIndex, carId: string): Matc
 }
 
 function applyFuel(state: MatchState, player: PlayerIndex, carId: string): MatchState {
-  let next = setPlayer(state, player, (p) => ({
-    ...p,
-    garage: p.garage.map((car) => (car.carId === carId ? { ...car, fuel: car.fuel + 1 } : car)),
-  }))
+  let next = updateCar(state, player, carId, (car) => ({ ...car, fuel: car.fuel + 1 }))
   next = withLog(next, { kind: 'fuel', player, carId })
-  return { ...next, turn: { ...next.turn, step: 'mods' } }
+  if (next.turn.step === 'fuel') return setTurn(next, { step: 'mods' })
+  return setTurn(next, { extraFuel: next.turn.extraFuel - 1 })
 }
 
-/** Why the staged car cannot advance this turn, or null when it can (DESIGN.md 3.2). */
-function advanceBlocker(state: MatchState): 'firstTurn' | 'notFueled' | null {
+// Mods (DESIGN.md 2.5)
+
+function applyPlayPart(
+  state: MatchState,
+  player: PlayerIndex,
+  modId: string,
+  carId: string,
+): MatchState {
+  let next = setPlayer(state, player, (p) => ({ ...p, hand: removeOne(p.hand, modId) }))
+  next = updateCar(next, player, carId, (car) => ({ ...car, parts: [...car.parts, modId] }))
+  return withLog(next, { kind: 'playPart', player, modId, carId })
+}
+
+function discardFromHand(state: MatchState, player: PlayerIndex, modId: string): MatchState {
+  return setPlayer(state, player, (p) => ({
+    ...p,
+    hand: removeOne(p.hand, modId),
+    discard: [...p.discard, modId],
+  }))
+}
+
+function applyPlayBoost(state: MatchState, action: Action & { type: 'playBoost' }): MatchState {
+  const { player, modId } = action
+  const mod = getMod(modId)
+  if (mod.family !== 'boost') throw new Error(`${modId} is not a Boost`)
+  let next = discardFromHand(state, player, modId)
+  if (mod.fuelCost) {
+    const cost = mod.fuelCost
+    next = updateStagedCar(next, player, (car) => ({ ...car, fuel: car.fuel - cost }))
+  }
+  next = setTurn(next, { boostsPlayed: next.turn.boostsPlayed + 1 })
+  next = withLog(next, { kind: 'playBoost', player, modId })
+  return applyEffects(next, player, mod.effects, { modId, action })
+}
+
+function applyPlaySabotage(state: MatchState, player: PlayerIndex, modId: string): MatchState {
+  const mod = getMod(modId)
+  if (mod.family !== 'sabotage') throw new Error(`${modId} is not a Sabotage`)
+  let next = discardFromHand(state, player, modId)
+  next = setTurn(next, { sabotagePlayed: next.turn.sabotagePlayed + 1 })
+  next = withLog(next, { kind: 'playSabotage', player, modId })
+  return applyEffects(next, player, mod.effects, {
+    modId,
+    action: { type: 'playSabotage', player, modId },
+  })
+}
+
+interface EffectContext {
+  modId: string
+  action: Action
+}
+
+function applyEffects(
+  state: MatchState,
+  player: PlayerIndex,
+  effects: readonly ModEffect[],
+  context: EffectContext,
+): MatchState {
+  let next = state
+  for (const effect of effects) next = applyEffect(next, player, effect, context)
+  return next
+}
+
+/**
+ * A coin flip made by a player's staged car (DESIGN.md 3.6). The Sports identity forces the
+ * first flip a car makes each race to heads without touching the generator.
+ */
+function flipForPlayer(
+  state: MatchState,
+  player: PlayerIndex,
+  modId: string,
+): [boolean, MatchState] {
+  const staged = requireStagedCar(state, player)
+  const forcedBySports =
+    getCar(staged.carId).type === 'sports' && state.race.coinFlips[player] === 0
+  let heads = true
+  let rng = state.rng
+  if (!forcedBySports) [heads, rng] = flipCoin(rng)
+  let next: MatchState = {
+    ...state,
+    rng,
+    race: {
+      ...state.race,
+      coinFlips: setPair(state.race.coinFlips, player, state.race.coinFlips[player] + 1),
+    },
+  }
+  next = withLog(next, { kind: 'coinFlip', purpose: 'mod', player, modId, heads, forcedBySports })
+  return [heads, next]
+}
+
+function discardPart(
+  state: MatchState,
+  owner: PlayerIndex,
+  carId: string,
+  modId: string,
+): MatchState {
+  let next = updateCar(state, owner, carId, (car) => ({
+    ...car,
+    parts: removeOne(car.parts, modId),
+  }))
+  next = setPlayer(next, owner, (p) => ({ ...p, discard: [...p.discard, modId] }))
+  return withLog(next, { kind: 'discardPart', player: owner, carId, modId })
+}
+
+/** Interprets one effect descriptor. `player` is the one who played the card. */
+function applyEffect(
+  state: MatchState,
+  player: PlayerIndex,
+  effect: ModEffect,
+  context: EffectContext,
+): MatchState {
+  const opponent = otherPlayer(player)
+  switch (effect.kind) {
+    // This turn's advance
+    case 'hpPercent':
+      return patchAdvanceModifiers(state, (m) => ({ ...m, hpPercent: m.hpPercent + effect.value }))
+    case 'hpPercentPerPart':
+      return patchAdvanceModifiers(state, (m) => ({
+        ...m,
+        hpPercentPerPart: m.hpPercentPerPart + effect.value,
+      }))
+    case 'weightReduction':
+      return patchAdvanceModifiers(state, (m) => ({
+        ...m,
+        weightReductionLb: m.weightReductionLb + effect.lb,
+      }))
+    case 'flatDistance':
+      return patchAdvanceModifiers(state, (m) => ({
+        ...m,
+        flatBonuses: [...m.flatBonuses, { ft: effect.ft, window: effect.window }],
+      }))
+    case 'distancePercent':
+      return patchAdvanceModifiers(state, (m) => ({
+        ...m,
+        distancePercent: m.distancePercent + effect.value,
+      }))
+    case 'extraAdvance':
+      return patchAdvanceModifiers(state, (m) => ({
+        ...m,
+        extraAdvanceMultiplier: effect.distanceMultiplier,
+      }))
+
+    // The opponent's next advance
+    case 'reduceDistance':
+      return setPending(state, opponent, (s) => ({
+        ...s,
+        flatReductionFt: s.flatReductionFt + effect.ft,
+      }))
+    case 'halveDistance':
+      return setPending(state, opponent, (s) => ({ ...s, halve: true }))
+    case 'skipAdvance':
+      if (state.race.advances[opponent] !== 0) return state
+      return setPending(state, opponent, (s) => ({ ...s, skipAdvance: true }))
+
+    // Static Part effects are read from the attached card, never applied
+    case 'fuelCostDelta':
+    case 'noWearFromWinning':
+    case 'tractionImmunity':
+      return state
+
+    // Car state
+    case 'tractionShield':
+      return updateStagedCar(state, player, (car) => ({ ...car, tractionShield: true }))
+    case 'addWear':
+      if (effect.target === 'self') {
+        return patchAdvanceModifiers(state, (m) => ({
+          ...m,
+          wearAfterAdvance: m.wearAfterAdvance + effect.count,
+        }))
+      }
+      return updateStagedCar(state, opponent, (car) => ({ ...car, wear: car.wear + effect.count }))
+    case 'addFuel':
+      return updateStagedCar(state, player, (car) => ({ ...car, fuel: car.fuel + effect.count }))
+    case 'removeFuel':
+      return updateStagedCar(state, opponent, (car) => ({
+        ...car,
+        fuel: Math.max(0, car.fuel - effect.count),
+      }))
+    case 'moveAllFuel': {
+      const { action } = context
+      if (action.type !== 'playBoost' || !action.fromCarId || !action.toCarId) {
+        throw new Error(`${context.modId} needs a source and a destination car`)
+      }
+      const from = state.players[player].garage.find((car) => car.carId === action.fromCarId)
+      const moved = from?.fuel ?? 0
+      const next = updateCar(state, player, action.fromCarId, (car) => ({ ...car, fuel: 0 }))
+      return updateCar(next, player, action.toCarId, (car) => ({ ...car, fuel: car.fuel + moved }))
+    }
+    case 'discardPart': {
+      const target = requireStagedCar(state, opponent)
+      const [only] = target.parts
+      if (only === undefined) return state
+      if (target.parts.length === 1) return discardPart(state, opponent, target.carId, only)
+      return {
+        ...state,
+        phase: {
+          kind: 'choice',
+          player: opponent,
+          choice: { kind: 'discardPart', carId: target.carId },
+        },
+      }
+    }
+
+    // Turn and cards
+    case 'extraFuelPlacement':
+      return setTurn(state, { extraFuel: state.turn.extraFuel + effect.count })
+    case 'draw':
+      return drawForPlayer(state, player, effect.count)
+    case 'searchDeck': {
+      const { action } = context
+      const target = action.type === 'playBoost' ? action.targetModId : undefined
+      let next = state
+      if (target !== undefined) {
+        next = setPlayer(next, player, (p) => ({
+          ...p,
+          deck: removeOne(p.deck, target),
+          hand: [...p.hand, target],
+        }))
+      }
+      const [deck, rng] = shuffle(next.rng, next.players[player].deck)
+      next = setPlayer(next, player, (p) => ({ ...p, deck }))
+      return { ...next, rng }
+    }
+    case 'blockBoost':
+      return setPlayer(state, opponent, (p) => ({ ...p, boostBlockedNextTurn: true }))
+
+    // Randomness
+    case 'coinFlip': {
+      const [heads, next] = flipForPlayer(state, player, context.modId)
+      return applyEffects(next, player, heads ? effect.heads : effect.tails, context)
+    }
+  }
+}
+
+function applyDiscardPart(state: MatchState, player: PlayerIndex, modId: string): MatchState {
+  if (state.phase.kind !== 'choice') throw new Error('No choice pending')
+  const next = discardPart(state, player, state.phase.choice.carId, modId)
+  return { ...next, phase: { kind: 'turn' } }
+}
+
+// Advance (DESIGN.md 3.2 step 4 and 3.3)
+
+/** Why the staged car cannot advance this turn, or null when it can. */
+function advanceBlocker(state: MatchState): 'firstTurn' | 'notFueled' | 'redLight' | null {
   if (state.turn.number === 1) return 'firstTurn'
   const car = requireStagedCar(state, state.turn.player)
   if (car.fuel < fuelCost(car)) return 'notFueled'
+  const pending = state.players[state.turn.player].pendingSabotage
+  if (pending.skipAdvance && tractionProtection(car) === null) return 'redLight'
   return null
 }
 
 function applyEndMods(state: MatchState): MatchState {
+  const player = state.turn.player
   const blocker = advanceBlocker(state)
-  if (blocker === null) return { ...state, turn: { ...state.turn, step: 'advance' } }
-  const next = withLog(state, {
-    kind: 'advanceSkipped',
-    player: state.turn.player,
-    reason: blocker,
-  })
+  if (blocker === null) return setTurn(state, { step: 'advance' })
+  let next = state
+  if (blocker === 'redLight') next = setPending(next, player, () => NO_PENDING_SABOTAGE)
+  next = withLog(next, { kind: 'advanceSkipped', player, reason: blocker })
   return endTurn(next)
 }
 
-function applyAdvance(state: MatchState): MatchState {
-  const player = state.turn.player
+/** One advance by the staged car. Ends the race when the car reaches the finish. */
+function performAdvance(
+  state: MatchState,
+  player: PlayerIndex,
+  options: { useTurnModifiers: boolean; finalMultiplier: number },
+): MatchState {
   const staged = requireStagedCar(state, player)
+  const car = getCar(staged.carId)
+  const parts = partModifiers(staged)
+  const mods = options.useTurnModifiers ? state.turn.advance : NO_ADVANCE_MODIFIERS
   const startFt = state.race.distanceFt[player]
+  const isFirst = state.race.advances[player] === 0
+  const flatBonusFt = [...parts.flatBonuses, ...mods.flatBonuses]
+    .filter((bonus) => windowApplies(bonus.window, startFt, isFirst))
+    .reduce((sum, bonus) => sum + bonus.ft, 0)
+  const pending = state.players[player].pendingSabotage
+  const protection = tractionProtection(staged)
   const breakdown = computeAdvance({
-    car: getCar(staged.carId),
+    car,
     wear: staged.wear,
     startFt,
-    isFirstAdvanceOfRace: state.race.advances[player] === 0,
+    isFirstAdvanceOfRace: isFirst,
+    hpPercent: parts.hpPercent + mods.hpPercent + mods.hpPercentPerPart * staged.parts.length,
+    weightReductionLb: parts.weightReductionLb + mods.weightReductionLb,
+    flatBonusFt,
+    distancePercent: mods.distancePercent,
+    sabotage:
+      protection === null
+        ? { flatReductionFt: pending.flatReductionFt, halve: pending.halve }
+        : undefined,
+    finalMultiplier: options.finalMultiplier,
   })
   const toFt = startFt + breakdown.finalFt
-  let next: MatchState = {
-    ...state,
+  const wearGained = options.useTurnModifiers ? mods.wearAfterAdvance : 0
+
+  let next = setPending(state, player, () => NO_PENDING_SABOTAGE)
+  next = updateCar(next, player, staged.carId, (c) => ({
+    ...c,
+    tractionShield: false,
+    wear: c.wear + wearGained,
+  }))
+  next = {
+    ...next,
     race: {
-      ...state.race,
-      distanceFt: setPair(state.race.distanceFt, player, toFt),
-      advances: setPair(state.race.advances, player, state.race.advances[player] + 1),
+      ...next.race,
+      distanceFt: setPair(next.race.distanceFt, player, toFt),
+      advances: setPair(next.race.advances, player, next.race.advances[player] + 1),
     },
+  }
+  if (protection !== null && hasPendingSabotage(pending)) {
+    next = withLog(next, { kind: 'tractionIgnored', player, reason: protection })
   }
   next = withLog(next, {
     kind: 'advance',
@@ -305,26 +772,47 @@ function applyAdvance(state: MatchState): MatchState {
     breakdown,
   })
   if (toFt >= TUNABLES.trackLengthFt) return endRace(next, player)
+  return next
+}
+
+function applyAdvance(state: MatchState): MatchState {
+  const player = state.turn.player
+  const extra = state.turn.advance.extraAdvanceMultiplier
+  let next = performAdvance(state, player, { useTurnModifiers: true, finalMultiplier: 1 })
+  if (next.phase.kind !== 'turn') return next
+  if (extra !== null) {
+    next = performAdvance(next, player, { useTurnModifiers: false, finalMultiplier: extra })
+    if (next.phase.kind !== 'turn') return next
+  }
   return endTurn(next)
 }
 
 /** Race end (DESIGN.md 3.4) and match end (3.5). */
 function endRace(state: MatchState, winner: PlayerIndex): MatchState {
   const loser = otherPlayer(winner)
-  const capturedCarId = requireStagedCar(state, loser).carId
+  const captured = requireStagedCar(state, loser)
+  const winningCar = requireStagedCar(state, winner)
   let next = setPlayer(state, loser, (p) => ({
     ...p,
-    garage: p.garage.filter((car) => car.carId !== capturedCarId),
+    garage: p.garage.filter((car) => car.carId !== captured.carId),
+    discard: [...p.discard, ...captured.parts],
     stagedCarId: null,
+    pendingSabotage: NO_PENDING_SABOTAGE,
   }))
   next = setPlayer(next, winner, (p) => ({
     ...p,
-    pinkSlips: [...p.pinkSlips, capturedCarId],
-    garage: p.garage.map((car) =>
-      car.carId === p.stagedCarId ? { ...car, wear: car.wear + 1 } : car,
-    ),
+    pinkSlips: [...p.pinkSlips, captured.carId],
+    pendingSabotage: NO_PENDING_SABOTAGE,
   }))
-  next = withLog(next, { kind: 'raceEnd', race: state.race.number, winner, capturedCarId })
+  if (gainsWearFromWinning(winningCar)) {
+    next = updateCar(next, winner, winningCar.carId, (car) => ({ ...car, wear: car.wear + 1 }))
+  }
+  next = withLog(next, {
+    kind: 'raceEnd',
+    race: state.race.number,
+    winner,
+    capturedCarId: captured.carId,
+  })
   if (next.players[winner].pinkSlips.length >= TUNABLES.pinkSlipsToWin) {
     next = { ...next, phase: { kind: 'over', winner } }
     return withLog(next, { kind: 'matchEnd', winner })
@@ -332,7 +820,12 @@ function endRace(state: MatchState, winner: PlayerIndex): MatchState {
   return {
     ...next,
     phase: { kind: 'staging', pending: [loser, winner] },
-    race: { number: state.race.number + 1, distanceFt: [0, 0], advances: [0, 0] },
-    turn: { player: otherPlayer(state.turn.player), number: state.turn.number + 1, step: 'fuel' },
+    race: {
+      number: state.race.number + 1,
+      distanceFt: [0, 0],
+      advances: [0, 0],
+      coinFlips: [0, 0],
+    },
+    turn: newTurn(otherPlayer(state.turn.player), state.turn.number + 1, false),
   }
 }
