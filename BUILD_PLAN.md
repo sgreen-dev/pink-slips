@@ -19,7 +19,7 @@
 | 1 | Card data | done | 4de5699 |
 | 2 | Engine core | done | c8febad |
 | 3 | Engine mods | done | bb3d90c |
-| 4 | CPU opponent | todo | |
+| 4 | CPU opponent | done | 54b5613 |
 | 5 | Simulator and balance | todo | |
 | 6 | UI foundation and hotseat | todo | |
 | 7 | CPU play and match flow | todo | |
