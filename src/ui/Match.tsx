@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { chooseAction } from '../cpu/index.ts'
 import {
   apply,
@@ -11,6 +11,7 @@ import {
   type PlayerIndex,
 } from '../engine/index.ts'
 import { Board } from './Board.tsx'
+import { recordMatch } from './counter.ts'
 import { HandOverScreen } from './HandOverScreen.tsx'
 import { NO_SELECTION, type Selection } from './interaction.ts'
 import { ResultScreen } from './ResultScreen.tsx'
@@ -40,6 +41,7 @@ export function Match({ mode, config, seed, names, onRematch, onNewMatch }: Matc
   const [selection, setSelection] = useState<Selection>(NO_SELECTION)
   const [options, setOptions] = useState<Action[] | null>(null)
   const cpu = mode === 'cpu'
+  const recorded = useRef(false)
 
   useEffect(() => {
     if (!cpu || isOver(state) !== null || currentPlayer(state) !== CPU_SEAT) return
@@ -53,6 +55,11 @@ export function Match({ mode, config, seed, names, onRematch, onNewMatch }: Matc
   }, [cpu, state, seed])
 
   const winner = isOver(state)
+  useEffect(() => {
+    if (winner === null || recorded.current) return
+    recorded.current = true
+    void recordMatch()
+  }, [winner])
   if (winner !== null) {
     const title = cpu
       ? winner === HUMAN_SEAT

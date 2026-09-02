@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CARS } from '../data/cars.ts'
 import { MODS, getMod } from '../data/mods.ts'
 import { TIER_LABEL } from '../data/tiers.ts'
@@ -29,6 +29,7 @@ import {
 } from './builder.ts'
 import { CarCard } from './CarCard.tsx'
 import { ModCard } from './ModCard.tsx'
+import { RulesButton, RulesDialog } from './RulesDialog.tsx'
 import {
   clearDraft,
   deleteGarage,
@@ -94,6 +95,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
   const [family, setFamily] = useState<ModFamily | 'all'>('all')
   const [notice, setNotice] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const rules = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
     saveDraft(draft)
@@ -169,6 +171,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
       <header className="builder__header">
         <span className="board__brand">Pink Slips</span>
         <h1 className="builder__title">Deck builder</h1>
+        <RulesButton dialogRef={rules} label="Rules" small />
         <button type="button" className="button" onClick={onBack}>
           Back to start
         </button>
@@ -380,6 +383,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
           )}
         </section>
       </div>
+      <RulesDialog dialogRef={rules} />
     </main>
   )
 }

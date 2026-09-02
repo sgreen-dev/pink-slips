@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { getMod } from '../data/mods.ts'
 import { otherPlayer, type Action, type MatchState, type PlayerIndex } from '../engine/index.ts'
 import { Garage } from './Garage.tsx'
@@ -14,6 +14,7 @@ import {
 import { ModCard } from './ModCard.tsx'
 import { describeLogEntry } from './narrate.ts'
 import { RaceTrack } from './RaceTrack.tsx'
+import { RulesButton, RulesDialog } from './RulesDialog.tsx'
 
 interface BoardProps {
   state: MatchState
@@ -56,6 +57,7 @@ export function Board({
   const buttons = buttonActions(state, viewer)
   const handIds = [...new Set(me.hand)]
   const busy = selection.kind !== 'none' || options !== null
+  const rules = useRef<HTMLDialogElement>(null)
 
   const onCar = (_carId: string, intent: CarIntent) => {
     if (intent.kind === 'apply') {
@@ -106,6 +108,7 @@ export function Board({
       <header className="board__header">
         <span className="board__brand">Pink Slips</span>
         <span className="board__status">{turnSummary(state, names)}</span>
+        <RulesButton dialogRef={rules} label="Rules" small />
       </header>
 
       <Garage
@@ -206,6 +209,7 @@ export function Board({
           ))}
         </ol>
       </section>
+      <RulesDialog dialogRef={rules} />
     </main>
   )
 }

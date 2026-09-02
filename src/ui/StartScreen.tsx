@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { MatchConfig } from '../engine/index.ts'
 import { garageOptions, type GarageOption } from './builder.ts'
 import { CarCard } from './CarCard.tsx'
 import type { Mode } from './Match.tsx'
+import { MatchCounter } from './MatchCounter.tsx'
+import { RulesButton, RulesDialog } from './RulesDialog.tsx'
 import { loadGarages } from './storage.ts'
 
 interface StartScreenProps {
@@ -50,6 +52,7 @@ function GaragePicker({
 
 export function StartScreen({ onStart, onBuilder }: StartScreenProps) {
   const [options] = useState<GarageOption[]>(() => garageOptions(loadGarages()))
+  const rules = useRef<HTMLDialogElement>(null)
   const [mode, setMode] = useState<Mode>('cpu')
   const [first, setFirst] = useState(0)
   const [second, setSecond] = useState(1)
@@ -97,6 +100,7 @@ export function StartScreen({ onStart, onBuilder }: StartScreenProps) {
         <button type="button" className="button button--ghost" onClick={onBuilder}>
           Deck builder
         </button>
+        <RulesButton dialogRef={rules} />
       </div>
       <div className="start__pickers">
         <GaragePicker label={labels[0]} options={options} value={first} onChange={setFirst} />
@@ -105,6 +109,8 @@ export function StartScreen({ onStart, onBuilder }: StartScreenProps) {
       <button type="button" className="button button--primary button--big" onClick={start}>
         Start the match
       </button>
+      <MatchCounter />
+      <RulesDialog dialogRef={rules} />
     </main>
   )
 }

@@ -42,6 +42,8 @@ npm run dev
 
 Pushes to `main` build and deploy to GitHub Pages automatically.
 
+The matches-played counter on the start screen is optional. It reads a small Cloudflare Worker in `counter/`; deploy it with `npx wrangler deploy` from that directory after creating a KV namespace, then set the worker URL as the repository variable `VITE_COUNTER_URL`. Without the variable the counter is simply absent.
+
 ## Project layout
 
 `DESIGN.md` is the source of truth for the game. `BUILD_PLAN.md` tracks what was built and in what order. `docs/balance-log.md` records every change to the tunable numbers and the evidence behind it.
