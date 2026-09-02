@@ -85,7 +85,7 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 
 ### 2.4 Roster (v1)
 
-52 cars. The 30 marked ★ were requested by name and are fixed. The rest are fillers chosen to give every cell at least one car where a real car exists for it, and may be swapped in phase 1 if a better fit is found. Specs below are approximate and are verified with sources in phase 1.
+52 cars. The 30 marked ★ were requested by name and are fixed. The rest are fillers chosen to give every cell at least one car where a real car exists for it. Specs below are the approximate figures the roster was chosen with. The verified figures, with a source per car, live in `src/data/cars.ts`; where a manufacturer publishes only a dry weight, that is what is used and the source says so.
 
 **Sports**
 
@@ -271,7 +271,7 @@ Computed in this order. All results floor to whole feet, minimum 0.
 6. Apply wear: `× (1 − wearRate × wearCount)` where **wearRate = 0.10** (tunable). Luxury uses half the rate.
 7. If the car's distance reaches or passes **1320 ft**, the race ends immediately.
 
-Worked example at K = 3000, no mods: Civic Si advances 206 ft and needs 7 advances. Mustang GT advances 360 ft and needs 4. Aventador SVJ advances 607 ft and needs 3. Rimac Nevera advances 1,126 ft and needs 2.
+Worked example at K = 3000, no mods, using the verified figures in `src/data/cars.ts`: Civic Si (200 hp, 2,952 lb) advances 203 ft and needs 7 advances. Mustang GT (460 hp, 3,705 lb) advances 372 ft and needs 4. Aventador SVJ (759 hp, 3,362 lb dry) advances 677 ft and needs 2. Rimac Nevera (1,914 hp, 5,071 lb) advances 1,132 ft and needs 2.
 
 ### 3.4 Race end
 
