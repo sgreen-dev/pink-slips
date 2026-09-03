@@ -23,9 +23,6 @@ const HUMAN_SEAT: PlayerIndex = 0
 /** Pause between CPU actions so a player can follow each one on the board and in the log. */
 const CPU_STEP_MS = 700
 
-/** How long the race-end banner stays up when nobody taps Continue. */
-const RACE_END_MS = 4000
-
 interface MatchProps {
   mode: Mode
   config: MatchConfig
@@ -57,13 +54,6 @@ export function Match({ mode, config, seed, names, onRematch, onNewMatch }: Matc
     const timer = setTimeout(() => dispatch({ type: 'cpuStep', seat: CPU_SEAT, seed }), CPU_STEP_MS)
     return () => clearTimeout(timer)
   }, [cpu, state, raceEnd, seed])
-
-  // The banner continues on its own when nobody taps.
-  useEffect(() => {
-    if (raceEnd === null) return
-    const timer = setTimeout(onContinue, RACE_END_MS)
-    return () => clearTimeout(timer)
-  }, [raceEnd, onContinue])
 
   const winner = isOver(state)
   useEffect(() => {
