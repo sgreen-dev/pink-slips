@@ -430,3 +430,4 @@ Anything new goes here first and becomes a phase when picked up.
 1. Trading duplicates, or converting them, once the collection has been live long enough to show how many duplicates players hold
 2. Spectating a friend's online match
 3. Seasonal starter garages built from the collection's most-opened cards
+4. Optional stakes mode, off by default and hotseat only: a start-screen toggle under which a captured car changes hands for real, the winner's collection gaining it and the loser's losing one copy, with starter cards exempt so a garage can always be rebuilt. Today pink slips are match prizes only and the collection never shrinks; that stays the default. Needs a DESIGN.md section 12 addendum and a test that starter cards are never taken
