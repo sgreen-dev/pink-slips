@@ -1123,14 +1123,17 @@ h2 {
   position: fixed;
   inset: 0;
   z-index: 20;
-  display: grid;
-  place-items: center;
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 1rem;
   background: rgba(23, 23, 26, 0.75);
   animation: raceend-in 0.3s ease-out 0.5s both;
 }
 .raceend__panel {
   box-sizing: border-box;
+  margin: auto;
   width: 100%;
   max-width: 24rem;
   padding: 1.25rem 1.5rem 1.5rem;
