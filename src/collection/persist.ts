@@ -7,13 +7,16 @@ import {
   type StorageLike,
 } from '../ui/storage.ts'
 import {
+  NO_VARIANTS,
   grant,
   grantGarage,
+  grantVariants,
   openPack,
   packCards,
   starterCollection,
   type Collection,
   type Pack,
+  type VariantCounts,
 } from './collection.ts'
 
 /** The collection in localStorage, next to the garages and through the same wrapper. */
@@ -24,17 +27,33 @@ export interface CollectionState {
   owned: Collection
   /** Packs earned and not yet opened. */
   packs: number
+  /** Foil and holo copies among the owned ones. */
+  variants: VariantCounts
 }
 
-function isState(value: unknown): value is CollectionState {
+/** What sits in storage. Records written before phase 12 have no variants. */
+interface StoredState {
+  owned: Collection
+  packs: number
+  variants?: VariantCounts
+}
+
+function isCounts(value: unknown): value is Collection {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    Object.values(value as Record<string, unknown>).every((n) => typeof n === 'number')
+  )
+}
+
+function isStored(value: unknown): value is StoredState {
   if (typeof value !== 'object' || value === null) return false
   const record = value as Record<string, unknown>
-  const owned = record['owned']
+  const variants = record['variants'] as Record<string, unknown> | undefined
   return (
     typeof record['packs'] === 'number' &&
-    typeof owned === 'object' &&
-    owned !== null &&
-    Object.values(owned as Record<string, unknown>).every((n) => typeof n === 'number')
+    isCounts(record['owned']) &&
+    (variants === undefined || (isCounts(variants['foil']) && isCounts(variants['holo'])))
   )
 }
 
@@ -45,11 +64,12 @@ function isState(value: unknown): value is CollectionState {
  * corrupt record is replaced the same way.
  */
 export function loadCollection(store: StorageLike | null = browserStorage()): CollectionState {
-  const saved = readRecord(COLLECTION_KEY, isState, store)
-  if (saved) return saved
+  const saved = readRecord(COLLECTION_KEY, isStored, store)
+  if (saved)
+    return { owned: saved.owned, packs: saved.packs, variants: saved.variants ?? NO_VARIANTS }
   let owned = starterCollection()
   for (const garage of loadGarages(store)) owned = grantGarage(owned, garage.cars, garage.deck)
-  const state: CollectionState = { owned, packs: 0 }
+  const state: CollectionState = { owned, packs: 0, variants: NO_VARIANTS }
   writeRecord(COLLECTION_KEY, state, store)
   return state
 }
@@ -80,7 +100,15 @@ export function openNextPack(
   const current = loadCollection(store)
   if (current.packs <= 0) return null
   const [pack] = openPack(seedRng(seed))
-  const state = { owned: grant(current.owned, packCards(pack)), packs: current.packs - 1 }
+  const cards = packCards(pack)
+  const state: CollectionState = {
+    owned: grant(
+      current.owned,
+      cards.map((card) => card.id),
+    ),
+    packs: current.packs - 1,
+    variants: grantVariants(current.variants, cards),
+  }
   saveCollection(state, store)
   return { state, pack }
 }

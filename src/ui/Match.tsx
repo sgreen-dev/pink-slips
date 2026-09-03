@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { packsEarned } from '../collection/collection.ts'
-import { addPacks } from '../collection/persist.ts'
+import { addPacks, loadCollection } from '../collection/persist.ts'
 import {
   currentPlayer,
   isOver,
@@ -15,6 +15,7 @@ import { HandOverScreen } from './HandOverScreen.tsx'
 import { NO_SELECTION, type Selection } from './interaction.ts'
 import { RaceEndBanner } from './RaceEndBanner.tsx'
 import { ResultScreen } from './ResultScreen.tsx'
+import { VariantContext, lookupFrom } from './variants.ts'
 
 export type Mode = 'cpu' | 'hotseat'
 
@@ -47,6 +48,7 @@ export function Match({ mode, config, seed, names, onRematch, onNewMatch }: Matc
   const cpu = mode === 'cpu'
   const recorded = useRef(false)
   const [earned, setEarned] = useState(0)
+  const [variantOf] = useState(() => lookupFrom(loadCollection().variants))
   const onContinue = useCallback(() => dispatch({ type: 'continue' }), [])
 
   // The CPU acts one step at a time and waits while the race-end banner is up.
@@ -73,15 +75,17 @@ export function Match({ mode, config, seed, names, onRematch, onNewMatch }: Matc
 
   if (winner !== null && raceEnd === null) {
     return (
-      <ResultScreen
-        state={state}
-        winner={winner}
-        names={names}
-        title={headline(winner)}
-        packsEarned={earned}
-        onRematch={onRematch}
-        onNewMatch={onNewMatch}
-      />
+      <VariantContext value={variantOf}>
+        <ResultScreen
+          state={state}
+          winner={winner}
+          names={names}
+          title={headline(winner)}
+          packsEarned={earned}
+          onRematch={onRematch}
+          onNewMatch={onNewMatch}
+        />
+      </VariantContext>
     )
   }
 
@@ -115,7 +119,7 @@ export function Match({ mode, config, seed, names, onRematch, onNewMatch }: Matc
   }
 
   return (
-    <>
+    <VariantContext value={variantOf}>
       <Board
         state={state}
         viewer={viewer}
@@ -127,6 +131,7 @@ export function Match({ mode, config, seed, names, onRematch, onNewMatch }: Matc
         onOptions={setOptions}
         frozen={raceEnd}
         inert={raceEnd !== null}
+        plainOpponent={cpu}
       />
       {raceEnd !== null && (
         <RaceEndBanner
@@ -135,6 +140,6 @@ export function Match({ mode, config, seed, names, onRematch, onNewMatch }: Matc
           onContinue={onContinue}
         />
       )}
-    </>
+    </VariantContext>
   )
 }

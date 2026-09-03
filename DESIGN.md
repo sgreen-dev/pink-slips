@@ -68,7 +68,7 @@ Consequences of this rule, accepted as honest to the real cars:
 - Some famous cars land lower than their badge suggests. The F-150 Raptor is Daily. The Rolls-Royce Wraith is Performance.
 - The roster grid is uneven. Two cars per tier-and-type cell is the target, not a rule.
 
-Holo and foil variants are a post-v1 feature tied to packs. They will be cosmetic only.
+Holo and foil variants came with phase 12. They are cosmetic only; see section 12.
 
 ### 2.3 Types
 
@@ -307,6 +307,7 @@ Every value here is a starting point. Phase 5 runs the simulator and adjusts the
 | Packs per match | 1, or 2 for beating the CPU | phase 11; a pack every match or two keeps packs frequent, and a full collection is a long goal (section 12) |
 | Pack contents | 2 cars, 3 mods | phase 11 |
 | Car tier odds in a pack | 55 / 30 / 12 / 3 (Common, Uncommon, Rare, Ultra Rare) | phase 11; rarity labels mean something |
+| Foil and holo odds per pack card | 10% foil, 2% holo | phase 12; a foil most packs, a holo now and then |
 | Pink slips to win | 3 | |
 | Mod deck size | 30 | |
 | Hand size at start | 5 | |
@@ -393,7 +394,7 @@ A headless command, `npm run sim`, that plays CPU against CPU for thousands of m
 
 **Retro trading card.** The precedent for layout is Top Trumps, the 1970s car stat card game: portrait card, car name across the top, a stat block down one side. The precedent for stock and border is the 1999 Pokémon Base Set: cream body, thick colored border, a boxed image area. The image area holds a stylized placeholder in v1 and an illustration later.
 
-- Border color by type. Foil treatment reserved for post-v1 holo variants.
+- Border color by type. Foil and holo finishes are CSS overlays on the frame and the art (section 12).
 - Typography from Google Fonts: a condensed display face for names, a monospace face for stats. Real fallback stacks.
 - Race screen: two lanes viewed from above, a car marker per lane advancing toward a finish line, distance in feet under each. Markers slide. The one other piece of motion is the race-end moment: the track holds at the finishing positions, the winner's finish line flashes, and a banner names the winner and shows the captured car as a pink slip with the tally. It stays until Continue and comes before staging, the hotseat hand-over, and the result screen. Reduced-motion settings keep the banner and drop the motion.
 - Hotseat shows a hand-over screen between turns so hands stay hidden.
@@ -495,3 +496,5 @@ Added in phase 11. Before it, every card was unlocked.
 - The odds and rewards are tunables under `collection` in `src/engine/tunables.ts`; a change gets a balance-log line.
 
 **Measured** (`npm run sim -- --packs 10000`, seed 1): from the starter set, owning every card takes a mean of 395 packs (median 355). The first pack holding an Ultra Rare car arrives after a mean of 16.7 packs (median 12). At one or two packs a match, new cards arrive from the first match on and a full collection is a long-term goal, with the last Ultra Rare cars as the chase. The Ultra Rare odds and the pack size are the levers if that proves too slow.
+
+**Finishes** (phase 12). Every card pulled from a pack rolls a finish: 2% holo, 10% foil, the rest base. Both are cosmetic only. Foil is a shimmer on the frame; holo is a shimmer across the image area and is the rarer of the two. The collection counts foil and holo copies separately from the total, so a foil copy still counts toward ownership and deck limits. The best finish a player owns is the one that shows: in the collection, the builder, the player's own cards on the board, and the result screen; the CPU's cards stay plain. The treatment is CSS only, moves on hover, stays still under reduced-motion settings, and never touches the engine: match configs and match state carry card ids only. The pack reveal marks a foil or holo when one appears, and every card with a finish carries a small Foil or Holo tag.

@@ -58,6 +58,9 @@ export const TUNABLES = {
     packsPerCpuWin: 2,
     packCars: 2,
     packMods: 3,
+    /** Chance that a pack card is foil, and that it is holo. Exclusive; the rest are base. */
+    foilOdds: 0.1,
+    holoOdds: 0.02,
     /** Odds that a car slot in a pack holds each tier. Must sum to 1. */
     carTierOdds: { daily: 0.55, performance: 0.3, super: 0.12, hyper: 0.03 } as Readonly<
       Record<Tier, number>

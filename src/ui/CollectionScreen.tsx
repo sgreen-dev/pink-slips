@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   ALL_CARD_IDS,
+  bestVariant,
   copiesOwned,
   ownedCount,
   packCards,
@@ -54,7 +55,11 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const open = () => {
     const result = openNextPack(newSeed())
     if (!result) return
-    const fresh = new Set(packCards(result.pack).filter((id) => copiesOwned(owned, id) === 0))
+    const fresh = new Set(
+      packCards(result.pack)
+        .filter((card) => copiesOwned(owned, card.id) === 0)
+        .map((card) => card.id),
+    )
     setState(result.state)
     setOpened({ pack: result.pack, fresh })
   }
@@ -88,19 +93,24 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         </p>
         {opened && (
           <div className="collection__reveal">
-            {opened.pack.cars.map((id, i) => (
-              <div key={`${id}-${i}`} style={{ animationDelay: `${i * 0.15}s` }}>
-                <CarCard carId={id} size="md" badge={opened.fresh.has(id) ? 'New' : undefined} />
+            {opened.pack.cars.map((card, i) => (
+              <div key={`${card.id}-${i}`} style={{ animationDelay: `${i * 0.15}s` }}>
+                <CarCard
+                  carId={card.id}
+                  size="md"
+                  variant={card.variant}
+                  badge={opened.fresh.has(card.id) ? 'New' : undefined}
+                />
               </div>
             ))}
-            {opened.pack.mods.map((id, i) => (
+            {opened.pack.mods.map((card, i) => (
               <div
-                key={`${id}-${i}`}
+                key={`${card.id}-${i}`}
                 className="hand__slot"
                 style={{ animationDelay: `${(opened.pack.cars.length + i) * 0.15}s` }}
               >
-                <ModCard modId={id} />
-                {opened.fresh.has(id) && <span className="hand__count">New</span>}
+                <ModCard modId={card.id} variant={card.variant} />
+                {opened.fresh.has(card.id) && <span className="hand__count">New</span>}
               </div>
             ))}
           </div>
@@ -155,6 +165,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
                     carId={car.id}
                     size="sm"
                     dimmed={have === 0}
+                    variant={bestVariant(state.variants, car.id)}
                     badge={have > 1 ? `×${have}` : undefined}
                   />
                 )
@@ -176,7 +187,11 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
                 const have = copiesOwned(owned, mod.id)
                 return (
                   <div key={mod.id} className="hand__slot">
-                    <ModCard modId={mod.id} dimmed={have === 0} />
+                    <ModCard
+                      modId={mod.id}
+                      dimmed={have === 0}
+                      variant={bestVariant(state.variants, mod.id)}
+                    />
                     {have > 0 && <span className="hand__count">×{have}</span>}
                   </div>
                 )

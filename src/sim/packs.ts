@@ -44,8 +44,10 @@ export function runPackSimulation(options: { trials: number; seed: number }): Pa
       packs++
       let pack
       ;[pack, rng] = openPack(rng)
-      if (firstUltraRare === 0 && pack.cars.some((id) => ultraRare.has(id))) firstUltraRare = packs
-      for (const id of packCards(pack)) missing.delete(id)
+      if (firstUltraRare === 0 && pack.cars.some((card) => ultraRare.has(card.id))) {
+        firstUltraRare = packs
+      }
+      for (const { id } of packCards(pack)) missing.delete(id)
     }
     toComplete.push(packs)
     toUltraRare.push(firstUltraRare)

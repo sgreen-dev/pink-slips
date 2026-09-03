@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useContext, useEffect, useRef } from 'react'
 import { getMod } from '../data/mods.ts'
 import { otherPlayer, type Action, type MatchState, type PlayerIndex } from '../engine/index.ts'
 import type { RaceEnd } from './celebration.ts'
@@ -16,6 +16,7 @@ import { ModCard } from './ModCard.tsx'
 import { describeLogEntry } from './narrate.ts'
 import { RaceTrack } from './RaceTrack.tsx'
 import { RulesButton, RulesDialog } from './RulesDialog.tsx'
+import { BASE_ONLY, VariantContext } from './variants.ts'
 
 interface BoardProps {
   state: MatchState
@@ -31,6 +32,8 @@ interface BoardProps {
   frozen?: RaceEnd | null
   /** True while the race-end banner is up, so nothing on the board takes clicks or focus. */
   inert?: boolean
+  /** Draw the opponent's cards without finishes, as for the CPU. */
+  plainOpponent?: boolean
 }
 
 function buttonLabel(action: Action): string {
@@ -57,6 +60,7 @@ export function Board({
   onOptions,
   frozen,
   inert,
+  plainOpponent,
 }: BoardProps) {
   const opponent = otherPlayer(viewer)
   const me = state.players[viewer]
@@ -65,6 +69,7 @@ export function Board({
   const handIds = [...new Set(me.hand)]
   const busy = selection.kind !== 'none' || options !== null
   const rules = useRef<HTMLDialogElement>(null)
+  const variantOf = useContext(VariantContext)
 
   const onCar = (_carId: string, intent: CarIntent) => {
     if (intent.kind === 'apply') {
@@ -118,12 +123,14 @@ export function Board({
         <RulesButton dialogRef={rules} label="Rules" small />
       </header>
 
-      <Garage
-        player={state.players[opponent]}
-        name={names[opponent]}
-        handCount={state.players[opponent].hand.length}
-        size="sm"
-      />
+      <VariantContext value={plainOpponent ? BASE_ONLY : variantOf}>
+        <Garage
+          player={state.players[opponent]}
+          name={names[opponent]}
+          handCount={state.players[opponent].hand.length}
+          size="sm"
+        />
+      </VariantContext>
 
       <RaceTrack state={state} names={names} lanes={[opponent, viewer]} frozen={frozen} />
 

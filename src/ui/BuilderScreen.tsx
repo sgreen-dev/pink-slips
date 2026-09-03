@@ -34,6 +34,7 @@ import { CarCard } from './CarCard.tsx'
 import { Filter } from './Filter.tsx'
 import { ModCard } from './ModCard.tsx'
 import { RulesButton, RulesDialog } from './RulesDialog.tsx'
+import { VariantContext, lookupFrom } from './variants.ts'
 import {
   clearDraft,
   deleteGarage,
@@ -52,7 +53,9 @@ interface BuilderScreenProps {
 export function BuilderScreen({ onBack }: BuilderScreenProps) {
   const [draft, setDraft] = useState<GarageDraft>(() => loadDraft() ?? emptyDraft())
   const [saved, setSaved] = useState<SavedGarage[]>(() => loadGarages())
-  const [owned] = useState(() => loadCollection().owned)
+  const [collection] = useState(() => loadCollection())
+  const owned = collection.owned
+  const variantOf = lookupFrom(collection.variants)
   const [tab, setTab] = useState<'cars' | 'mods'>('cars')
   const [type, setType] = useState<CarType | 'all'>('all')
   const [tier, setTier] = useState<Tier | 'all'>('all')
@@ -131,235 +134,237 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
   }
 
   return (
-    <main className="builder">
-      <header className="builder__header">
-        <span className="board__brand">Pink Slips</span>
-        <h1 className="builder__title">Deck builder</h1>
-        <RulesButton dialogRef={rules} label="Rules" small />
-        <button type="button" className="button" onClick={onBack}>
-          Back to start
-        </button>
-      </header>
+    <VariantContext value={variantOf}>
+      <main className="builder">
+        <header className="builder__header">
+          <span className="board__brand">Pink Slips</span>
+          <h1 className="builder__title">Deck builder</h1>
+          <RulesButton dialogRef={rules} label="Rules" small />
+          <button type="button" className="button" onClick={onBack}>
+            Back to start
+          </button>
+        </header>
 
-      <div className="builder__layout">
-        <aside className="builder__garage">
-          <label className="builder__name">
-            <span>Garage name</span>
-            <input
-              type="text"
-              value={draft.name}
-              maxLength={40}
-              onChange={(event) => update({ ...draft, name: event.target.value })}
-            />
-          </label>
-          {savedName && <p className="builder__saved">Editing saved garage: {savedName}</p>}
-
-          <h2 className="builder__section">
-            Garage {draft.cars.length}/{TUNABLES.garageSize}
-          </h2>
-          <div className="builder__cars">
-            {draft.cars.map((carId) => (
-              <CarCard
-                key={carId}
-                carId={carId}
-                size="sm"
-                onClick={() => update(removeCar(draft, carId))}
+        <div className="builder__layout">
+          <aside className="builder__garage">
+            <label className="builder__name">
+              <span>Garage name</span>
+              <input
+                type="text"
+                value={draft.name}
+                maxLength={40}
+                onChange={(event) => update({ ...draft, name: event.target.value })}
               />
-            ))}
-            {Array.from(
-              { length: Math.max(0, TUNABLES.garageSize - draft.cars.length) },
-              (_, i) => (
-                <div key={i} className="builder__slot">
-                  empty
-                </div>
-              ),
+            </label>
+            {savedName && <p className="builder__saved">Editing saved garage: {savedName}</p>}
+
+            <h2 className="builder__section">
+              Garage {draft.cars.length}/{TUNABLES.garageSize}
+            </h2>
+            <div className="builder__cars">
+              {draft.cars.map((carId) => (
+                <CarCard
+                  key={carId}
+                  carId={carId}
+                  size="sm"
+                  onClick={() => update(removeCar(draft, carId))}
+                />
+              ))}
+              {Array.from(
+                { length: Math.max(0, TUNABLES.garageSize - draft.cars.length) },
+                (_, i) => (
+                  <div key={i} className="builder__slot">
+                    empty
+                  </div>
+                ),
+              )}
+            </div>
+            <p className="builder__hint">Click a car in the garage to remove it.</p>
+
+            <h2 className="builder__section">
+              Deck {draft.deck.length}/{TUNABLES.modDeckSize}
+            </h2>
+            {counts.size === 0 ? (
+              <p className="builder__hint">
+                Add mods from the Mods tab. Up to {TUNABLES.maxCopiesPerMod} copies of each.
+              </p>
+            ) : (
+              <ul className="builder__deck">
+                {[...counts.entries()].map(([modId, count]) => (
+                  <li key={modId} className={`builder__row builder__row--${getMod(modId).family}`}>
+                    <span className="builder__row-name">{getMod(modId).name}</span>
+                    <span className="builder__row-count">×{count}</span>
+                    <button
+                      type="button"
+                      className="button button--small"
+                      aria-label={`Remove one ${getMod(modId).name}`}
+                      onClick={() => update(removeMod(draft, modId))}
+                    >
+                      −
+                    </button>
+                    <button
+                      type="button"
+                      className="button button--small"
+                      aria-label={`Add one ${getMod(modId).name}`}
+                      disabled={!canAddMod(draft, modId, owned)}
+                      onClick={() => update(addMod(draft, modId, owned))}
+                    >
+                      +
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
-          </div>
-          <p className="builder__hint">Click a car in the garage to remove it.</p>
 
-          <h2 className="builder__section">
-            Deck {draft.deck.length}/{TUNABLES.modDeckSize}
-          </h2>
-          {counts.size === 0 ? (
-            <p className="builder__hint">
-              Add mods from the Mods tab. Up to {TUNABLES.maxCopiesPerMod} copies of each.
-            </p>
-          ) : (
-            <ul className="builder__deck">
-              {[...counts.entries()].map(([modId, count]) => (
-                <li key={modId} className={`builder__row builder__row--${getMod(modId).family}`}>
-                  <span className="builder__row-name">{getMod(modId).name}</span>
-                  <span className="builder__row-count">×{count}</span>
-                  <button
-                    type="button"
-                    className="button button--small"
-                    aria-label={`Remove one ${getMod(modId).name}`}
-                    onClick={() => update(removeMod(draft, modId))}
-                  >
-                    −
-                  </button>
-                  <button
-                    type="button"
-                    className="button button--small"
-                    aria-label={`Add one ${getMod(modId).name}`}
-                    disabled={!canAddMod(draft, modId, owned)}
-                    onClick={() => update(addMod(draft, modId, owned))}
-                  >
-                    +
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+            {validation.errors.length > 0 && (
+              <ul className="builder__errors">
+                {validation.errors.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            )}
+            {validation.warnings.length > 0 && (
+              <ul className="builder__warnings">
+                {validation.warnings.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            )}
+            {validation.errors.length === 0 && <p className="builder__ready">Ready to race.</p>}
 
-          {validation.errors.length > 0 && (
-            <ul className="builder__errors">
-              {validation.errors.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          )}
-          {validation.warnings.length > 0 && (
-            <ul className="builder__warnings">
-              {validation.warnings.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          )}
-          {validation.errors.length === 0 && <p className="builder__ready">Ready to race.</p>}
-
-          <div className="builder__actions">
-            <button type="button" className="button button--primary" onClick={() => save(false)}>
-              {draft.id ? 'Save changes' : 'Save garage'}
-            </button>
-            {draft.id && (
-              <button type="button" className="button" onClick={() => save(true)}>
-                Save as new
+            <div className="builder__actions">
+              <button type="button" className="button button--primary" onClick={() => save(false)}>
+                {draft.id ? 'Save changes' : 'Save garage'}
               </button>
-            )}
-            {draft.id && (
-              <button type="button" className="button" onClick={remove}>
-                {confirmDelete ? 'Confirm delete' : 'Delete'}
+              {draft.id && (
+                <button type="button" className="button" onClick={() => save(true)}>
+                  Save as new
+                </button>
+              )}
+              {draft.id && (
+                <button type="button" className="button" onClick={remove}>
+                  {confirmDelete ? 'Confirm delete' : 'Delete'}
+                </button>
+              )}
+              <button type="button" className="button button--ghost" onClick={reset}>
+                Start empty
               </button>
-            )}
-            <button type="button" className="button button--ghost" onClick={reset}>
-              Start empty
-            </button>
-          </div>
-          {notice && <p className="builder__notice">{notice}</p>}
+            </div>
+            {notice && <p className="builder__notice">{notice}</p>}
 
-          <h2 className="builder__section">Load</h2>
-          <div className="builder__load">
-            {options.map((option) => (
+            <h2 className="builder__section">Load</h2>
+            <div className="builder__load">
+              {options.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  className="button button--small"
+                  onClick={() => load(option)}
+                >
+                  {option.name}
+                  {option.custom ? '' : ' (starter)'}
+                </button>
+              ))}
+            </div>
+          </aside>
+
+          <section className="builder__browse">
+            <div className="builder__tabs" role="tablist">
               <button
-                key={option.id}
                 type="button"
-                className="button button--small"
-                onClick={() => load(option)}
+                role="tab"
+                aria-selected={tab === 'cars'}
+                className={`button ${tab === 'cars' ? 'button--primary' : ''}`}
+                onClick={() => setTab('cars')}
               >
-                {option.name}
-                {option.custom ? '' : ' (starter)'}
+                Cars ({CARS.length})
               </button>
-            ))}
-          </div>
-        </aside>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={tab === 'mods'}
+                className={`button ${tab === 'mods' ? 'button--primary' : ''}`}
+                onClick={() => setTab('mods')}
+              >
+                Mods ({MODS.length})
+              </button>
+            </div>
 
-        <section className="builder__browse">
-          <div className="builder__tabs" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === 'cars'}
-              className={`button ${tab === 'cars' ? 'button--primary' : ''}`}
-              onClick={() => setTab('cars')}
-            >
-              Cars ({CARS.length})
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === 'mods'}
-              className={`button ${tab === 'mods' ? 'button--primary' : ''}`}
-              onClick={() => setTab('mods')}
-            >
-              Mods ({MODS.length})
-            </button>
-          </div>
-
-          {tab === 'cars' ? (
-            <>
-              <Filter
-                label="Type"
-                value={type}
-                options={CAR_TYPES.map((t) => [t, CAR_TYPE_LABEL[t]] as [CarType, string])}
-                onChange={setType}
-              />
-              <Filter
-                label="Tier"
-                value={tier}
-                options={TIERS.map((t) => [t, TIER_LABEL[t]] as [Tier, string])}
-                onChange={setTier}
-              />
-              <p className="builder__hint">
-                Click a car to add it to the garage. Cars you do not own yet are dimmed.
-              </p>
-              <div className="browse__grid">
-                {cars.map((car) => {
-                  const inGarage = draft.cars.includes(car.id)
-                  const have = copiesOwned(owned, car.id)
-                  const addable = canAddCar(draft, car.id, owned)
-                  return (
-                    <CarCard
-                      key={car.id}
-                      carId={car.id}
-                      size="sm"
-                      dimmed={have === 0}
-                      badge={inGarage ? 'In garage' : have === 0 ? 'Not owned' : undefined}
-                      onClick={addable ? () => update(addCar(draft, car.id, owned)) : undefined}
-                    />
-                  )
-                })}
-              </div>
-            </>
-          ) : (
-            <>
-              <Filter
-                label="Family"
-                value={family}
-                options={(['part', 'boost', 'sabotage'] as const).map(
-                  (f) => [f, FAMILY_LABEL[f]] as [ModFamily, string],
-                )}
-                onChange={setFamily}
-              />
-              <p className="builder__hint">
-                Click a mod to add a copy to the deck, up to the copies you own and at most{' '}
-                {TUNABLES.maxCopiesPerMod}.
-              </p>
-              <div className="browse__grid">
-                {mods.map((mod) => {
-                  const count = counts.get(mod.id) ?? 0
-                  const have = copiesOwned(owned, mod.id)
-                  return (
-                    <div key={mod.id} className="hand__slot">
-                      <ModCard
-                        modId={mod.id}
-                        playable={canAddMod(draft, mod.id, owned)}
+            {tab === 'cars' ? (
+              <>
+                <Filter
+                  label="Type"
+                  value={type}
+                  options={CAR_TYPES.map((t) => [t, CAR_TYPE_LABEL[t]] as [CarType, string])}
+                  onChange={setType}
+                />
+                <Filter
+                  label="Tier"
+                  value={tier}
+                  options={TIERS.map((t) => [t, TIER_LABEL[t]] as [Tier, string])}
+                  onChange={setTier}
+                />
+                <p className="builder__hint">
+                  Click a car to add it to the garage. Cars you do not own yet are dimmed.
+                </p>
+                <div className="browse__grid">
+                  {cars.map((car) => {
+                    const inGarage = draft.cars.includes(car.id)
+                    const have = copiesOwned(owned, car.id)
+                    const addable = canAddCar(draft, car.id, owned)
+                    return (
+                      <CarCard
+                        key={car.id}
+                        carId={car.id}
+                        size="sm"
                         dimmed={have === 0}
-                        onClick={() => update(addMod(draft, mod.id, owned))}
+                        badge={inGarage ? 'In garage' : have === 0 ? 'Not owned' : undefined}
+                        onClick={addable ? () => update(addCar(draft, car.id, owned)) : undefined}
                       />
-                      {count > 0 && <span className="hand__count">×{count}</span>}
-                      <span className="browse__owned">
-                        {have === 0 ? 'not owned' : `own ${have}`}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            </>
-          )}
-        </section>
-      </div>
-      <RulesDialog dialogRef={rules} />
-    </main>
+                    )
+                  })}
+                </div>
+              </>
+            ) : (
+              <>
+                <Filter
+                  label="Family"
+                  value={family}
+                  options={(['part', 'boost', 'sabotage'] as const).map(
+                    (f) => [f, FAMILY_LABEL[f]] as [ModFamily, string],
+                  )}
+                  onChange={setFamily}
+                />
+                <p className="builder__hint">
+                  Click a mod to add a copy to the deck, up to the copies you own and at most{' '}
+                  {TUNABLES.maxCopiesPerMod}.
+                </p>
+                <div className="browse__grid">
+                  {mods.map((mod) => {
+                    const count = counts.get(mod.id) ?? 0
+                    const have = copiesOwned(owned, mod.id)
+                    return (
+                      <div key={mod.id} className="hand__slot">
+                        <ModCard
+                          modId={mod.id}
+                          playable={canAddMod(draft, mod.id, owned)}
+                          dimmed={have === 0}
+                          onClick={() => update(addMod(draft, mod.id, owned))}
+                        />
+                        {count > 0 && <span className="hand__count">×{count}</span>}
+                        <span className="browse__owned">
+                          {have === 0 ? 'not owned' : `own ${have}`}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+          </section>
+        </div>
+        <RulesDialog dialogRef={rules} />
+      </main>
+    </VariantContext>
   )
 }

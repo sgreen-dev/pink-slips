@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { VARIANT_LABEL, type Variant } from '../collection/collection.ts'
 import { getCar } from '../data/cars.ts'
 import { getMod } from '../data/mods.ts'
 import { TIER_LABEL } from '../data/tiers.ts'
 import { CAR_TYPE_LABEL } from '../data/types.ts'
 import { fuelCost, type CarState } from '../engine/index.ts'
 import { initialArtState, nextArtState, showsImage } from './artState.ts'
+import { useVariant } from './variants.ts'
 
 export type CardSize = 'sm' | 'md' | 'lg'
 
@@ -22,6 +24,8 @@ interface CarCardProps {
   badge?: string
   /** Shown faded, such as a card the player does not own yet. */
   dimmed?: boolean
+  /** Foil or holo finish. Without it the card asks the nearest VariantContext. */
+  variant?: Variant
 }
 
 /** A stylized car silhouette, tinted by the card's type. Illustrated art is a post-v1 item. */
@@ -84,8 +88,10 @@ export function CarCard({
   onClick,
   badge,
   dimmed,
+  variant: variantProp,
 }: CarCardProps) {
   const car = getCar(carId)
+  const variant = useVariant(carId, variantProp)
   const [art, setArt] = useState(() => initialArtState(car.imageUrl))
   const cost = state ? fuelCost(state) : undefined
   const className = [
@@ -97,6 +103,7 @@ export function CarCard({
     selected ? 'card--selected' : '',
     onClick ? 'card--clickable' : '',
     dimmed ? 'card--unowned' : '',
+    variant === 'base' ? '' : `card--${variant}`,
   ]
     .filter(Boolean)
     .join(' ')
@@ -141,6 +148,9 @@ export function CarCard({
       {state && <Tokens state={state} />}
       {staged && <span className="card__badge card__badge--staged">Staged</span>}
       {badge && <span className="card__badge">{badge}</span>}
+      {variant !== 'base' && (
+        <span className={`card__variant card__variant--${variant}`}>{VARIANT_LABEL[variant]}</span>
+      )}
     </>
   )
   if (onClick) {

@@ -1,4 +1,6 @@
+import { VARIANT_LABEL, type Variant } from '../collection/collection.ts'
 import { getMod } from '../data/mods.ts'
+import { useVariant } from './variants.ts'
 
 interface ModCardProps {
   modId: string
@@ -8,12 +10,23 @@ interface ModCardProps {
   /** Shown faded, such as a card the player does not own yet. */
   dimmed?: boolean
   size?: 'sm' | 'md'
+  /** Foil or holo finish. Without it the card asks the nearest VariantContext. */
+  variant?: Variant
 }
 
 const FAMILY_LABEL = { part: 'Part', boost: 'Boost', sabotage: 'Sabotage' } as const
 
-export function ModCard({ modId, playable, selected, onClick, dimmed, size = 'md' }: ModCardProps) {
+export function ModCard({
+  modId,
+  playable,
+  selected,
+  onClick,
+  dimmed,
+  size = 'md',
+  variant: variantProp,
+}: ModCardProps) {
   const mod = getMod(modId)
+  const variant = useVariant(modId, variantProp)
   const family =
     mod.family === 'sabotage'
       ? `${FAMILY_LABEL.sabotage} · ${mod.kind === 'traction' ? 'Traction' : 'Pit'}`
@@ -25,6 +38,7 @@ export function ModCard({ modId, playable, selected, onClick, dimmed, size = 'md
     playable ? 'mod--playable' : '',
     selected ? 'mod--selected' : '',
     dimmed ? 'mod--unowned' : '',
+    variant === 'base' ? '' : `mod--${variant}`,
     onClick && !playable ? 'mod--unplayable' : '',
   ]
     .filter(Boolean)
@@ -38,6 +52,9 @@ export function ModCard({ modId, playable, selected, onClick, dimmed, size = 'md
         <div className="mod__cost">Costs {mod.fuelCost} fuel</div>
       ) : null}
       {mod.typeLock && <div className="mod__lock">{mod.typeLock.toUpperCase()} only</div>}
+      {variant !== 'base' && (
+        <span className={`mod__variant mod__variant--${variant}`}>{VARIANT_LABEL[variant]}</span>
+      )}
     </>
   )
   if (onClick) {

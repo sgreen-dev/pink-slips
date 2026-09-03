@@ -948,6 +948,16 @@ h2 {
   .collection__reveal > * {
     animation: none;
   }
+  .card--foil::before,
+  .mod--foil::before,
+  .card--holo .card__art::after,
+  .mod--holo::after,
+  .card--foil:hover::before,
+  .mod--foil:hover::before,
+  .card--holo:hover .card__art::after,
+  .mod--holo:hover::after {
+    transition: none;
+  }
 }
 
 /* Phone sizing */
@@ -1219,4 +1229,91 @@ h2 {
 .result__packs {
   color: var(--gold);
   font-family: var(--font-mono);
+}
+
+/* Foil and holo finishes: cosmetic only, CSS only. Foil shimmers on the frame, holo across the art. */
+
+.mod {
+  position: relative;
+}
+.card--foil::before,
+.mod--foil::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 0.5em;
+  border-radius: inherit;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgb(255 255 255 / 85%) 44%,
+    rgb(140 225 255 / 80%) 50%,
+    rgb(255 255 255 / 85%) 56%,
+    transparent 70%
+  );
+  background-size: 260% 260%;
+  background-position: 35% 35%;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  transition: background-position 1s ease;
+}
+.mod--foil::before {
+  inset: -0.3rem;
+  padding: 0.3rem;
+}
+.card--foil:hover::before,
+.mod--foil:hover::before {
+  background-position: 70% 70%;
+}
+.card--holo .card__art::after,
+.mod--holo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    120deg,
+    rgb(255 80 170 / 45%),
+    rgb(255 220 80 / 45%),
+    rgb(80 255 190 / 45%),
+    rgb(80 160 255 / 45%),
+    rgb(210 90 255 / 45%)
+  );
+  background-size: 300% 300%;
+  background-position: 0% 0%;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  transition: background-position 1.2s ease;
+}
+.mod--holo::after {
+  opacity: 0.6;
+}
+.card--holo:hover .card__art::after,
+.mod--holo:hover::after {
+  background-position: 100% 100%;
+}
+.card__variant,
+.mod__variant {
+  position: absolute;
+  top: -0.6em;
+  right: 0.5em;
+  padding: 0.1em 0.5em;
+  border-radius: 0.3em;
+  font-family: var(--font-display);
+  font-size: 0.9em;
+  letter-spacing: 0.05em;
+  color: #222;
+  background: linear-gradient(90deg, #cfd3d8, #fff, #b9bec5);
+}
+.card__variant--holo,
+.mod__variant--holo {
+  color: #fff;
+  background: linear-gradient(90deg, var(--pink), var(--gold), var(--type-ev), var(--type-jdm));
 }

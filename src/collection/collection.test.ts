@@ -3,7 +3,8 @@ import { CARS } from '../data/cars.ts'
 import { MODS } from '../data/mods.ts'
 import { STARTERS } from '../data/starters.ts'
 import { TIERS, type Tier } from '../data/types.ts'
-import { seedRng, TUNABLES } from '../engine/index.ts'
+import { createMatch, seedRng, TUNABLES } from '../engine/index.ts'
+import { starterConfig } from '../engine/test-helpers.ts'
 import { GARAGES_KEY, type StorageLike } from '../ui/storage.ts'
 import {
   copiesOwned,
@@ -14,6 +15,9 @@ import {
   packCards,
   packsEarned,
   starterCollection,
+  NO_VARIANTS,
+  bestVariant,
+  grantVariants,
 } from './collection.ts'
 import { COLLECTION_KEY, addPacks, loadCollection, openNextPack } from './persist.ts'
 
@@ -50,14 +54,14 @@ describe('packs', () => {
       ;[pack, rng] = openPack(rng)
       expect(pack.cars).toHaveLength(TUNABLES.collection.packCars)
       expect(pack.mods).toHaveLength(TUNABLES.collection.packMods)
-      for (const id of pack.cars) {
+      for (const { id } of pack.cars) {
         const tier = must(
           CARS.find((car) => car.id === id),
           id,
         ).tier
         tierHits.set(tier, (tierHits.get(tier) ?? 0) + 1)
       }
-      for (const id of pack.mods) modHits.set(id, (modHits.get(id) ?? 0) + 1)
+      for (const { id } of pack.mods) modHits.set(id, (modHits.get(id) ?? 0) + 1)
     }
     const carDraws = 10_000 * TUNABLES.collection.packCars
     for (const tier of TIERS) {
@@ -142,7 +146,7 @@ describe('persistence', () => {
     expect(opened).not.toBeNull()
     if (!opened) return
     expect(opened.state.packs).toBe(1)
-    for (const id of packCards(opened.pack)) {
+    for (const { id } of packCards(opened.pack)) {
       expect(copiesOwned(opened.state.owned, id)).toBeGreaterThanOrEqual(1)
     }
     expect(loadCollection(store)).toEqual(opened.state)
@@ -153,5 +157,55 @@ describe('persistence', () => {
   it('reads as the starter set when storage is missing', () => {
     expect(loadCollection(null).owned).toEqual(starter)
     expect(openNextPack(1, null)).toBeNull()
+  })
+})
+
+describe('variants', () => {
+  it('roll foil and holo at the tunable odds over 10,000 packs', () => {
+    const hits = { base: 0, foil: 0, holo: 0 }
+    let rng = seedRng(11)
+    let pack
+    for (let i = 0; i < 10_000; i++) {
+      ;[pack, rng] = openPack(rng)
+      for (const card of packCards(pack)) hits[card.variant]++
+    }
+    const total = 10_000 * (TUNABLES.collection.packCars + TUNABLES.collection.packMods)
+    expect(Math.abs(hits.holo / total - TUNABLES.collection.holoOdds)).toBeLessThan(0.004)
+    expect(Math.abs(hits.foil / total - TUNABLES.collection.foilOdds)).toBeLessThan(0.008)
+    expect(hits.base).toBeGreaterThan(hits.foil)
+    expect(hits.foil).toBeGreaterThan(hits.holo)
+  })
+
+  it('show the best finish owned', () => {
+    const counts = grantVariants(NO_VARIANTS, [
+      { id: 'a', variant: 'foil' },
+      { id: 'b', variant: 'holo' },
+      { id: 'b', variant: 'foil' },
+      { id: 'c', variant: 'base' },
+    ])
+    expect(bestVariant(counts, 'a')).toBe('foil')
+    expect(bestVariant(counts, 'b')).toBe('holo')
+    expect(bestVariant(counts, 'c')).toBe('base')
+    expect(bestVariant(counts, 'never-seen')).toBe('base')
+    expect(copiesOwned(counts.foil, 'b')).toBe(1)
+    expect(copiesOwned(counts.holo, 'b')).toBe(1)
+  })
+
+  it('never reach the engine', () => {
+    const config = starterConfig()
+    const state = createMatch(config, 1)
+    expect(JSON.stringify(config) + JSON.stringify(state)).not.toMatch(/foil|holo|variant/i)
+  })
+
+  it('persist next to the counts and default to none for older records', () => {
+    const store = memoryStore({ [COLLECTION_KEY]: JSON.stringify({ owned: starter, packs: 1 }) })
+    expect(loadCollection(store).variants).toEqual(NO_VARIANTS)
+    const opened = openNextPack(3, store)
+    if (!opened) throw new Error('No pack to open')
+    for (const card of packCards(opened.pack)) {
+      if (card.variant === 'base') continue
+      expect(copiesOwned(opened.state.variants[card.variant], card.id)).toBeGreaterThanOrEqual(1)
+    }
+    expect(loadCollection(store).variants).toEqual(opened.state.variants)
   })
 })
