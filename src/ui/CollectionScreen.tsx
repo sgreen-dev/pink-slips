@@ -24,6 +24,7 @@ import { FAMILY_LABEL } from './builder.ts'
 import { CarCard } from './CarCard.tsx'
 import { Filter } from './Filter.tsx'
 import { ModCard } from './ModCard.tsx'
+import { PackReveal } from './PackReveal.tsx'
 import { newSeed } from './seed.ts'
 
 interface CollectionScreenProps {
@@ -91,30 +92,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         <p className="builder__hint">
           Finishing a match earns {packsPerMatch} pack. Beating the CPU earns {packsPerCpuWin}.
         </p>
-        {opened && (
-          <div className="collection__reveal">
-            {opened.pack.cars.map((card, i) => (
-              <div key={`${card.id}-${i}`} style={{ animationDelay: `${i * 0.15}s` }}>
-                <CarCard
-                  carId={card.id}
-                  size="md"
-                  variant={card.variant}
-                  badge={opened.fresh.has(card.id) ? 'New' : undefined}
-                />
-              </div>
-            ))}
-            {opened.pack.mods.map((card, i) => (
-              <div
-                key={`${card.id}-${i}`}
-                className="hand__slot"
-                style={{ animationDelay: `${(opened.pack.cars.length + i) * 0.15}s` }}
-              >
-                <ModCard modId={card.id} variant={card.variant} />
-                {opened.fresh.has(card.id) && <span className="hand__count">New</span>}
-              </div>
-            ))}
-          </div>
-        )}
+        {opened && <PackReveal pack={opened.pack} fresh={opened.fresh} />}
       </section>
 
       <section className="builder__browse">

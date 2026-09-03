@@ -1317,3 +1317,19 @@ h2 {
   color: #fff;
   background: linear-gradient(90deg, var(--pink), var(--gold), var(--type-ev), var(--type-jdm));
 }
+
+/* Pack pop-up after a match */
+
+.raceend__panel--wide {
+  max-width: 46rem;
+}
+.raceend__panel .collection__reveal {
+  padding-top: 0.8rem;
+  margin-bottom: 0.4rem;
+}
+.packs__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}

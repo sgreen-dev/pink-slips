@@ -488,7 +488,7 @@ Added in phase 11. Before it, every card was unlocked.
 
 - The collection is per browser, in `localStorage` next to the garages, through the same try/catch wrapper. It holds a count per card id, cars and mods alike.
 - A fresh browser owns every card in the three starter garages, with as many copies of a mod as the starter deck that uses it most, so the starters always rebuild. Everything else has to be opened: 46 of the 84 cards are owned at the start.
-- Finishing a match against the CPU earns 1 pack; winning it earns 2. A hotseat match earns 1. Packs wait in a stack until opened from the Collection screen, which shows every card, owned ones in color with their counts, unowned ones dimmed.
+- Finishing a match against the CPU earns 1 pack; winning it earns 2. A hotseat match earns 1. Packs wait in a stack until opened, either from the pop-up that follows the winner banner and the result screen right after a match, or from the Collection screen, which shows every card, owned ones in color with their counts, unowned ones dimmed.
 - A pack holds 2 cars and 3 mods. Car odds follow the tier's rarity label: Common 55%, Uncommon 30%, Rare 12%, Ultra Rare 3%. Mods are uniform across all 32. Duplicates count.
 - The deck builder adds only owned cards: a car needs one copy, and a mod can go in up to the smaller of 3 and the copies owned. Its messages say what is missing. Racing is untouched: the engine's match config is card ids only, and a saved garage stays raceable.
 - Migration: the first load after phase 11 grants every card in an already saved garage, once. The grant is written back at once, so it never repeats.
