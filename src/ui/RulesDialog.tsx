@@ -24,20 +24,18 @@ export function RulesDialog({ dialogRef }: RulesDialogProps) {
             Close
           </button>
         </header>
-        {rulesSections().map((section) => (
-          <section key={section.title}>
-            <h3 className="rules__title">{section.title}</h3>
-            {section.lines.length === 1 ? (
-              <p>{section.lines[0]}</p>
-            ) : (
-              <ul>
-                {section.lines.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
-            )}
-          </section>
-        ))}
+        {rulesSections().map((section) => {
+          const items = section.lines.map((line) => <li key={line}>{line}</li>)
+          return (
+            <section key={section.title}>
+              <h3 className="rules__title">{section.title}</h3>
+              {section.kind === 'prose' && section.lines.map((line) => <p key={line}>{line}</p>)}
+              {section.kind === 'steps' && <ol>{items}</ol>}
+              {section.kind === 'bullets' && <ul>{items}</ul>}
+              {section.note && <p className="rules__note">{section.note}</p>}
+            </section>
+          )
+        })}
       </div>
     </dialog>
   )

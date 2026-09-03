@@ -1064,9 +1064,14 @@ h2 {
   font-size: 0.92rem;
   line-height: 1.45;
 }
-.rules ul {
+.rules ul,
+.rules ol {
   margin: 0;
   padding-left: 1.2rem;
+}
+.rules p + p,
+.rules__note {
+  margin-top: 0.35rem;
 }
 .rules li + li {
   margin-top: 0.15rem;

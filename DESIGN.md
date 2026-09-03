@@ -446,7 +446,7 @@ The engine is deterministic given a seed. Every rule in section 3 is a unit test
 
 **Matches-played counter**: the one number that lives outside the browser. A Cloudflare Worker in `counter/` keeps a count in KV, answers GET with it, and adds one on POST from the game's origin, at most once every ten seconds per address. The site reads the worker URL from `VITE_COUNTER_URL` at build time; without it the counter is silent. One increment per finished match, sent from the client when the result screen appears, so abandoned matches do not count. KV writes are not atomic, and a lost count now and then is accepted. The count shows as one muted line at the bottom of the start screen and nowhere else.
 
-**Rules in the game**: a native dialog, opened from the start screen, the board header, and the deck builder header, with the rules in eight short sections whose numbers come from `src/engine/tunables.ts`.
+**Rules in the game**: a native dialog, opened from the start screen, the board header, and the deck builder header, with the rules written as a walkthrough in seven short sections, in the order a first match asks for things and under 400 words, whose numbers come from `src/engine/tunables.ts` and whose wording matches the prompts on the board.
 
 **Stack**: TypeScript, React, Vite, Vitest. Deployed as a static site to GitHub Pages.
 
