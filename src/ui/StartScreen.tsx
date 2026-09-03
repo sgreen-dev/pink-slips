@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { loadCollection } from '../collection/persist.ts'
 import type { MatchConfig } from '../engine/index.ts'
 import { garageOptions, type GarageOption } from './builder.ts'
 import { CarCard } from './CarCard.tsx'
@@ -10,6 +11,7 @@ import { loadGarages } from './storage.ts'
 interface StartScreenProps {
   onStart: (mode: Mode, config: MatchConfig, names: [string, string]) => void
   onBuilder: () => void
+  onCollection: () => void
 }
 
 function GaragePicker({
@@ -50,8 +52,9 @@ function GaragePicker({
   )
 }
 
-export function StartScreen({ onStart, onBuilder }: StartScreenProps) {
+export function StartScreen({ onStart, onBuilder, onCollection }: StartScreenProps) {
   const [options] = useState<GarageOption[]>(() => garageOptions(loadGarages()))
+  const [packs] = useState(() => loadCollection().packs)
   const rules = useRef<HTMLDialogElement>(null)
   const [mode, setMode] = useState<Mode>('cpu')
   const [first, setFirst] = useState(0)
@@ -99,6 +102,9 @@ export function StartScreen({ onStart, onBuilder }: StartScreenProps) {
         </button>
         <button type="button" className="button button--ghost" onClick={onBuilder}>
           Deck builder
+        </button>
+        <button type="button" className="button button--ghost" onClick={onCollection}>
+          Collection{packs > 0 ? ` · ${packs} ${packs === 1 ? 'pack' : 'packs'} to open` : ''}
         </button>
         <RulesButton dialogRef={rules} />
       </div>

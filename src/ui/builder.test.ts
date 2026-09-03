@@ -6,6 +6,7 @@ import {
   addMod,
   canAddCar,
   canAddMod,
+  deckCounts,
   draftFrom,
   emptyDraft,
   garageOptions,
@@ -161,5 +162,46 @@ describe('garage storage', () => {
     expect(loadDraft(store)).toEqual(draft)
     clearDraft(store)
     expect(loadDraft(store)).toBeNull()
+  })
+})
+
+import { copiesOwned, owns, starterCollection } from '../collection/collection.ts'
+import { CARS as ALL_CARS } from '../data/cars.ts'
+import { MODS as ALL_MODS } from '../data/mods.ts'
+
+describe('ownership', () => {
+  const owned = starterCollection()
+  const outsideCar = ALL_CARS.find((car) => !owns(owned, car.id))
+  const scarceMod = ALL_MODS.find((mod) => {
+    const have = copiesOwned(owned, mod.id)
+    return have > 0 && have < TUNABLES.maxCopiesPerMod
+  })
+
+  it('rejects a car the player does not own and says so', () => {
+    if (!outsideCar) throw new Error('Every car is in a starter')
+    expect(canAddCar(emptyDraft(), outsideCar.id, owned)).toBe(false)
+    expect(addCar(emptyDraft(), outsideCar.id, owned).cars).toEqual([])
+    expect(canAddCar(emptyDraft(), outsideCar.id)).toBe(true)
+    const errors = validateDraft({ ...emptyDraft(), cars: [outsideCar.id] }, owned).errors
+    expect(errors.some((e) => e.includes(`do not own the ${outsideCar.name}`))).toBe(true)
+  })
+
+  it('caps mod copies at the copies owned', () => {
+    if (!scarceMod) throw new Error('No starter mod below the copy limit')
+    const have = copiesOwned(owned, scarceMod.id)
+    let draft = emptyDraft()
+    for (let i = 0; i < TUNABLES.maxCopiesPerMod; i++) draft = addMod(draft, scarceMod.id, owned)
+    expect(deckCounts(draft.deck).get(scarceMod.id)).toBe(have)
+    const full = { ...emptyDraft(), deck: Array.from({ length: have + 1 }, () => scarceMod.id) }
+    const errors = validateDraft(full, owned).errors
+    expect(errors.some((e) => e.includes(`you own ${have}`))).toBe(true)
+    expect(validateDraft(full).errors.some((e) => e.includes('you own'))).toBe(false)
+  })
+
+  it('never reaches the engine: a match config is card ids only', () => {
+    const option = garageOptions([])[0]
+    if (!option) throw new Error('No starter option')
+    const config = { players: [{ garage: option.cars, deck: option.deck }] }
+    expect(Object.keys(config.players[0] ?? {})).toEqual(['garage', 'deck'])
   })
 })

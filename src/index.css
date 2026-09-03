@@ -944,7 +944,8 @@ h2 {
   .card--target,
   .lane--won .lane__finish,
   .raceend,
-  .raceend__card {
+  .raceend__card,
+  .collection__reveal > * {
     animation: none;
   }
 }
@@ -1174,4 +1175,48 @@ h2 {
     opacity: 1;
     transform: none;
   }
+}
+
+/* Collection */
+
+.card--unowned,
+.mod--unowned {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+.collection {
+  max-width: 90rem;
+  margin: 0 auto;
+  padding: 0.75rem 1rem 2rem;
+}
+.collection__packs {
+  text-align: center;
+  margin: 0.5rem 0 1.5rem;
+}
+.collection__summary {
+  margin: 0 0 0.6rem;
+  color: var(--muted);
+}
+.collection__reveal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1rem;
+  padding-top: 1rem;
+}
+.collection__reveal > * {
+  animation: raceend-card 0.4s ease-out both;
+}
+.browse__owned {
+  display: block;
+  margin-top: 0.2rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: center;
+}
+.result__packs {
+  color: var(--gold);
+  font-family: var(--font-mono);
 }

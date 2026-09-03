@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { copiesOwned } from '../collection/collection.ts'
+import { loadCollection } from '../collection/persist.ts'
 import { CARS } from '../data/cars.ts'
 import { MODS, getMod } from '../data/mods.ts'
 import { TIER_LABEL } from '../data/tiers.ts'
@@ -12,6 +14,7 @@ import {
 } from '../data/types.ts'
 import { TUNABLES } from '../engine/index.ts'
 import {
+  FAMILY_LABEL,
   addCar,
   addMod,
   canAddCar,
@@ -28,6 +31,7 @@ import {
   type GarageOption,
 } from './builder.ts'
 import { CarCard } from './CarCard.tsx'
+import { Filter } from './Filter.tsx'
 import { ModCard } from './ModCard.tsx'
 import { RulesButton, RulesDialog } from './RulesDialog.tsx'
 import {
@@ -44,51 +48,11 @@ interface BuilderScreenProps {
   onBack: () => void
 }
 
-const FAMILY_LABEL: Record<ModFamily, string> = {
-  part: 'Parts',
-  boost: 'Boosts',
-  sabotage: 'Sabotage',
-}
-
-function Filter<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string
-  value: T | 'all'
-  options: ReadonlyArray<[T, string]>
-  onChange: (value: T | 'all') => void
-}) {
-  return (
-    <div className="filters" role="group" aria-label={label}>
-      <span className="filters__label">{label}</span>
-      <button
-        type="button"
-        className={`button button--small ${value === 'all' ? 'button--primary' : ''}`}
-        onClick={() => onChange('all')}
-      >
-        All
-      </button>
-      {options.map(([key, text]) => (
-        <button
-          key={key}
-          type="button"
-          className={`button button--small ${value === key ? 'button--primary' : ''}`}
-          onClick={() => onChange(key)}
-        >
-          {text}
-        </button>
-      ))}
-    </div>
-  )
-}
-
 /** Build a garage of 5 and a deck of 30, keep it in localStorage, and race it (DESIGN.md 9). */
 export function BuilderScreen({ onBack }: BuilderScreenProps) {
   const [draft, setDraft] = useState<GarageDraft>(() => loadDraft() ?? emptyDraft())
   const [saved, setSaved] = useState<SavedGarage[]>(() => loadGarages())
+  const [owned] = useState(() => loadCollection().owned)
   const [tab, setTab] = useState<'cars' | 'mods'>('cars')
   const [type, setType] = useState<CarType | 'all'>('all')
   const [tier, setTier] = useState<Tier | 'all'>('all')
@@ -101,7 +65,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
     saveDraft(draft)
   }, [draft])
 
-  const validation = validateDraft(draft)
+  const validation = validateDraft(draft, owned)
   const counts = deckCounts(draft.deck)
   const cars = CARS.filter(
     (car) => (type === 'all' || car.type === type) && (tier === 'all' || car.tier === tier),
@@ -238,8 +202,8 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
                     type="button"
                     className="button button--small"
                     aria-label={`Add one ${getMod(modId).name}`}
-                    disabled={!canAddMod(draft, modId)}
-                    onClick={() => update(addMod(draft, modId))}
+                    disabled={!canAddMod(draft, modId, owned)}
+                    onClick={() => update(addMod(draft, modId, owned))}
                   >
                     +
                   </button>
@@ -336,18 +300,22 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
                 options={TIERS.map((t) => [t, TIER_LABEL[t]] as [Tier, string])}
                 onChange={setTier}
               />
-              <p className="builder__hint">Click a car to add it to the garage.</p>
+              <p className="builder__hint">
+                Click a car to add it to the garage. Cars you do not own yet are dimmed.
+              </p>
               <div className="browse__grid">
                 {cars.map((car) => {
                   const inGarage = draft.cars.includes(car.id)
-                  const addable = canAddCar(draft, car.id)
+                  const have = copiesOwned(owned, car.id)
+                  const addable = canAddCar(draft, car.id, owned)
                   return (
                     <CarCard
                       key={car.id}
                       carId={car.id}
                       size="sm"
-                      badge={inGarage ? 'In garage' : undefined}
-                      onClick={addable ? () => update(addCar(draft, car.id)) : undefined}
+                      dimmed={have === 0}
+                      badge={inGarage ? 'In garage' : have === 0 ? 'Not owned' : undefined}
+                      onClick={addable ? () => update(addCar(draft, car.id, owned)) : undefined}
                     />
                   )
                 })}
@@ -363,18 +331,26 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
                 )}
                 onChange={setFamily}
               />
-              <p className="builder__hint">Click a mod to add a copy to the deck.</p>
+              <p className="builder__hint">
+                Click a mod to add a copy to the deck, up to the copies you own and at most{' '}
+                {TUNABLES.maxCopiesPerMod}.
+              </p>
               <div className="browse__grid">
                 {mods.map((mod) => {
                   const count = counts.get(mod.id) ?? 0
+                  const have = copiesOwned(owned, mod.id)
                   return (
                     <div key={mod.id} className="hand__slot">
                       <ModCard
                         modId={mod.id}
-                        playable={canAddMod(draft, mod.id)}
-                        onClick={() => update(addMod(draft, mod.id))}
+                        playable={canAddMod(draft, mod.id, owned)}
+                        dimmed={have === 0}
+                        onClick={() => update(addMod(draft, mod.id, owned))}
                       />
                       {count > 0 && <span className="hand__count">×{count}</span>}
+                      <span className="browse__owned">
+                        {have === 0 ? 'not owned' : `own ${have}`}
+                      </span>
                     </div>
                   )
                 })}

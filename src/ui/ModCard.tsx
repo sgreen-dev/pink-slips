@@ -5,12 +5,14 @@ interface ModCardProps {
   playable?: boolean
   selected?: boolean
   onClick?: () => void
+  /** Shown faded, such as a card the player does not own yet. */
+  dimmed?: boolean
   size?: 'sm' | 'md'
 }
 
 const FAMILY_LABEL = { part: 'Part', boost: 'Boost', sabotage: 'Sabotage' } as const
 
-export function ModCard({ modId, playable, selected, onClick, size = 'md' }: ModCardProps) {
+export function ModCard({ modId, playable, selected, onClick, dimmed, size = 'md' }: ModCardProps) {
   const mod = getMod(modId)
   const family =
     mod.family === 'sabotage'
@@ -22,6 +24,7 @@ export function ModCard({ modId, playable, selected, onClick, size = 'md' }: Mod
     `mod--${size}`,
     playable ? 'mod--playable' : '',
     selected ? 'mod--selected' : '',
+    dimmed ? 'mod--unowned' : '',
     onClick && !playable ? 'mod--unplayable' : '',
   ]
     .filter(Boolean)

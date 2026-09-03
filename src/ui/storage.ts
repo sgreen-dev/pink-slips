@@ -22,7 +22,7 @@ export interface StorageLike {
 export const GARAGES_KEY = 'pink-slips.garages.v1'
 export const DRAFT_KEY = 'pink-slips.draft.v1'
 
-function browserStorage(): StorageLike | null {
+export function browserStorage(): StorageLike | null {
   try {
     const store = (globalThis as { localStorage?: StorageLike }).localStorage
     return store ?? null
@@ -47,7 +47,7 @@ function isSavedGarage(value: unknown): value is SavedGarage {
   )
 }
 
-function read<T>(
+export function readRecord<T>(
   key: string,
   check: (value: unknown) => value is T,
   store: StorageLike | null,
@@ -62,7 +62,7 @@ function read<T>(
   }
 }
 
-function write(key: string, value: unknown, store: StorageLike | null): boolean {
+export function writeRecord(key: string, value: unknown, store: StorageLike | null): boolean {
   try {
     if (!store) return false
     store.setItem(key, JSON.stringify(value))
@@ -73,7 +73,7 @@ function write(key: string, value: unknown, store: StorageLike | null): boolean 
 }
 
 export function loadGarages(store: StorageLike | null = browserStorage()): SavedGarage[] {
-  const list = read(GARAGES_KEY, (v): v is unknown[] => Array.isArray(v), store)
+  const list = readRecord(GARAGES_KEY, (v): v is unknown[] => Array.isArray(v), store)
   return (list ?? []).filter(isSavedGarage)
 }
 
@@ -81,7 +81,7 @@ export function saveGarages(
   garages: readonly SavedGarage[],
   store: StorageLike | null = browserStorage(),
 ): boolean {
-  return write(GARAGES_KEY, garages, store)
+  return writeRecord(GARAGES_KEY, garages, store)
 }
 
 /** Adds the garage or replaces the one with the same id. */
@@ -120,14 +120,14 @@ function isDraft(value: unknown): value is DraftRecord {
 }
 
 export function loadDraft(store: StorageLike | null = browserStorage()): DraftRecord | null {
-  return read(DRAFT_KEY, isDraft, store)
+  return readRecord(DRAFT_KEY, isDraft, store)
 }
 
 export function saveDraft(
   draft: DraftRecord,
   store: StorageLike | null = browserStorage(),
 ): boolean {
-  return write(DRAFT_KEY, draft, store)
+  return writeRecord(DRAFT_KEY, draft, store)
 }
 
 export function clearDraft(store: StorageLike | null = browserStorage()): void {

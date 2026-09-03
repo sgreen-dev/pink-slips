@@ -304,6 +304,9 @@ Every value here is a starting point. Phase 5 runs the simulator and adjusts the
 | Wear rate | 10% per win | three wins cost a car nearly a third of its speed |
 | Part slots | 2, JDM 3 | |
 | Garage size | 5 | |
+| Packs per match | 1, or 2 for beating the CPU | phase 11; a pack every match or two keeps packs frequent, and a full collection is a long goal (section 12) |
+| Pack contents | 2 cars, 3 mods | phase 11 |
+| Car tier odds in a pack | 55 / 30 / 12 / 3 (Common, Uncommon, Rare, Ultra Rare) | phase 11; rarity labels mean something |
 | Pink slips to win | 3 | |
 | Mod deck size | 30 | |
 | Hand size at start | 5 | |
@@ -442,7 +445,7 @@ The engine is deterministic given a seed. Every rule in section 3 is a unit test
 
 **Race-end moment**: derived from the log, not from the engine's phase. When a newly applied state adds a `raceEnd` entry, the match screen keeps a record of the finishing positions and the captured car, freezes the track on it, and holds the CPU and the hand-over until Continue clears it. The engine moves to staging in the same step as before; only the screen waits.
 
-**Persistence**: custom garages and decks in `localStorage`, wrapped in try/catch, with starters always available.
+**Persistence**: custom garages and decks in `localStorage`, wrapped in try/catch, with starters always available. The collection and its unopened packs sit next to them under their own key, through the same wrapper (section 12).
 
 **Matches-played counter**: the one number that lives outside the browser. A Cloudflare Worker in `counter/` keeps a count in KV, answers GET with it, and adds one on POST from the game's origin, at most once every ten seconds per address. The site reads the worker URL from `VITE_COUNTER_URL` at build time; without it the counter is silent. One increment per finished match, sent from the client when the result screen appears, so abandoned matches do not count. KV writes are not atomic, and a lost count now and then is accepted. The count shows as one muted line at the bottom of the start screen and nowhere else.
 
@@ -458,7 +461,7 @@ The engine is deterministic given a seed. Every rule in section 3 is a unit test
 
 - 52 cars, 30 mods, 3 starter garages
 - CPU and hotseat play
-- Every card unlocked
+- Every card unlocked (until phase 11 added packs and a collection; see section 12)
 - Deck builder with saved garages
 - Simulator and tuned numbers
 - Live URL
@@ -475,3 +478,20 @@ The engine is deterministic given a seed. Every rule in section 3 is a unit test
 ## 11. Legal
 
 Code is MIT licensed. Car names and marques are trademarks of their respective manufacturers. This project is unaffiliated with and not endorsed by any of them. The README carries the same note.
+
+---
+
+## 12. Collection and packs
+
+Added in phase 11. Before it, every card was unlocked.
+
+- The collection is per browser, in `localStorage` next to the garages, through the same try/catch wrapper. It holds a count per card id, cars and mods alike.
+- A fresh browser owns every card in the three starter garages, with as many copies of a mod as the starter deck that uses it most, so the starters always rebuild. Everything else has to be opened: 46 of the 84 cards are owned at the start.
+- Finishing a match against the CPU earns 1 pack; winning it earns 2. A hotseat match earns 1. Packs wait in a stack until opened from the Collection screen, which shows every card, owned ones in color with their counts, unowned ones dimmed.
+- A pack holds 2 cars and 3 mods. Car odds follow the tier's rarity label: Common 55%, Uncommon 30%, Rare 12%, Ultra Rare 3%. Mods are uniform across all 32. Duplicates count.
+- The deck builder adds only owned cards: a car needs one copy, and a mod can go in up to the smaller of 3 and the copies owned. Its messages say what is missing. Racing is untouched: the engine's match config is card ids only, and a saved garage stays raceable.
+- Migration: the first load after phase 11 grants every card in an already saved garage, once. The grant is written back at once, so it never repeats.
+- Pack opening runs through the engine's seeded generator with a fresh seed per pack, so it is testable and the simulator can measure it.
+- The odds and rewards are tunables under `collection` in `src/engine/tunables.ts`; a change gets a balance-log line.
+
+**Measured** (`npm run sim -- --packs 10000`, seed 1): from the starter set, owning every card takes a mean of 395 packs (median 355). The first pack holding an Ultra Rare car arrives after a mean of 16.7 packs (median 12). At one or two packs a match, new cards arrive from the first match on and a full collection is a long-term goal, with the last Ultra Rare cars as the chase. The Ultra Rare odds and the pack size are the levers if that proves too slow.

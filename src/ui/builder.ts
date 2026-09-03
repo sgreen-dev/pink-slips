@@ -1,12 +1,24 @@
+import { copiesOwned, type Collection } from '../collection/collection.ts'
 import { CAR_BY_ID, getCar } from '../data/cars.ts'
 import { MOD_BY_ID, getMod } from '../data/mods.ts'
 import { STARTERS } from '../data/starters.ts'
+import type { ModFamily } from '../data/types.ts'
 import { TUNABLES } from '../engine/index.ts'
 import type { DraftRecord, SavedGarage } from './storage.ts'
 
-/** Rules and helpers for building a garage of 5 and a deck of 30 (DESIGN.md 3.1). */
+/**
+ * Rules and helpers for building a garage of 5 and a deck of 30 (DESIGN.md 3.1). Given a
+ * collection, the builder also keeps to what the player owns (DESIGN.md 12); without one it
+ * only checks the match rules, which is all racing a saved garage needs.
+ */
 
 export type GarageDraft = DraftRecord
+
+export const FAMILY_LABEL: Readonly<Record<ModFamily, string>> = {
+  part: 'Parts',
+  boost: 'Boosts',
+  sabotage: 'Sabotage',
+}
 
 export function emptyDraft(): GarageDraft {
   return { id: null, name: 'My garage', cars: [], deck: [] }
@@ -36,7 +48,13 @@ export function deckCounts(deck: readonly string[]): Map<string, number> {
   return counts
 }
 
-export function validateDraft(draft: GarageDraft): Validation {
+/** Copies of a mod the deck may hold: the rule limit, or fewer if the player owns fewer. */
+export function modCopyLimit(modId: string, owned?: Collection): number {
+  const limit = TUNABLES.maxCopiesPerMod
+  return owned ? Math.min(limit, copiesOwned(owned, modId)) : limit
+}
+
+export function validateDraft(draft: GarageDraft, owned?: Collection): Validation {
   const { garageSize, modDeckSize, maxCopiesPerMod } = TUNABLES
   const errors: string[] = []
   const warnings: string[] = []
@@ -62,6 +80,20 @@ export function validateDraft(draft: GarageDraft): Validation {
     }
   }
 
+  if (owned) {
+    for (const id of draft.cars) {
+      if (CAR_BY_ID.has(id) && copiesOwned(owned, id) === 0) {
+        errors.push(`You do not own the ${getCar(id).name} yet. Open packs to find it.`)
+      }
+    }
+    for (const [id, count] of deckCounts(draft.deck)) {
+      const have = copiesOwned(owned, id)
+      if (MOD_BY_ID.has(id) && count > have) {
+        errors.push(`${getMod(id).name}: the deck has ${count} but you own ${have}.`)
+      }
+    }
+  }
+
   const types = new Set(draft.cars.filter((id) => CAR_BY_ID.has(id)).map((id) => getCar(id).type))
   for (const id of new Set(draft.deck)) {
     const mod = MOD_BY_ID.get(id)
@@ -73,27 +105,31 @@ export function validateDraft(draft: GarageDraft): Validation {
   return { errors, warnings }
 }
 
-export function canAddCar(draft: GarageDraft, carId: string): boolean {
-  return draft.cars.length < TUNABLES.garageSize && !draft.cars.includes(carId)
+export function canAddCar(draft: GarageDraft, carId: string, owned?: Collection): boolean {
+  return (
+    draft.cars.length < TUNABLES.garageSize &&
+    !draft.cars.includes(carId) &&
+    (!owned || copiesOwned(owned, carId) > 0)
+  )
 }
 
-export function addCar(draft: GarageDraft, carId: string): GarageDraft {
-  return canAddCar(draft, carId) ? { ...draft, cars: [...draft.cars, carId] } : draft
+export function addCar(draft: GarageDraft, carId: string, owned?: Collection): GarageDraft {
+  return canAddCar(draft, carId, owned) ? { ...draft, cars: [...draft.cars, carId] } : draft
 }
 
 export function removeCar(draft: GarageDraft, carId: string): GarageDraft {
   return { ...draft, cars: draft.cars.filter((id) => id !== carId) }
 }
 
-export function canAddMod(draft: GarageDraft, modId: string): boolean {
+export function canAddMod(draft: GarageDraft, modId: string, owned?: Collection): boolean {
   return (
     draft.deck.length < TUNABLES.modDeckSize &&
-    (deckCounts(draft.deck).get(modId) ?? 0) < TUNABLES.maxCopiesPerMod
+    (deckCounts(draft.deck).get(modId) ?? 0) < modCopyLimit(modId, owned)
   )
 }
 
-export function addMod(draft: GarageDraft, modId: string): GarageDraft {
-  return canAddMod(draft, modId) ? { ...draft, deck: [...draft.deck, modId] } : draft
+export function addMod(draft: GarageDraft, modId: string, owned?: Collection): GarageDraft {
+  return canAddMod(draft, modId, owned) ? { ...draft, deck: [...draft.deck, modId] } : draft
 }
 
 /** Removes one copy. */

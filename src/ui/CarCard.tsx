@@ -20,6 +20,8 @@ interface CarCardProps {
   onClick?: () => void
   /** Small label in the corner, such as "Pink slip". */
   badge?: string
+  /** Shown faded, such as a card the player does not own yet. */
+  dimmed?: boolean
 }
 
 /** A stylized car silhouette, tinted by the card's type. Illustrated art is a post-v1 item. */
@@ -81,6 +83,7 @@ export function CarCard({
   selected,
   onClick,
   badge,
+  dimmed,
 }: CarCardProps) {
   const car = getCar(carId)
   const [art, setArt] = useState(() => initialArtState(car.imageUrl))
@@ -93,6 +96,7 @@ export function CarCard({
     target ? 'card--target' : '',
     selected ? 'card--selected' : '',
     onClick ? 'card--clickable' : '',
+    dimmed ? 'card--unowned' : '',
   ]
     .filter(Boolean)
     .join(' ')

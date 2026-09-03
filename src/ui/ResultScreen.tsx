@@ -7,6 +7,8 @@ interface ResultScreenProps {
   names: readonly [string, string]
   /** Headline, such as "You win" or "Player 2 wins". */
   title: string
+  /** Packs this match added to the collection. */
+  packsEarned: number
   onRematch: () => void
   onNewMatch: () => void
 }
@@ -16,6 +18,7 @@ export function ResultScreen({
   winner,
   names,
   title,
+  packsEarned,
   onRematch,
   onNewMatch,
 }: ResultScreenProps) {
@@ -24,6 +27,12 @@ export function ResultScreen({
     <main className="result">
       <h1 className="result__title">{title}</h1>
       <p className="result__sub">Three pink slips in {Math.ceil(state.turn.number / 2)} turns.</p>
+      {packsEarned > 0 && (
+        <p className="result__packs">
+          This match earned {packsEarned} {packsEarned === 1 ? 'pack' : 'packs'}. Open{' '}
+          {packsEarned === 1 ? 'it' : 'them'} in the Collection.
+        </p>
+      )}
       <section className="result__slips">
         <h2>{names[winner]}&rsquo;s pink slips</h2>
         <div className="result__cards">

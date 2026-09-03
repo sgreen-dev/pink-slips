@@ -1,6 +1,7 @@
+import { formatPackReport, runPackSimulation } from './packs.ts'
 import { formatReport, runSimulation } from './run.ts'
 
-/** `npm run sim -- --matches 5000 --seed 1` */
+/** `npm run sim -- --matches 5000 --seed 1`, or `npm run sim -- --packs 10000` for pack opening. */
 
 function readArg(name: string, fallback: number): number {
   const args = process.argv.slice(2)
@@ -18,8 +19,13 @@ function readArg(name: string, fallback: number): number {
   return fallback
 }
 
-const report = runSimulation({
-  matches: readArg('matches', 5000),
-  seed: readArg('seed', 1),
-})
-console.log(formatReport(report))
+const packs = readArg('packs', 0)
+if (packs > 0) {
+  console.log(formatPackReport(runPackSimulation({ trials: packs, seed: readArg('seed', 1) })))
+} else {
+  const report = runSimulation({
+    matches: readArg('matches', 5000),
+    seed: readArg('seed', 1),
+  })
+  console.log(formatReport(report))
+}

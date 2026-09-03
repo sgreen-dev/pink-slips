@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { packsEarned } from '../collection/collection.ts'
+import { addPacks } from '../collection/persist.ts'
 import {
   currentPlayer,
   isOver,
@@ -44,6 +46,7 @@ export function Match({ mode, config, seed, names, onRematch, onNewMatch }: Matc
   const [options, setOptions] = useState<Action[] | null>(null)
   const cpu = mode === 'cpu'
   const recorded = useRef(false)
+  const [earned, setEarned] = useState(0)
   const onContinue = useCallback(() => dispatch({ type: 'continue' }), [])
 
   // The CPU acts one step at a time and waits while the race-end banner is up.
@@ -60,7 +63,10 @@ export function Match({ mode, config, seed, names, onRematch, onNewMatch }: Matc
     if (winner === null || recorded.current) return
     recorded.current = true
     void recordMatch()
-  }, [winner])
+    const packs = packsEarned(mode, winner === HUMAN_SEAT)
+    addPacks(packs)
+    setEarned(packs)
+  }, [winner, mode])
 
   const headline = (player: PlayerIndex) =>
     cpu ? (player === HUMAN_SEAT ? 'You win' : 'The CPU wins') : `${names[player]} wins`
@@ -72,6 +78,7 @@ export function Match({ mode, config, seed, names, onRematch, onNewMatch }: Matc
         winner={winner}
         names={names}
         title={headline(winner)}
+        packsEarned={earned}
         onRematch={onRematch}
         onNewMatch={onNewMatch}
       />

@@ -50,4 +50,17 @@ export const TUNABLES = {
     /** Luxury: wear rate is multiplied by this. */
     luxuryWearMultiplier: 0.5,
   },
+  /** Packs and the collection (DESIGN.md 12). */
+  collection: {
+    /** Packs for finishing any match. */
+    packsPerMatch: 1,
+    /** Packs for beating the CPU, replacing packsPerMatch. */
+    packsPerCpuWin: 2,
+    packCars: 2,
+    packMods: 3,
+    /** Odds that a car slot in a pack holds each tier. Must sum to 1. */
+    carTierOdds: { daily: 0.55, performance: 0.3, super: 0.12, hyper: 0.03 } as Readonly<
+      Record<Tier, number>
+    >,
+  },
 } as const
