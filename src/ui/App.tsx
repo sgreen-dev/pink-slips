@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { Level } from '../cpu/index.ts'
 import type { MatchConfig } from '../engine/index.ts'
 import { BuilderScreen } from './BuilderScreen.tsx'
 import { CollectionScreen } from './CollectionScreen.tsx'
@@ -10,7 +11,14 @@ type Screen =
   | { kind: 'start' }
   | { kind: 'builder' }
   | { kind: 'collection' }
-  | { kind: 'match'; mode: Mode; config: MatchConfig; names: [string, string]; seed: number }
+  | {
+      kind: 'match'
+      mode: Mode
+      config: MatchConfig
+      names: [string, string]
+      level: Level
+      seed: number
+    }
 
 export function App() {
   const [screen, setScreen] = useState<Screen>({ kind: 'start' })
@@ -18,8 +26,8 @@ export function App() {
   if (screen.kind === 'start') {
     return (
       <StartScreen
-        onStart={(mode, config, names) =>
-          setScreen({ kind: 'match', mode, config, names, seed: newSeed() })
+        onStart={(mode, config, names, level) =>
+          setScreen({ kind: 'match', mode, config, names, level, seed: newSeed() })
         }
         onBuilder={() => setScreen({ kind: 'builder' })}
         onCollection={() => setScreen({ kind: 'collection' })}
@@ -35,6 +43,7 @@ export function App() {
       config={screen.config}
       seed={screen.seed}
       names={screen.names}
+      level={screen.level}
       onRematch={() => setScreen({ ...screen, seed: newSeed() })}
       onNewMatch={toStart}
     />

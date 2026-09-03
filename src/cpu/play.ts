@@ -9,12 +9,15 @@ import {
   type PlayerIndex,
 } from '../engine/index.ts'
 import { chooseAction } from './cpu.ts'
+import type { Level } from './levels.ts'
 
 export interface CpuMatchOptions {
   /** Tie-break seeds per player. Default to the match seed. */
   cpuSeeds?: readonly [number, number]
   /** Safety cap; a match that runs past it throws. */
   maxActions?: number
+  /** Difficulty per player. Default Street on both sides. */
+  levels?: readonly [Level, Level]
 }
 
 export interface CpuMatchResult {
@@ -33,6 +36,7 @@ export function playCpuMatch(
 ): CpuMatchResult {
   const cpuSeeds = options.cpuSeeds ?? [seed, seed]
   const maxActions = options.maxActions ?? 20000
+  const levels = options.levels ?? ['street', 'street']
   let state = createMatch(config, seed)
   let actions = 0
   for (;;) {
@@ -40,7 +44,7 @@ export function playCpuMatch(
     if (winner !== null) return { state, winner, actions, turns: state.turn.number }
     const player = currentPlayer(state)
     if (player === null) throw new Error('No player to act while the match is not over')
-    const action = chooseAction(state, player, cpuSeeds[player])
+    const action = chooseAction(state, player, cpuSeeds[player], levels[player])
     if (!isLegal(state, action)) {
       throw new Error(`CPU chose an illegal action: ${JSON.stringify(action)}`)
     }

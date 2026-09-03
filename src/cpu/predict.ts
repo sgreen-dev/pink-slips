@@ -1,6 +1,7 @@
 import { getCar } from '../data/cars.ts'
 import { getMod } from '../data/mods.ts'
 import type { Mod, ModEffect } from '../data/types.ts'
+import type { CoinFlips } from './levels.ts'
 import {
   computeAdvance,
   fuelCost,
@@ -20,8 +21,8 @@ import {
 /**
  * Forecasts the CPU reasons with. Everything here reads only what a human at the table could
  * see: garages, fuel, parts, wear, distances, pending sabotage, and the CPU's own hand. Coin
- * flips are read as tails unless the Sports identity makes heads certain, and the opponent's
- * hand is assumed empty.
+ * flips are read as tails unless the Sports identity makes heads certain, or at their expected
+ * value when the level asks for it, and the opponent's hand is assumed empty.
  */
 
 /** What one card would do, read conservatively from its effect descriptors. */
@@ -80,6 +81,35 @@ interface EstimateContext {
   /** The player's garage, to read how much fuel Tow Truck would move. */
   garage: readonly CarState[]
   stagedCarId: string | null
+  /** How coin flips are read: the tails branch, or the average of both. */
+  coinFlips?: CoinFlips
+}
+
+/** Adds a weighted share of one estimate to another, for reading a coin flip at its average. */
+function merge(into: CardEstimate, from: CardEstimate, weight: number): void {
+  into.hpPercent += from.hpPercent * weight
+  into.hpPercentPerPart += from.hpPercentPerPart * weight
+  into.weightReductionLb += from.weightReductionLb * weight
+  into.distancePercent += from.distancePercent * weight
+  into.ownFuelDelta += from.ownFuelDelta * weight
+  into.ownWear += from.ownWear * weight
+  into.opponentFuelLoss += from.opponentFuelLoss * weight
+  into.opponentWear += from.opponentWear * weight
+  into.flatReductionFt += from.flatReductionFt * weight
+  into.draws += from.draws * weight
+  for (const bonus of from.flatBonuses) {
+    into.flatBonuses.push({ ft: bonus.ft * weight, window: bonus.window })
+  }
+  if (from.extraAdvanceMultiplier !== null) {
+    into.extraAdvanceMultiplier =
+      (into.extraAdvanceMultiplier ?? 0) + from.extraAdvanceMultiplier * weight
+  }
+  into.shield ||= from.shield
+  into.halve ||= from.halve
+  into.skip ||= from.skip
+  into.removesPart ||= from.removesPart
+  into.blocksBoost ||= from.blocksBoost
+  into.searchesPart ||= from.searchesPart
 }
 
 export function estimateEffects(
@@ -157,9 +187,16 @@ export function estimateEffects(
           estimate.searchesPart = effect.family === 'part'
           break
         case 'coinFlip': {
-          const branch = forcedHeads ? effect.heads : effect.tails
-          forcedHeads = false
-          visit(branch)
+          if (forcedHeads) {
+            forcedHeads = false
+            visit(effect.heads)
+          } else if (context.coinFlips === 'expected') {
+            const branch = { ...context, forcedHeads: false }
+            merge(estimate, estimateEffects(effect.heads, branch), 0.5)
+            merge(estimate, estimateEffects(effect.tails, branch), 0.5)
+          } else {
+            visit(effect.tails)
+          }
           break
         }
         case 'fuelCostDelta':
@@ -186,6 +223,7 @@ export function estimateCard(
   player: PlayerIndex,
   mod: Mod,
   action?: Action,
+  coinFlips: CoinFlips = 'tails',
 ): CardEstimate {
   const p = state.players[player]
   return estimateEffects(mod.effects, {
@@ -193,6 +231,7 @@ export function estimateCard(
     action,
     garage: p.garage,
     stagedCarId: p.stagedCarId,
+    coinFlips,
   })
 }
 
@@ -281,13 +320,14 @@ export function forecastOwnAdvance(
   state: MatchState,
   player: PlayerIndex,
   candidate?: { mod: Mod; action: Action },
+  coinFlips: CoinFlips = 'tails',
 ): Forecast {
   const staged = stagedCar(state, player)
   const startFt = state.race.distanceFt[player]
   if (!staged) return NO_ADVANCE(startFt)
   const car = getCar(staged.carId)
   const estimate = candidate
-    ? estimateCard(state, player, candidate.mod, candidate.action)
+    ? estimateCard(state, player, candidate.mod, candidate.action, coinFlips)
     : emptyEstimate()
   const cardFuelCost = candidate?.mod.family === 'boost' ? (candidate.mod.fuelCost ?? 0) : 0
   const fuel = staged.fuel - cardFuelCost + estimate.ownFuelDelta
@@ -348,12 +388,15 @@ export function forecastOpponentAdvance(
   state: MatchState,
   player: PlayerIndex,
   sabotage?: Mod,
+  coinFlips: CoinFlips = 'tails',
 ): Forecast {
   const opponent = otherPlayer(player)
   const staged = stagedCar(state, opponent)
   const startFt = state.race.distanceFt[opponent]
   if (!staged) return NO_ADVANCE(startFt)
-  const estimate = sabotage ? estimateCard(state, player, sabotage) : emptyEstimate()
+  const estimate = sabotage
+    ? estimateCard(state, player, sabotage, undefined, coinFlips)
+    : emptyEstimate()
   const fuelNow = Math.max(0, staged.fuel - estimate.opponentFuelLoss)
   const cost = fuelCost(staged)
   const fuel = fuelNow < cost ? fuelNow + 1 : fuelNow
@@ -414,4 +457,6 @@ export const VALUE = {
   roadblock: 50,
   /** Minimum worth before the CPU spends a Boost or Sabotage outside the win-and-stop rules. */
   playThreshold: 50,
+  /** One turn taken off the CPU's own finish, or added to the opponent's, for Pro. */
+  turn: 200,
 } as const

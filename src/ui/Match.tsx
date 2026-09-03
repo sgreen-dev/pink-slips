@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { packsEarned } from '../collection/collection.ts'
+import type { Level } from '../cpu/index.ts'
 import { addPacks, loadCollection } from '../collection/persist.ts'
 import {
   currentPlayer,
@@ -31,6 +32,8 @@ interface MatchProps {
   config: MatchConfig
   seed: number
   names: readonly [string, string]
+  /** CPU difficulty; ignored in hotseat. */
+  level: Level
   onRematch: () => void
   onNewMatch: () => void
 }
@@ -39,7 +42,7 @@ interface MatchProps {
  * Owns one match: the engine state, the CPU's turns, the moment after each finish line, the
  * hotseat hand-over, and the selection.
  */
-export function Match({ mode, config, seed, names, onRematch, onNewMatch }: MatchProps) {
+export function Match({ mode, config, seed, names, level, onRematch, onNewMatch }: MatchProps) {
   const [session, dispatch] = useReducer(reduceSession, { config, seed }, startSession)
   const { match: state, raceEnd } = session
   const [revealedFor, setRevealedFor] = useState<PlayerIndex | null>(null)
@@ -56,9 +59,12 @@ export function Match({ mode, config, seed, names, onRematch, onNewMatch }: Matc
     if (!cpu || raceEnd !== null || isOver(state) !== null || currentPlayer(state) !== CPU_SEAT) {
       return
     }
-    const timer = setTimeout(() => dispatch({ type: 'cpuStep', seat: CPU_SEAT, seed }), CPU_STEP_MS)
+    const timer = setTimeout(
+      () => dispatch({ type: 'cpuStep', seat: CPU_SEAT, seed, level }),
+      CPU_STEP_MS,
+    )
     return () => clearTimeout(timer)
-  }, [cpu, state, raceEnd, seed])
+  }, [cpu, state, raceEnd, seed, level])
 
   const winner = isOver(state)
   useEffect(() => {

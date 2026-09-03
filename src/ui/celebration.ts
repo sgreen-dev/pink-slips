@@ -1,4 +1,4 @@
-import { chooseAction } from '../cpu/index.ts'
+import { chooseAction, type Level } from '../cpu/index.ts'
 import {
   apply,
   createMatch,
@@ -68,7 +68,7 @@ export interface Session {
 
 export type SessionEvent =
   | { type: 'act'; action: Action }
-  | { type: 'cpuStep'; seat: PlayerIndex; seed: number }
+  | { type: 'cpuStep'; seat: PlayerIndex; seed: number; level?: Level }
   | { type: 'continue' }
 
 export function startSession({ config, seed }: { config: MatchConfig; seed: number }): Session {
@@ -88,7 +88,7 @@ export function reduceSession(session: Session, event: SessionEvent): Session {
       if (raceEnd !== null || isOver(match) !== null || currentPlayer(match) !== event.seat) {
         return session
       }
-      return step(session, chooseAction(match, event.seat, event.seed))
+      return step(session, chooseAction(match, event.seat, event.seed, event.level ?? 'street'))
     }
     case 'continue':
       return session.raceEnd === null ? session : { ...session, raceEnd: null }

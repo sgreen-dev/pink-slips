@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { loadCollection } from '../collection/persist.ts'
+import { LEVELS, LEVEL_BLURB, LEVEL_LABEL, type Level } from '../cpu/index.ts'
 import type { MatchConfig } from '../engine/index.ts'
 import { garageOptions, type GarageOption } from './builder.ts'
 import { CarCard } from './CarCard.tsx'
@@ -9,7 +10,7 @@ import { RulesButton, RulesDialog } from './RulesDialog.tsx'
 import { loadGarages } from './storage.ts'
 
 interface StartScreenProps {
-  onStart: (mode: Mode, config: MatchConfig, names: [string, string]) => void
+  onStart: (mode: Mode, config: MatchConfig, names: [string, string], level: Level) => void
   onBuilder: () => void
   onCollection: () => void
 }
@@ -57,6 +58,7 @@ export function StartScreen({ onStart, onBuilder, onCollection }: StartScreenPro
   const [packs] = useState(() => loadCollection().packs)
   const rules = useRef<HTMLDialogElement>(null)
   const [mode, setMode] = useState<Mode>('cpu')
+  const [level, setLevel] = useState<Level>('street')
   const [first, setFirst] = useState(0)
   const [second, setSecond] = useState(1)
   const labels: [string, string] =
@@ -73,7 +75,8 @@ export function StartScreen({ onStart, onBuilder, onCollection }: StartScreenPro
           { garage: b.cars, deck: b.deck },
         ],
       },
-      mode === 'cpu' ? ['Player', 'CPU'] : ['Player 1', 'Player 2'],
+      mode === 'cpu' ? ['Player', `${LEVEL_LABEL[level]} CPU`] : ['Player 1', 'Player 2'],
+      level,
     )
   }
   return (
@@ -108,6 +111,22 @@ export function StartScreen({ onStart, onBuilder, onCollection }: StartScreenPro
         </button>
         <RulesButton dialogRef={rules} />
       </div>
+      {mode === 'cpu' && (
+        <div className="start__levels" role="group" aria-label="CPU level">
+          {LEVELS.map((option) => (
+            <button
+              key={option}
+              type="button"
+              className={`button button--small ${level === option ? 'button--primary' : ''}`}
+              aria-pressed={level === option}
+              onClick={() => setLevel(option)}
+            >
+              {LEVEL_LABEL[option]}
+            </button>
+          ))}
+          <span className="start__level-note">{LEVEL_BLURB[level]}</span>
+        </div>
+      )}
       <div className="start__pickers">
         <GaragePicker label={labels[0]} options={options} value={first} onChange={setFirst} />
         <GaragePicker label={labels[1]} options={options} value={second} onChange={setSecond} />
