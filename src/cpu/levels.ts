@@ -16,7 +16,7 @@ export const LEVEL_LABEL: Readonly<Record<Level, string>> = {
 export const LEVEL_BLURB: Readonly<Record<Level, string>> = {
   rookie: 'Stages its fastest car and rarely plays a card.',
   street: 'The regular opponent.',
-  pro: 'Times its stalls, fuels for the next race, and bets on coin flips.',
+  pro: 'Times its stalls, races the right car, and bets on coin flips.',
 }
 
 export type CoinFlips = 'tails' | 'expected'
