@@ -29,6 +29,7 @@ export function RulesDialog({ dialogRef }: RulesDialogProps) {
           return (
             <section key={section.title}>
               <h3 className="rules__title">{section.title}</h3>
+              {section.lead && <p>{section.lead}</p>}
               {section.kind === 'prose' && section.lines.map((line) => <p key={line}>{line}</p>)}
               {section.kind === 'steps' && <ol>{items}</ol>}
               {section.kind === 'bullets' && <ul>{items}</ul>}

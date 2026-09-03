@@ -1070,6 +1070,7 @@ h2 {
   padding-left: 1.2rem;
 }
 .rules p + p,
+.rules p + ul,
 .rules__note {
   margin-top: 0.35rem;
 }
