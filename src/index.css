@@ -384,7 +384,7 @@ h2 {
   position: relative;
   height: 1rem;
   margin-left: 11.75rem;
-  margin-right: 5.25rem;
+  margin-right: 6.25rem;
 }
 .track__mark {
   position: absolute;
@@ -396,7 +396,7 @@ h2 {
 .lane {
   --lane-color: var(--pink);
   display: grid;
-  grid-template-columns: 11rem 1fr 4.5rem;
+  grid-template-columns: 11rem 1fr 5.5rem;
   align-items: center;
   gap: 0.75rem;
 }
@@ -733,7 +733,7 @@ h2 {
     gap: 0.2rem;
   }
   .lane {
-    grid-template-columns: 1fr 4rem;
+    grid-template-columns: 1fr 5rem;
   }
   .lane__label {
     grid-column: 1 / -1;
@@ -743,7 +743,7 @@ h2 {
   }
   .track__marks {
     margin-left: 0;
-    margin-right: 4.75rem;
+    margin-right: 5.75rem;
   }
   .handover__title,
   .result__title {
@@ -941,7 +941,10 @@ h2 {
   .mod {
     transition: none;
   }
-  .card--target {
+  .card--target,
+  .lane--won .lane__finish,
+  .raceend,
+  .raceend__card {
     animation: none;
   }
 }
@@ -1082,4 +1085,87 @@ h2 {
 
 .rules {
   text-align: left;
+}
+
+/* Race end: the track holds at the line, the winner's finish flashes, a banner names the winner */
+
+.lane--won .lane__finish {
+  animation: finish-flash 0.25s steps(1, end) 0.6s 4;
+}
+.lane--won .lane__dot {
+  box-shadow:
+    0 0 0.8rem var(--lane-color),
+    0 0 1.6rem var(--pink);
+}
+@keyframes finish-flash {
+  50% {
+    filter: invert(1);
+  }
+}
+.raceend {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(23, 23, 26, 0.75);
+  animation: raceend-in 0.3s ease-out 0.5s both;
+}
+.raceend__panel {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 24rem;
+  padding: 1.25rem 1.5rem 1.5rem;
+  background: var(--asphalt-2);
+  border: 2px solid var(--pink);
+  border-radius: 0.6rem;
+  box-shadow: 0 0 3rem rgba(255, 92, 168, 0.35);
+  text-align: center;
+}
+.raceend__kicker {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.raceend__title {
+  margin: 0.2rem 0 1rem;
+  font-size: 3rem;
+  line-height: 1;
+  color: var(--pink);
+}
+.raceend__card {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.6rem;
+  animation: raceend-card 0.4s ease-out 0.7s both;
+}
+.raceend__line {
+  margin: 0.9rem 0 0.2rem;
+}
+.raceend__tally {
+  margin: 0 0 1rem;
+  font-family: var(--font-mono);
+  color: var(--gold);
+}
+@keyframes raceend-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes raceend-card {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }

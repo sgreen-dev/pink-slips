@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { getMod } from '../data/mods.ts'
 import { otherPlayer, type Action, type MatchState, type PlayerIndex } from '../engine/index.ts'
+import type { RaceEnd } from './celebration.ts'
 import { Garage } from './Garage.tsx'
 import {
   buttonActions,
@@ -26,6 +27,10 @@ interface BoardProps {
   onAction: (action: Action) => void
   onSelect: (selection: Selection) => void
   onOptions: (options: Action[] | null) => void
+  /** A race that just ended; the track holds at its finishing positions. */
+  frozen?: RaceEnd | null
+  /** True while the race-end banner is up, so nothing on the board takes clicks or focus. */
+  inert?: boolean
 }
 
 function buttonLabel(action: Action): string {
@@ -50,6 +55,8 @@ export function Board({
   onAction,
   onSelect,
   onOptions,
+  frozen,
+  inert,
 }: BoardProps) {
   const opponent = otherPlayer(viewer)
   const me = state.players[viewer]
@@ -104,7 +111,7 @@ export function Board({
     .slice(-8)
 
   return (
-    <main className="board">
+    <main className="board" inert={inert}>
       <header className="board__header">
         <span className="board__brand">Pink Slips</span>
         <span className="board__status">{turnSummary(state, names)}</span>
@@ -118,7 +125,7 @@ export function Board({
         size="sm"
       />
 
-      <RaceTrack state={state} names={names} lanes={[opponent, viewer]} />
+      <RaceTrack state={state} names={names} lanes={[opponent, viewer]} frozen={frozen} />
 
       <Garage
         player={me}

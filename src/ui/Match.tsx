@@ -1,19 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
-import { chooseAction } from '../cpu/index.ts'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import {
-  apply,
-  createMatch,
   currentPlayer,
   isOver,
   type Action,
   type MatchConfig,
-  type MatchState,
   type PlayerIndex,
 } from '../engine/index.ts'
 import { Board } from './Board.tsx'
+import { reduceSession, startSession } from './celebration.ts'
 import { recordMatch } from './counter.ts'
 import { HandOverScreen } from './HandOverScreen.tsx'
 import { NO_SELECTION, type Selection } from './interaction.ts'
+import { RaceEndBanner } from './RaceEndBanner.tsx'
 import { ResultScreen } from './ResultScreen.tsx'
 
 export type Mode = 'cpu' | 'hotseat'
@@ -25,6 +23,9 @@ const HUMAN_SEAT: PlayerIndex = 0
 /** Pause between CPU actions so a player can follow each one on the board and in the log. */
 const CPU_STEP_MS = 700
 
+/** How long the race-end banner stays up when nobody taps Continue. */
+const RACE_END_MS = 4000
+
 interface MatchProps {
   mode: Mode
   config: MatchConfig
@@ -34,25 +35,35 @@ interface MatchProps {
   onNewMatch: () => void
 }
 
-/** Owns one match: the engine state, the CPU's turns, the hotseat hand-over, and the selection. */
+/**
+ * Owns one match: the engine state, the CPU's turns, the moment after each finish line, the
+ * hotseat hand-over, and the selection.
+ */
 export function Match({ mode, config, seed, names, onRematch, onNewMatch }: MatchProps) {
-  const [state, setState] = useState<MatchState>(() => createMatch(config, seed))
+  const [session, dispatch] = useReducer(reduceSession, { config, seed }, startSession)
+  const { match: state, raceEnd } = session
   const [revealedFor, setRevealedFor] = useState<PlayerIndex | null>(null)
   const [selection, setSelection] = useState<Selection>(NO_SELECTION)
   const [options, setOptions] = useState<Action[] | null>(null)
   const cpu = mode === 'cpu'
   const recorded = useRef(false)
+  const onContinue = useCallback(() => dispatch({ type: 'continue' }), [])
 
+  // The CPU acts one step at a time and waits while the race-end banner is up.
   useEffect(() => {
-    if (!cpu || isOver(state) !== null || currentPlayer(state) !== CPU_SEAT) return
-    const timer = setTimeout(() => {
-      setState((current) => {
-        if (isOver(current) !== null || currentPlayer(current) !== CPU_SEAT) return current
-        return apply(current, chooseAction(current, CPU_SEAT, seed))
-      })
-    }, CPU_STEP_MS)
+    if (!cpu || raceEnd !== null || isOver(state) !== null || currentPlayer(state) !== CPU_SEAT) {
+      return
+    }
+    const timer = setTimeout(() => dispatch({ type: 'cpuStep', seat: CPU_SEAT, seed }), CPU_STEP_MS)
     return () => clearTimeout(timer)
-  }, [cpu, state, seed])
+  }, [cpu, state, raceEnd, seed])
+
+  // The banner continues on its own when nobody taps.
+  useEffect(() => {
+    if (raceEnd === null) return
+    const timer = setTimeout(onContinue, RACE_END_MS)
+    return () => clearTimeout(timer)
+  }, [raceEnd, onContinue])
 
   const winner = isOver(state)
   useEffect(() => {
@@ -60,18 +71,17 @@ export function Match({ mode, config, seed, names, onRematch, onNewMatch }: Matc
     recorded.current = true
     void recordMatch()
   }, [winner])
-  if (winner !== null) {
-    const title = cpu
-      ? winner === HUMAN_SEAT
-        ? 'You win'
-        : 'The CPU wins'
-      : `${names[winner]} wins`
+
+  const headline = (player: PlayerIndex) =>
+    cpu ? (player === HUMAN_SEAT ? 'You win' : 'The CPU wins') : `${names[player]} wins`
+
+  if (winner !== null && raceEnd === null) {
     return (
       <ResultScreen
         state={state}
         winner={winner}
         names={names}
-        title={title}
+        title={headline(winner)}
         onRematch={onRematch}
         onNewMatch={onNewMatch}
       />
@@ -79,36 +89,55 @@ export function Match({ mode, config, seed, names, onRematch, onNewMatch }: Matc
   }
 
   const acting = currentPlayer(state)
-  if (acting === null) return null
-  const viewer: PlayerIndex = cpu ? HUMAN_SEAT : acting
-  if (!cpu && revealedFor !== acting) {
-    const note =
-      state.phase.kind === 'staging'
-        ? `Race ${state.race.number}`
-        : state.phase.kind === 'choice'
-          ? 'Parts Thief'
-          : `Race ${state.race.number} · Turn ${state.turn.number}`
-    return (
-      <HandOverScreen name={names[acting]} note={note} onReveal={() => setRevealedFor(acting)} />
-    )
+  if (raceEnd === null) {
+    if (acting === null) return null
+    if (!cpu && revealedFor !== acting) {
+      const note =
+        state.phase.kind === 'staging'
+          ? `Race ${state.race.number}`
+          : state.phase.kind === 'choice'
+            ? 'Parts Thief'
+            : `Race ${state.race.number} · Turn ${state.turn.number}`
+      return (
+        <HandOverScreen name={names[acting]} note={note} onReveal={() => setRevealedFor(acting)} />
+      )
+    }
   }
 
+  // While the banner is up the board stays with whoever watched the finish.
+  const viewer: PlayerIndex = cpu
+    ? HUMAN_SEAT
+    : raceEnd !== null
+      ? (revealedFor ?? raceEnd.winner)
+      : (acting ?? HUMAN_SEAT)
+
   const onAction = (action: Action) => {
-    setState((current) => apply(current, action))
+    dispatch({ type: 'act', action })
     setSelection(NO_SELECTION)
     setOptions(null)
   }
 
   return (
-    <Board
-      state={state}
-      viewer={viewer}
-      names={names}
-      selection={selection}
-      options={options}
-      onAction={onAction}
-      onSelect={setSelection}
-      onOptions={setOptions}
-    />
+    <>
+      <Board
+        state={state}
+        viewer={viewer}
+        names={names}
+        selection={selection}
+        options={options}
+        onAction={onAction}
+        onSelect={setSelection}
+        onOptions={setOptions}
+        frozen={raceEnd}
+        inert={raceEnd !== null}
+      />
+      {raceEnd !== null && (
+        <RaceEndBanner
+          raceEnd={raceEnd}
+          headline={headline(raceEnd.winner)}
+          onContinue={onContinue}
+        />
+      )}
+    </>
   )
 }

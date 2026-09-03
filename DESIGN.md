@@ -392,7 +392,7 @@ A headless command, `npm run sim`, that plays CPU against CPU for thousands of m
 
 - Border color by type. Foil treatment reserved for post-v1 holo variants.
 - Typography from Google Fonts: a condensed display face for names, a monospace face for stats. Real fallback stacks.
-- Race screen: two lanes viewed from above, a car marker per lane advancing toward a finish line, distance in feet under each. Minimal animation in v1: markers slide, nothing else.
+- Race screen: two lanes viewed from above, a car marker per lane advancing toward a finish line, distance in feet under each. Markers slide. The one other piece of motion is the race-end moment: the track holds at the finishing positions, the winner's finish line flashes, and a banner names the winner and shows the captured car as a pink slip with the tally. It continues on tap or after four seconds and comes before staging, the hotseat hand-over, and the result screen. Reduced-motion settings keep the banner and drop the motion.
 - Hotseat shows a hand-over screen between turns so hands stay hidden.
 - Desktop first. Usable on a phone.
 - Palette and type choices are made in phase 6 and recorded here.
@@ -439,6 +439,8 @@ src/
 - `isOver(state) → winner | null`
 
 The engine is deterministic given a seed. Every rule in section 3 is a unit test. The UI and the CPU only ever call this API, so online play later means moving the engine behind a server, not rewriting it.
+
+**Race-end moment**: derived from the log, not from the engine's phase. When a newly applied state adds a `raceEnd` entry, the match screen keeps a record of the finishing positions and the captured car, freezes the track on it, and holds the CPU and the hand-over until Continue or a four-second timer clears it. The engine moves to staging in the same step as before; only the screen waits.
 
 **Persistence**: custom garages and decks in `localStorage`, wrapped in try/catch, with starters always available.
 
