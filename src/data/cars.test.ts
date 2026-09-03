@@ -49,14 +49,13 @@ const STARRED = [
 
 /** Cells the design doc says have no real car (DESIGN.md 2.2). */
 const EMPTY_CELLS: ReadonlyArray<readonly [CarType, Tier]> = [
-  ['offroad', 'super'],
   ['offroad', 'hyper'],
   ['jdm', 'hyper'],
 ]
 
 describe('cars', () => {
-  it('has 52 cars', () => {
-    expect(CARS).toHaveLength(52)
+  it('has 102 cars', () => {
+    expect(CARS).toHaveLength(102)
   })
 
   it('includes every starred car from the design doc', () => {

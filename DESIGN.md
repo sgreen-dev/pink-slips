@@ -85,7 +85,7 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 
 ### 2.4 Roster (v1)
 
-52 cars. The 30 marked ★ were requested by name and are fixed. The rest are fillers chosen to give every cell at least one car where a real car exists for it. Specs below are the approximate figures the roster was chosen with. The verified figures, with a source per car, live in `src/data/cars.ts`; where a manufacturer publishes only a dry weight, that is what is used and the source says so.
+102 cars. The 30 marked ★ were requested by name and are fixed. The other 22 of the first 52 were fillers chosen to give every cell at least one car where a real car exists for it, and 50 more were added afterwards to bring every type to 17, with tiers split 5, 5, 4, 3 where real cars exist and spread across each band; JDM and Off-road have no Ultra Rare car. Specs below are the approximate figures the roster was chosen with. The verified figures, with a source per car, live in `src/data/cars.ts`; where a manufacturer publishes only a dry weight, that is what is used and the source says so.
 
 **Sports**
 
@@ -101,6 +101,13 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 | Hyper | ★ Lamborghini Aventador SVJ | 759 | 3,750 |
 | Hyper | ★ Lamborghini Temerario | 907 | 3,725 |
 | Hyper | ★ McLaren 765LT | 755 | 3,000 |
+| Daily | Porsche 914 (1.7) | 79 | 2,072 |
+| Daily | Mazda MX-5 Miata (NA) | 115 | 2,160 |
+| Daily | Toyota MR2 Spyder | 138 | 2,195 |
+| Performance | Porsche Boxster S (987) | 310 | 2,987 |
+| Performance | BMW Z4 M40i | 382 | 3,443 |
+| Performance | Porsche 718 Cayman GTS 4.0 | 394 | 3,031 |
+| Super | Porsche 911 Turbo S (992) | 640 | 3,615 |
 
 **Luxury**
 
@@ -115,6 +122,14 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 | Super | ★ Aston Martin DBS Superleggera | 715 | 4,000 |
 | Hyper | ★ Ferrari 812 Superfast | 789 | 3,600 |
 | Hyper | ★ Ferrari 12Cilindri | 819 | 3,500 |
+| Daily | Lexus ES 250 | 203 | 3,780 |
+| Daily | Mercedes-Benz E 300 | 241 | 3,650 |
+| Daily | BMW 330i | 255 | 3,582 |
+| Performance | Cadillac CT5-V | 360 | 3,974 |
+| Performance | Bentley Continental GT V8 | 542 | 4,771 |
+| Performance | Mercedes-AMG C 63 S (W205) | 503 | 3,957 |
+| Super | BMW M8 Competition | 617 | 4,156 |
+| Hyper | Ferrari 812 Competizione | 819 | 3,278 |
 
 **Muscle**
 
@@ -130,6 +145,13 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 | Super | ★ Dodge Viper (Gen 5) | 645 | 3,375 |
 | Hyper | Dodge Challenger SRT Demon 170 | 1,025 | 4,275 |
 | Hyper | Chevrolet Corvette ZR1 (C8) | 1,064 | 3,800 |
+| Daily | Ford Mustang 200 Six (1965) | 120 | 2,445 |
+| Daily | Ford Mustang V6 (2005) | 210 | 3,300 |
+| Daily | Dodge Challenger SXT | 305 | 3,894 |
+| Performance | Ford Mustang Mach 1 (2021) | 480 | 3,868 |
+| Super | Dodge Challenger SRT Hellcat | 717 | 4,449 |
+| Super | Ford Shelby GT500 (2020) | 760 | 4,171 |
+| Hyper | Chevrolet Corvette ZR1 (C7) | 755 | 3,560 |
 
 **JDM**
 
@@ -143,6 +165,15 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 | Super | ★ Nissan GT-R (R35) | 565 | 3,850 |
 | Super | Nissan GT-R NISMO | 600 | 3,865 |
 | Super | Acura NSX (2nd gen) | 573 | 3,800 |
+| Daily | Nissan 240SX (S14) | 155 | 2,800 |
+| Daily | Mazda MX-5 Miata (NB) | 140 | 2,348 |
+| Daily | Toyota Celica GT-S (2000) | 180 | 2,500 |
+| Performance | Mitsubishi Lancer Evolution IX | 286 | 3,263 |
+| Performance | Acura NSX (1991) | 270 | 3,010 |
+| Performance | Honda Civic Type R (FL5) | 315 | 3,188 |
+| Performance | Toyota GR Supra 3.0 | 382 | 3,400 |
+| Super | Acura NSX Type S | 600 | 3,891 |
+| Super | Lexus LFA | 552 | 3,263 |
 
 **EV**
 
@@ -156,6 +187,15 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 | Super | Lucid Air Grand Touring | 819 | 5,200 |
 | Hyper | ★ Tesla Model S Plaid | 1,020 | 4,800 |
 | Hyper | Rimac Nevera | 1,914 | 5,100 |
+| Daily | Volkswagen ID.4 Pro | 201 | 4,559 |
+| Daily | Chevrolet Bolt EV | 200 | 3,589 |
+| Daily | Ford F-150 Lightning | 426 | 6,015 |
+| Performance | Volvo C40 Recharge Twin | 402 | 4,710 |
+| Performance | Rivian R1T | 600 | 6,585 |
+| Performance | Kia EV6 GT | 576 | 4,795 |
+| Super | Lotus Eletre R | 905 | 5,930 |
+| Super | Tesla Model X Plaid | 1020 | 5,248 |
+| Hyper | Lucid Air Sapphire | 1234 | 5,336 |
 
 **Off-road**
 
@@ -168,6 +208,16 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 | Performance | Ford F-150 Raptor R | 720 | 6,000 |
 | Performance | Ram 1500 TRX | 702 | 6,400 |
 | Performance | Lamborghini Urus | 641 | 4,850 |
+| Daily | Toyota 4Runner SR5 | 270 | 4,400 |
+| Daily | Toyota Land Cruiser (2024) | 326 | 5,038 |
+| Daily | Ford Ranger Raptor | 405 | 5,325 |
+| Performance | Mercedes-AMG G 63 | 577 | 5,842 |
+| Performance | BMW X5 M | 600 | 5,455 |
+| Performance | Dodge Durango SRT Hellcat | 710 | 5,710 |
+| Performance | Jeep Grand Cherokee Trackhawk | 707 | 5,363 |
+| Super | Aston Martin DBX707 | 697 | 4,949 |
+| Super | Lamborghini Urus SE | 789 | 5,522 |
+| Super | Ferrari Purosangue | 715 | 4,784 |
 
 ### 2.5 Mod cards
 
@@ -390,6 +440,8 @@ A headless command, `npm run sim`, that plays CPU against CPU for thousands of m
 - EV was the strongest type at 62% through its launch bonus; 75 ft brought it to 58%.
 - Matches run about 14 turns per player with the CPU, well under the 25-turn target.
 
+**Roster expansion check** (5,000 matches at seed 1 after the roster grew from 52 to 102 cars): every type between 49% and 55% against the field, tiers 2 / 56 / 63 / 37 for Common, Uncommon, Rare, Ultra Rare, Daily-only against Hyper-only 42%, and the starters at 58%, 56%, and 60% for the first-named side. All four targets still pass, so no tunable moved. Rare sits closest to its cap at 63%: the new Rare cars are strong for a fuel cost of 4, and that is the first thing to watch if a later pass tunes again.
+
 ---
 
 ## 8. Visual design
@@ -462,7 +514,7 @@ The engine is deterministic given a seed. Every rule in section 3 is a unit test
 
 **v1**
 
-- 52 cars, 30 mods, 3 starter garages
+- 52 cars at v1, 102 after the roster expansion; 32 mods; 3 starter garages
 - CPU and hotseat play
 - Every card unlocked (until phase 11 added packs and a collection; see section 12)
 - Deck builder with saved garages
@@ -497,6 +549,6 @@ Added in phase 11. Before it, every card was unlocked.
 - Pack opening runs through the engine's seeded generator with a fresh seed per pack, so it is testable and the simulator can measure it.
 - The odds and rewards are tunables under `collection` in `src/engine/tunables.ts`; a change gets a balance-log line.
 
-**Measured** (`npm run sim -- --packs 10000`, seed 1): from the starter set, owning every card takes a mean of 395 packs (median 355). The first pack holding an Ultra Rare car arrives after a mean of 16.7 packs (median 12). At one or two packs a match, new cards arrive from the first match on and a full collection is a long-term goal, with the last Ultra Rare cars as the chase. The Ultra Rare odds and the pack size are the levers if that proves too slow.
+**Measured** (`npm run sim -- --packs 10000`, seed 1): from the starter set, owning every card takes a mean of 395 packs (median 355) with the 52-car roster, and a mean of 611 packs (median 561) after the roster grew to 102 cars and 134 cards. The first pack holding an Ultra Rare car arrives after a mean of 16.7 packs (median 12). At one or two packs a match, new cards arrive from the first match on and a full collection is a long-term goal, with the last Ultra Rare cars as the chase. The Ultra Rare odds and the pack size are the levers if that proves too slow.
 
 **Finishes** (phase 12). Every card pulled from a pack rolls a finish: 2% holo, 10% foil, the rest base. Both are cosmetic only. Foil is a shimmer on the frame; holo is a shimmer across the image area and is the rarer of the two. The collection counts foil and holo copies separately from the total, so a foil copy still counts toward ownership and deck limits. The best finish a player owns is the one that shows: in the collection, the builder, the player's own cards on the board, and the result screen; the CPU's cards stay plain. The treatment is CSS only, moves on hover, stays still under reduced-motion settings, and never touches the engine: match configs and match state carry card ids only. The pack reveal marks a foil or holo when one appears, and every card with a finish carries a small Foil or Holo tag.
