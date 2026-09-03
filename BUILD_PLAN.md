@@ -27,7 +27,7 @@
 | 8 | Deck builder | done | 6fbc20f |
 | 9 | Polish and release | done | 8619114 |
 | 10 | Illustrated card art | done | 7c2dbac |
-| 11 | Collection and packs | todo | |
+| 11 | Collection and packs | done | a2b459d |
 | 12 | Holo and foil variants | todo | |
 | 13 | CPU difficulty levels | todo | |
 | 14 | Online play, part 1: the engine behind a server | todo | |
