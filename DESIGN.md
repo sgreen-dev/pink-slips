@@ -309,6 +309,8 @@ Players alternate. A turn has four steps in this order.
 
 The first player skips the Advance step on their first turn.
 
+A mod played this turn can be taken back until the mod step ends or the player advances, in every mode. The take-back restores the state from before the play exactly, card, fuel, parts, and log included; it is a convenience of the screens and the room, not an engine action.
+
 ### 3.3 Advance
 
 Computed in this order. All results floor to whole feet, minimum 0.
@@ -516,6 +518,8 @@ The engine is deterministic given a seed. Every rule in section 3 is a unit test
 **Race-end moment**: derived from the log, not from the engine's phase. When a newly applied state adds a `raceEnd` entry, the match screen keeps a record of the finishing positions and the captured car, freezes the track on it, and holds the CPU and the hand-over until Continue clears it. The engine moves to staging in the same step as before; only the screen waits.
 
 **Sound**: `src/ui/sound/` holds the settings, a pure mapping from log entries to effect names (`soundsBetween`, tested over played-out matches), the synthesized effects, the music player, and a provider that owns the unlock gesture; screens diff their states the way the race-end moment does and play what the diff names.
+
+**Take-backs**: a local match keeps the states from before each mod play of the current mod step in its session and restores one on Undo; the room keeps the same stack in its snapshot and restores one on an `undo` message from the seat that played, then sends both seats their views.
 
 **Persistence**: custom garages and decks in `localStorage`, wrapped in try/catch, with starters always available. The collection and its unopened packs sit next to them under their own key, through the same wrapper (section 12).
 

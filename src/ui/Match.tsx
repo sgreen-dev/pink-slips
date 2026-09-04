@@ -11,7 +11,7 @@ import {
 } from '../engine/index.ts'
 import { AccountContext, reportCpuResult } from './account.ts'
 import { Board } from './Board.tsx'
-import { reduceSession, startSession } from './celebration.ts'
+import { canUndo, reduceSession, startSession } from './celebration.ts'
 import { recordMatch } from './counter.ts'
 import { HandOverScreen } from './HandOverScreen.tsx'
 import { NO_SELECTION, type Selection } from './interaction.ts'
@@ -146,6 +146,12 @@ export function Match({ mode, config, seed, names, level, onRematch, onNewMatch 
     setSelection(NO_SELECTION)
     setOptions(null)
   }
+  const onUndo = () => {
+    dispatch({ type: 'undo', player: viewer })
+    setSelection(NO_SELECTION)
+    setOptions(null)
+    sound.play('shuffle')
+  }
 
   return (
     <VariantContext value={variantOf}>
@@ -161,6 +167,8 @@ export function Match({ mode, config, seed, names, level, onRematch, onNewMatch 
         frozen={raceEnd}
         inert={raceEnd !== null}
         plainOpponent={cpu}
+        canUndo={canUndo(session, viewer)}
+        onUndo={onUndo}
       />
       {raceEnd !== null && (
         <RaceEndBanner

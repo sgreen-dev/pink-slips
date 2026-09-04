@@ -4,6 +4,7 @@ import { addPacks, loadCollection } from '../collection/persist.ts'
 import { currentPlayer, isOver, type Action, type PlayerIndex } from '../engine/index.ts'
 import { AccountContext, fetchMe } from './account.ts'
 import { Board } from './Board.tsx'
+import { isModPlay } from './celebration.ts'
 import { recordMatch } from './counter.ts'
 import { NO_SELECTION, type Selection } from './interaction.ts'
 import {
@@ -49,6 +50,8 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
   const [earned, setEarned] = useState(0)
   const [note, setNote] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  // Mod plays sent this step and not yet taken back; the room is the judge, this only shows the button.
+  const [undoable, setUndoable] = useState(0)
   const onContinue = useCallback(() => dispatch({ type: 'continue' }), [])
   const accountToken = account?.token ?? null
 
@@ -206,8 +209,19 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
     client.current?.act(action)
     setSelection(NO_SELECTION)
     setOptions(null)
+    const open = view.phase.kind === 'turn' && view.turn.step === 'mods'
+    setUndoable(isModPlay(action) && open ? undoable + 1 : 0)
+  }
+  const onUndo = () => {
+    client.current?.undo()
+    setSelection(NO_SELECTION)
+    setOptions(null)
+    setUndoable((n) => Math.max(0, n - 1))
+    sound.play('shuffle')
   }
   const yourTurn = currentPlayer(view) === seat
+  const canUndo =
+    undoable > 0 && yourTurn && view.phase.kind === 'turn' && view.turn.step === 'mods'
   const warn = session.status !== 'open' || !session.opponentConnected || session.error !== null
   const line =
     session.status !== 'open'
@@ -241,6 +255,8 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
         frozen={session.raceEnd}
         inert={session.raceEnd !== null || session.status !== 'open'}
         plainOpponent
+        canUndo={canUndo}
+        onUndo={onUndo}
       />
       {session.raceEnd !== null && (
         <RaceEndBanner

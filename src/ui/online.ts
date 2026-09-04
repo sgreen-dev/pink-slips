@@ -185,6 +185,11 @@ export class RoomClient {
     if (this.open && this.socket) this.socket.send(JSON.stringify({ type: 'act', action }))
   }
 
+  /** Asks the room to take back this seat's last mod play of the current step. */
+  undo(): void {
+    if (this.open && this.socket) this.socket.send(JSON.stringify({ type: 'undo' }))
+  }
+
   /** Stops the client for good; the room sees the socket close. */
   close(): void {
     this.stopped = true

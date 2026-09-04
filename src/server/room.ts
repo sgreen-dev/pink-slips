@@ -1,6 +1,7 @@
 import {
   apply,
   createMatch,
+  currentPlayer,
   isLegal,
   isOver,
   redact,
@@ -47,6 +48,8 @@ export interface RoomSnapshot {
   state: MatchState | null
   tickets?: readonly [Ticket, Ticket] | null
   reported?: boolean
+  /** States from before each mod play in the current mod step, with the seat that played. */
+  history?: readonly { seat: PlayerIndex; state: MatchState }[]
 }
 
 export interface Outbound {
@@ -74,7 +77,12 @@ export const REASONS = {
   notYourSeat: 'That action belongs to the other seat.',
   illegal: 'That move is not legal right now.',
   over: 'The match is over.',
+  nothingToUndo: 'There is no mod play of yours to take back.',
 } as const
+
+function isModPlay(action: Action): boolean {
+  return action.type === 'playPart' || action.type === 'playBoost' || action.type === 'playSabotage'
+}
 
 function otherSeat(seat: PlayerIndex): PlayerIndex {
   return seat === 0 ? 1 : 0
@@ -85,6 +93,7 @@ export class Room {
   private state: MatchState | null
   private tickets: [Ticket, Ticket] | null
   private reported: boolean
+  private history: { seat: PlayerIndex; state: MatchState }[]
   readonly code: string
   readonly seed: number
 
@@ -95,6 +104,7 @@ export class Room {
     this.state = snapshot?.state ?? null
     this.tickets = snapshot?.tickets ? [snapshot.tickets[0], snapshot.tickets[1]] : null
     this.reported = snapshot?.reported ?? false
+    this.history = snapshot?.history ? [...snapshot.history] : []
   }
 
   snapshot(): RoomSnapshot {
@@ -105,6 +115,7 @@ export class Room {
       state: this.state,
       tickets: this.tickets ? [...this.tickets] : null,
       reported: this.reported,
+      history: [...this.history],
     }
   }
 
@@ -171,6 +182,8 @@ export class Room {
         return this.resume(message.token)
       case 'act':
         return this.act(from, message.action)
+      case 'undo':
+        return this.undo(from)
     }
   }
 
@@ -244,7 +257,24 @@ export class Room {
     if (state.phase.kind === 'over') return [fail(REASONS.over)]
     if (action.player !== from) return [fail(REASONS.notYourSeat)]
     if (!isLegal(state, action)) return [fail(REASONS.illegal)]
+    const keep = isModPlay(action) && state.phase.kind === 'turn' && state.turn.step === 'mods'
+    this.history = keep ? [...this.history, { seat: from, state }] : []
     this.state = apply(state, action)
+    return this.views()
+  }
+
+  /** Takes back the seat's last mod play of this step and shows both seats the result. */
+  private undo(from: PlayerIndex | null): Outbound[] {
+    if (from === null) return [fail(REASONS.notSeated)]
+    const state = this.state
+    if (!state) return [fail(REASONS.notStarted)]
+    const last = this.history[this.history.length - 1]
+    const open = state.phase.kind === 'turn' && state.turn.step === 'mods'
+    if (!last || last.seat !== from || !open || currentPlayer(state) !== from) {
+      return [fail(REASONS.nothingToUndo)]
+    }
+    this.history = this.history.slice(0, -1)
+    this.state = last.state
     return this.views()
   }
 

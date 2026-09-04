@@ -60,19 +60,42 @@ export function raceEndBetween(previous: MatchState, next: MatchState): RaceEnd 
   }
 }
 
-/** What a match screen holds: the engine state and, while the board waits at the line, the race end. */
+/**
+ * What a match screen holds: the engine state, the race end while the board waits at the line,
+ * and the states from before each mod play in the current mod step, so a play can be taken
+ * back until the step ends or the player advances.
+ */
 export interface Session {
   match: MatchState
   raceEnd: RaceEnd | null
+  history: MatchState[]
+}
+
+/** A mod play during the mod step can be taken back; anything else makes plays final. */
+export function isModPlay(action: Action): boolean {
+  return action.type === 'playPart' || action.type === 'playBoost' || action.type === 'playSabotage'
+}
+
+/** True when the viewer can take back the last mod they played this step. */
+export function canUndo(session: Session, viewer: PlayerIndex): boolean {
+  const { match, raceEnd, history } = session
+  return (
+    raceEnd === null &&
+    history.length > 0 &&
+    match.phase.kind === 'turn' &&
+    match.turn.step === 'mods' &&
+    currentPlayer(match) === viewer
+  )
 }
 
 export type SessionEvent =
   | { type: 'act'; action: Action }
   | { type: 'cpuStep'; seat: PlayerIndex; seed: number; level?: Level }
   | { type: 'continue' }
+  | { type: 'undo'; player: PlayerIndex }
 
 export function startSession({ config, seed }: { config: MatchConfig; seed: number }): Session {
-  return { match: createMatch(config, seed), raceEnd: null }
+  return { match: createMatch(config, seed), raceEnd: null, history: [] }
 }
 
 /**
@@ -92,11 +115,19 @@ export function reduceSession(session: Session, event: SessionEvent): Session {
     }
     case 'continue':
       return session.raceEnd === null ? session : { ...session, raceEnd: null }
+    case 'undo': {
+      if (!canUndo(session, event.player)) return session
+      const previous = session.history[session.history.length - 1] as MatchState
+      return { match: previous, raceEnd: null, history: session.history.slice(0, -1) }
+    }
   }
 }
 
 function step(session: Session, action: Action): Session {
   if (session.raceEnd !== null) return session
   const match = apply(session.match, action)
-  return { match, raceEnd: raceEndBetween(session.match, match) }
+  const before = session.match
+  const keep = isModPlay(action) && before.phase.kind === 'turn' && before.turn.step === 'mods'
+  const history = keep ? [...session.history, before] : []
+  return { match, raceEnd: raceEndBetween(before, match), history }
 }

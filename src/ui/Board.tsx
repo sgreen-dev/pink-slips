@@ -33,6 +33,9 @@ interface BoardProps {
   frozen?: RaceEnd | null
   /** True while the race-end banner is up, so nothing on the board takes clicks or focus. */
   inert?: boolean
+  /** The viewer can take back the last mod they played this step. */
+  canUndo?: boolean
+  onUndo?: () => void
   /** Draw the opponent's cards without finishes, as for the CPU. */
   plainOpponent?: boolean
 }
@@ -62,6 +65,8 @@ export function Board({
   frozen,
   inert,
   plainOpponent,
+  canUndo = false,
+  onUndo,
 }: BoardProps) {
   const opponent = otherPlayer(viewer)
   const me = state.players[viewer]
@@ -148,6 +153,7 @@ export function Board({
       <section className="controls">
         <p className="controls__prompt" aria-live="polite">
           {prompt(state, viewer, selection, names)}
+          {canUndo && !busy ? ' Undo takes back your last mod.' : ''}
         </p>
         <div className="controls__buttons">
           {options
@@ -190,6 +196,11 @@ export function Board({
               }}
             >
               Cancel
+            </button>
+          )}
+          {canUndo && !busy && onUndo && (
+            <button type="button" className="button button--ghost" onClick={onUndo}>
+              Undo
             </button>
           )}
         </div>

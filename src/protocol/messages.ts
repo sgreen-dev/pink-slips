@@ -24,7 +24,12 @@ export interface ActMessage {
   action: Action
 }
 
-export type ClientMessage = JoinMessage | ResumeMessage | ActMessage
+/** Takes back the seat's last mod play of the current mod step. */
+export interface UndoMessage {
+  type: 'undo'
+}
+
+export type ClientMessage = JoinMessage | ResumeMessage | ActMessage | UndoMessage
 
 export interface WelcomeMessage {
   type: 'welcome'
@@ -137,6 +142,8 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
       return typeof value['token'] === 'string' ? { type: 'resume', token: value['token'] } : null
     case 'act':
       return isAction(value['action']) ? { type: 'act', action: value['action'] } : null
+    case 'undo':
+      return { type: 'undo' }
     default:
       return null
   }

@@ -5,6 +5,7 @@ import {
   currentPlayer,
   HIDDEN_CARD,
   isOver,
+  legalActions,
   type MatchState,
   type PlayerIndex,
 } from '../engine/index.ts'
@@ -257,5 +258,54 @@ describe('ranked rooms', () => {
     expect(result?.ranked).toBe(false)
     expect(winner === 0 ? result?.winner : result?.loser).toEqual(ann)
     expect(winner === 0 ? result?.loser : result?.winner).toBeNull()
+  })
+})
+
+describe('undo in a room', () => {
+  it('takes back the last mod play for the seat that made it, until the step ends', () => {
+    const [room, a, b] = seated()
+    const clients = [a, b] as const
+    // Walk at random until the acting seat can play a Part.
+    let found: { seat: PlayerIndex; action: ReturnType<typeof legalActions>[number] } | null = null
+    for (let step = 0; step < 400 && !found; step++) {
+      const view = a.view as MatchState
+      const seat = currentPlayer(view) as PlayerIndex
+      const me = clients[seat]
+      const mine = legalActions(me.view as MatchState, seat)
+      const part = mine.find((x) => x.type === 'playPart')
+      if (part && view.phase.kind === 'turn' && view.turn.step === 'mods') {
+        found = { seat, action: part }
+        break
+      }
+      const pick = mine[(step * 7) % mine.length] as (typeof mine)[number]
+      me.send(JSON.stringify({ type: 'act', action: pick }), [clients[seat === 0 ? 1 : 0]])
+    }
+    if (!found) throw new Error('No Part play came up')
+    const me = clients[found.seat]
+    const other = clients[found.seat === 0 ? 1 : 0]
+    const before = JSON.stringify(me.view)
+    const otherBefore = JSON.stringify(other.view)
+    me.send(JSON.stringify({ type: 'act', action: found.action }), [other])
+    expect(JSON.stringify(me.view)).not.toBe(before)
+    // The other seat has nothing of its own to take back.
+    expect(other.send(JSON.stringify({ type: 'undo' }), [me])).toEqual([
+      { type: 'error', reason: REASONS.nothingToUndo },
+    ])
+    const replies = me.send(JSON.stringify({ type: 'undo' }), [other])
+    expect(replies.every((m) => m.type === 'state')).toBe(true)
+    expect(JSON.stringify(me.view)).toBe(before)
+    expect(JSON.stringify(other.view)).toBe(otherBefore)
+    expect(room.snapshot().history).toEqual([])
+    // Played again and ended, the play is final.
+    me.send(JSON.stringify({ type: 'act', action: found.action }), [other])
+    expect(room.snapshot().history).toHaveLength(1)
+    const copy = new Room('x', 0, room.snapshot())
+    expect(copy.snapshot().history).toHaveLength(1)
+    me.send(JSON.stringify({ type: 'act', action: { type: 'endMods', player: found.seat } }), [
+      other,
+    ])
+    expect(me.send(JSON.stringify({ type: 'undo' }), [other])).toEqual([
+      { type: 'error', reason: REASONS.nothingToUndo },
+    ])
   })
 })
