@@ -31,7 +31,7 @@
 | 12 | Holo and foil variants | done | da7c6c2 |
 | 13 | CPU difficulty levels | done | ffc297b |
 | 14 | Online play, part 1: the engine behind a server | done | 0c7176d |
-| 15 | Online play, part 2: accounts and matchmaking | done | 7f08ebe, HASH |
+| 15 | Online play, part 2: accounts and matchmaking | done | 7f08ebe, 1bad706 |
 
 ---
 
@@ -421,7 +421,7 @@
 
 **Prompt**: Do phase 15 of BUILD_PLAN.md.
 
-**Live check**: `npm run online:smoke -- https://pink-slips-rooms.pink-slips-counter.workers.dev` makes two players, pairs them through the queue, plays the match, and prints both rating changes; see the result recorded in the commit message of the phase.
+**Live check**: `npm run online:smoke -- https://pink-slips-rooms.pink-slips-counter.workers.dev` makes two players, pairs them through the queue, plays the match, and prints both rating changes; run on 2026-09-04 against the live service: paired in one room, the winner went from 1000 to 1016 with two packs and the loser from 1000 to 984 with one, and both appeared on the leaderboard.
 
 ---
 
