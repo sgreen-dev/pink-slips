@@ -1,28 +1,49 @@
+import { audioContext } from './sfx.ts'
+
 /**
- * The music player (DESIGN.md 8): one audio element, one track at a time, looping, with a
- * fade on every change. It stays silent until unlocked by a gesture, pauses while the tab is
- * hidden, and sits well under the effects.
+ * The music player (DESIGN.md 8): one track at a time, looping, through the same audio
+ * engine as the effects. A chosen track is fetched and decoded at once, which browsers allow
+ * before any gesture, so the first tap starts it from memory with no wait. Changes crossfade,
+ * the tab going hidden pauses everything, a match plays lower than the menus, and every
+ * effect dips the music for a moment.
  */
 
 export const MENU_TRACK = 'track1'
 export const RACE_TRACKS: readonly string[] = ['track2', 'track3', 'track4', 'track5', 'track6']
 
-/** Music level relative to full scale; effects play above it. */
-export const MUSIC_VOLUME = 0.35
+/** Levels relative to full scale; effects play above both. */
+export const MENU_VOLUME = 0.35
+export const RACE_VOLUME = 0.2
+/** How far the music dips while an effect plays, and for how long. */
+export const DUCK_FACTOR = 0.35
+export const DUCK_MS = 700
+/** The first start is quick; a change of track takes a second. */
+export const FIRST_FADE_MS = 250
 export const FADE_MS = 1000
-const FADE_STEP_MS = 50
+
+export function volumeFor(track: string): number {
+  return RACE_TRACKS.includes(track) ? RACE_VOLUME : MENU_VOLUME
+}
+
+interface Playing {
+  track: string
+  source: AudioBufferSourceNode
+  gain: GainNode
+}
 
 export class MusicPlayer {
   private readonly base: string
-  private audio: HTMLAudioElement | null = null
+  private readonly buffers = new Map<string, Promise<AudioBuffer | null>>()
+  private bus: GainNode | null = null
+  private playing: Playing | null = null
   private track: string | null = null
   private enabled = true
   private unlocked = false
-  private fade: ReturnType<typeof setInterval> | null = null
   private readonly onVisibility = () => {
-    if (!this.audio || !this.unlocked || !this.enabled) return
-    if (document.hidden) this.audio.pause()
-    else void this.audio.play().catch(() => undefined)
+    const ctx = audioContext()
+    if (!ctx || !this.unlocked) return
+    if (document.hidden) void ctx.suspend()
+    else void ctx.resume()
   }
 
   constructor(base: string) {
@@ -36,81 +57,101 @@ export class MusicPlayer {
     return this.track
   }
 
-  /** The first gesture happened: from now on the chosen track may play. */
+  /** The first gesture happened: the decoded track starts now. */
   unlock(): void {
     if (this.unlocked) return
     this.unlocked = true
-    if (this.enabled && this.track) this.start(this.track)
+    if (this.enabled && this.track) void this.start(this.track, FIRST_FADE_MS)
   }
 
   setEnabled(enabled: boolean): void {
     this.enabled = enabled
-    if (!enabled) {
-      this.stopFade()
-      this.audio?.pause()
-    } else if (this.unlocked && this.track && !this.audio) {
-      this.start(this.track)
-    } else if (this.unlocked && this.audio) {
-      this.audio.volume = MUSIC_VOLUME
-      void this.audio.play().catch(() => undefined)
-    }
+    if (!enabled) this.stop(FADE_MS / 4)
+    else if (this.unlocked && this.track && !this.playing)
+      void this.start(this.track, FIRST_FADE_MS)
   }
 
-  /** Changes track with a fade; null fades out. A repeat of the current track does nothing. */
+  /** Chooses the track: decoding starts at once, playing when allowed. Null fades out. */
   setTrack(track: string | null): void {
     if (track === this.track) return
     this.track = track
-    if (!this.unlocked || !this.enabled) {
-      this.audio?.pause()
-      this.audio = null
+    if (!track) {
+      this.stop(FADE_MS)
       return
     }
-    const old = this.audio
-    this.audio = null
-    if (old) this.fadeOut(old)
-    if (track) this.start(track)
+    void this.decode(track)
+    if (this.unlocked && this.enabled)
+      void this.start(track, this.playing ? FADE_MS : FIRST_FADE_MS)
   }
 
-  private start(track: string): void {
-    if (typeof Audio === 'undefined') return
-    const audio = new Audio(`${this.base}${track}.mp3`)
-    audio.loop = true
-    audio.preload = 'auto'
-    audio.volume = 0
-    this.audio = audio
-    void audio.play().catch(() => undefined)
-    this.fadeIn(audio)
+  /** Drops the music under an effect and brings it back shortly after. */
+  duck(): void {
+    const ctx = audioContext()
+    if (!ctx || !this.bus || !this.playing) return
+    const now = ctx.currentTime
+    const gain = this.bus.gain
+    gain.cancelScheduledValues(now)
+    gain.setValueAtTime(DUCK_FACTOR, now)
+    gain.setValueAtTime(DUCK_FACTOR, now + DUCK_MS / 1000)
+    gain.linearRampToValueAtTime(1, now + (DUCK_MS + FADE_MS / 2) / 1000)
   }
 
-  private fadeIn(audio: HTMLAudioElement): void {
-    this.stopFade()
-    const steps = FADE_MS / FADE_STEP_MS
-    let step = 0
-    this.fade = setInterval(() => {
-      step += 1
-      if (this.audio !== audio) return this.stopFade()
-      audio.volume = Math.min(MUSIC_VOLUME, (MUSIC_VOLUME * step) / steps)
-      if (step >= steps) this.stopFade()
-    }, FADE_STEP_MS)
-  }
-
-  private fadeOut(audio: HTMLAudioElement): void {
-    const steps = FADE_MS / FADE_STEP_MS
-    let step = 0
-    const start = audio.volume
-    const timer = setInterval(() => {
-      step += 1
-      audio.volume = Math.max(0, start * (1 - step / steps))
-      if (step >= steps) {
-        clearInterval(timer)
-        audio.pause()
-        audio.src = ''
+  private decode(track: string): Promise<AudioBuffer | null> {
+    const held = this.buffers.get(track)
+    if (held) return held
+    const ctx = audioContext()
+    const loading = (async () => {
+      if (!ctx || typeof fetch !== 'function') return null
+      try {
+        const response = await fetch(`${this.base}${track}.mp3`)
+        if (!response.ok) return null
+        return await ctx.decodeAudioData(await response.arrayBuffer())
+      } catch {
+        return null
       }
-    }, FADE_STEP_MS)
+    })()
+    this.buffers.set(track, loading)
+    // Keep the menu track and the one in use; drop the rest so phones stay comfortable.
+    for (const key of this.buffers.keys()) {
+      if (key !== MENU_TRACK && key !== track) this.buffers.delete(key)
+    }
+    return loading
   }
 
-  private stopFade(): void {
-    if (this.fade !== null) clearInterval(this.fade)
-    this.fade = null
+  private async start(track: string, fadeMs: number): Promise<void> {
+    const ctx = audioContext()
+    if (!ctx) return
+    const buffer = await this.decode(track)
+    // The choice may have moved on while decoding.
+    if (!buffer || this.track !== track || !this.enabled || this.playing?.track === track) return
+    if (!this.bus) {
+      this.bus = ctx.createGain()
+      this.bus.gain.value = 1
+      this.bus.connect(ctx.destination)
+    }
+    this.stop(fadeMs)
+    const source = ctx.createBufferSource()
+    source.buffer = buffer
+    source.loop = true
+    const gain = ctx.createGain()
+    const now = ctx.currentTime
+    gain.gain.setValueAtTime(0.0001, now)
+    gain.gain.exponentialRampToValueAtTime(volumeFor(track), now + fadeMs / 1000)
+    source.connect(gain)
+    gain.connect(this.bus)
+    source.start(now)
+    this.playing = { track, source, gain }
+  }
+
+  private stop(fadeMs: number): void {
+    const ctx = audioContext()
+    const held = this.playing
+    this.playing = null
+    if (!ctx || !held) return
+    const now = ctx.currentTime
+    held.gain.gain.cancelScheduledValues(now)
+    held.gain.gain.setValueAtTime(Math.max(held.gain.gain.value, 0.0001), now)
+    held.gain.gain.exponentialRampToValueAtTime(0.0001, now + fadeMs / 1000)
+    held.source.stop(now + fadeMs / 1000 + 0.05)
   }
 }

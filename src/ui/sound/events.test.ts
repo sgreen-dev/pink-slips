@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createMatch, isOver, type MatchState } from '../../engine/index.ts'
 import { playOutRandomly, starterConfig } from '../../engine/test-helpers.ts'
 import { beforeStart, hashText, soundsBetween, trackFor } from './events.ts'
-import { MENU_TRACK, RACE_TRACKS } from './music.ts'
+import { MENU_TRACK, MENU_VOLUME, RACE_TRACKS, RACE_VOLUME, volumeFor } from './music.ts'
 
 /** Every state along a random play-out, from the first to the last. */
 function statesAlong(seed: number): MatchState[] {
@@ -84,5 +84,11 @@ describe('trackFor', () => {
       trackFor('onlineMatch', hashText('ABC234')),
     )
     expect(hashText('ABC234')).not.toBe(hashText('ABC235'))
+  })
+
+  it('plays race music lower than menu music', () => {
+    expect(volumeFor(MENU_TRACK)).toBe(MENU_VOLUME)
+    for (const track of RACE_TRACKS) expect(volumeFor(track)).toBe(RACE_VOLUME)
+    expect(RACE_VOLUME).toBeLessThan(MENU_VOLUME)
   })
 })

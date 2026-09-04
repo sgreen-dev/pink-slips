@@ -41,7 +41,7 @@ export const SOUND_NAMES: readonly SoundName[] = [
 ]
 
 /** Effects sit above the music; the music player keeps its own, lower level. */
-const MASTER_GAIN = 0.8
+const MASTER_GAIN = 1
 
 let context: AudioContext | null = null
 let master: GainNode | null = null
@@ -55,22 +55,31 @@ function contextClass(): typeof AudioContext | null {
   return w.AudioContext ?? w.webkitAudioContext ?? null
 }
 
-/** Creates the context on a user gesture. True when audio is available. */
-export function unlockEffects(): boolean {
+/**
+ * The one audio context, made on first use. Browsers allow it before any gesture, in a
+ * suspended state in which fetching and decoding still work; a gesture resumes it.
+ */
+export function audioContext(): AudioContext | null {
+  if (context) return context
   const Ctor = contextClass()
-  if (!Ctor) return false
-  if (!context) {
-    try {
-      context = new Ctor()
-      master = context.createGain()
-      master.gain.value = MASTER_GAIN
-      master.connect(context.destination)
-    } catch {
-      context = null
-      return false
-    }
+  if (!Ctor) return null
+  try {
+    context = new Ctor()
+    master = context.createGain()
+    master.gain.value = MASTER_GAIN
+    master.connect(context.destination)
+  } catch {
+    context = null
+    return null
   }
-  if (context.state === 'suspended') void context.resume()
+  return context
+}
+
+/** A user gesture happened: the context may run. True when audio is available. */
+export function unlockEffects(): boolean {
+  const ctx = audioContext()
+  if (!ctx) return false
+  if (ctx.state === 'suspended') void ctx.resume()
   return true
 }
 
@@ -166,7 +175,7 @@ export function playEffect(name: SoundName, intensity = 1): void {
   const level = Math.min(1, Math.max(0, intensity))
   switch (name) {
     case 'stage':
-      tone({ from: 90, to: 55, duration: 0.2, gain: 0.5 })
+      tone({ from: 90, to: 55, duration: 0.2, gain: 0.7 })
       burst({ duration: 0.03, gain: 0.25, filter: { type: 'highpass', from: 2500 } })
       return
     case 'fuel':
@@ -175,7 +184,7 @@ export function playEffect(name: SoundName, intensity = 1): void {
       return
     case 'advance': {
       const duration = 0.45 + 0.7 * level
-      tone({ from: 70, to: 260 + 420 * level, type: 'sawtooth', duration, gain: 0.3, attack: 0.03 })
+      tone({ from: 70, to: 260 + 420 * level, type: 'sawtooth', duration, gain: 0.5, attack: 0.03 })
       burst({
         duration: duration * 0.8,
         gain: 0.18,
@@ -191,7 +200,7 @@ export function playEffect(name: SoundName, intensity = 1): void {
     case 'boost':
       burst({
         duration: 0.45,
-        gain: 0.28,
+        gain: 0.4,
         filter: { type: 'bandpass', from: 400, to: 3200 },
         attack: 0.04,
       })
@@ -203,7 +212,7 @@ export function playEffect(name: SoundName, intensity = 1): void {
       tone({ from: 2400, duration: 0.06, gain: 0.08 })
       return
     case 'sabotage':
-      tone({ from: 420, to: 110, type: 'square', duration: 0.4, gain: 0.2, attack: 0.02 })
+      tone({ from: 420, to: 110, type: 'square', duration: 0.4, gain: 0.3, attack: 0.02 })
       tone({ from: 430, to: 115, type: 'square', duration: 0.4, gain: 0.1, attack: 0.02 })
       return
     case 'deflect':
@@ -225,7 +234,7 @@ export function playEffect(name: SoundName, intensity = 1): void {
     case 'raceEnd':
       tone({ from: NOTE.c5, duration: 0.18, gain: 0.22 })
       tone({ from: NOTE.e5, duration: 0.18, gain: 0.22, at: 0.14 })
-      tone({ from: NOTE.g5, duration: 0.45, gain: 0.24, at: 0.28 })
+      tone({ from: NOTE.g5, duration: 0.45, gain: 0.34, at: 0.28 })
       burst({
         duration: 0.7,
         gain: 0.14,
@@ -238,7 +247,7 @@ export function playEffect(name: SoundName, intensity = 1): void {
       tone({ from: NOTE.c5, type: 'triangle', duration: 0.16, gain: 0.24, at: 0.15 })
       tone({ from: NOTE.e5, type: 'triangle', duration: 0.16, gain: 0.24, at: 0.3 })
       tone({ from: NOTE.g5, type: 'triangle', duration: 0.16, gain: 0.24, at: 0.45 })
-      tone({ from: NOTE.c6, type: 'triangle', duration: 0.8, gain: 0.26, at: 0.6 })
+      tone({ from: NOTE.c6, type: 'triangle', duration: 0.8, gain: 0.36, at: 0.6 })
       tone({ from: NOTE.e5, type: 'triangle', duration: 0.8, gain: 0.14, at: 0.6 })
       burst({
         duration: 1,
