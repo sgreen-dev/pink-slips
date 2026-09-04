@@ -31,7 +31,7 @@
 | 12 | Holo and foil variants | done | da7c6c2 |
 | 13 | CPU difficulty levels | done | ffc297b |
 | 14 | Online play, part 1: the engine behind a server | done | 0c7176d |
-| 15 | Online play, part 2: accounts and matchmaking | todo | |
+| 15 | Online play, part 2: accounts and matchmaking | done, sign-in secrets pending | 7f08ebe |
 
 ---
 
@@ -420,6 +420,8 @@
 **Done when**: two signed-in strangers queue from different machines and are matched into a match that counts toward their ratings.
 
 **Prompt**: Do phase 15 of BUILD_PLAN.md.
+
+**Owner step outstanding**: register a GitHub OAuth app with callback `https://pink-slips-rooms.pink-slips-counter.workers.dev/auth/callback`, then from `server/` run `npx wrangler secret put GITHUB_CLIENT_ID` and `npx wrangler secret put GITHUB_CLIENT_SECRET`. The site hides the sign-in link until the service reports a provider, so the live "done when" check of two signed-in strangers waits on those secrets; the same flow was run end to end locally with the development sign-in.
 
 ---
 
