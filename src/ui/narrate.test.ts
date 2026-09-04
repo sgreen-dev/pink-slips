@@ -33,6 +33,43 @@ describe('match log narration', () => {
     ).toMatch(/Red Light/)
   })
 
+  it('shows what changed an advance', () => {
+    const breakdown = {
+      effectiveHp: 460,
+      effectiveWeightLb: 3700,
+      baseFt: 500,
+      typeBonusFt: 0,
+      modBonusFt: 100,
+      beforeSabotageFt: 600,
+      afterSabotageFt: 600,
+      wearMultiplier: 1,
+      finalFt: 600,
+    }
+    const entry = {
+      kind: 'advance',
+      player: 0,
+      carId: 'ford-mustang-gt',
+      fromFt: 0,
+      toFt: 600,
+      breakdown,
+    } as const
+    expect(describeLogEntry(entry, NAMES)).toMatch(
+      /advances 600 ft to 600 ft \(base 500 ft, \+100 ft mods\)\.$/,
+    )
+    const plain = {
+      ...entry,
+      toFt: 500,
+      breakdown: {
+        ...breakdown,
+        modBonusFt: 0,
+        beforeSabotageFt: 500,
+        afterSabotageFt: 500,
+        finalFt: 500,
+      },
+    }
+    expect(describeLogEntry(plain, NAMES)).toMatch(/advances 500 ft to 500 ft\.$/)
+  })
+
   it('hides bookkeeping entries', () => {
     expect(describeLogEntry({ kind: 'turnStart', player: 0, number: 3 }, NAMES)).toBeNull()
     expect(describeLogEntry({ kind: 'draw', player: 0, count: 1 }, NAMES)).toBeNull()

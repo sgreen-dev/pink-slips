@@ -484,6 +484,8 @@ Fonts load from Google Fonts. The card is a portrait 5:7 with a thick type-color
 
 **Next-step cue**: on the player's own turn the prompt line turns gold and breathes, and the button that moves the turn on (End mod step, Advance, a Parts Thief pick, a Sponsor fetch, and Continue at the line) breathes a gold ring in the same rhythm as the target cards, so the next step is obvious at a glance; while the other player acts, nothing breathes. Under reduced motion the gold stays and the motion stops.
 
+**Mod hints**: during the player's own mod step a faded card in the hand says in one line why it cannot be played (the turn's Boost or Sabotage already used, a Roadblock, a type lock, fuel it cannot pay, no open Part slot); outside the mod step the hand header says when cards play instead. The track lane under each car names what is waiting on its next advance, a Roadblock on its Boosts, and on the player's turn the Boosts they have played with what each does to the coming advance, cleared when the turn passes. An advance's log line ends with what changed the distance, base feet and only the steps that moved the number. A Part chip on a car carries its printed text for hover.
+
 **Leaving a local match**: the board header of a CPU or hotseat match has Exit match, which asks once and then returns to the start screen; a match left this way counts for nothing, no packs and no tally. Online matches leave through the online bar, where Leave concedes (section 13).
 
 **Board order**: each garage row shows its staged car first, so the two cars in the race lead their rows and stay in view on a phone, where the row scrolls; the other cars keep the order the engine holds them in.

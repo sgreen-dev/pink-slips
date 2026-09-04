@@ -8,6 +8,7 @@ import {
   currentPlayer,
 } from '../engine/index.ts'
 import type { RaceEnd } from './celebration.ts'
+import { blockedReason, handNote } from './explain.ts'
 import { Garage } from './Garage.tsx'
 import {
   buttonActions,
@@ -86,6 +87,7 @@ export function Board({
   const [confirmExit, setConfirmExit] = useState(false)
   // The viewer's own turn: the prompt and the next-step button breathe so the next step is obvious.
   const live = !inert && currentPlayer(state) === viewer
+  const hint = inert ? null : handNote(state, viewer)
   const rules = useRef<HTMLDialogElement>(null)
   const variantOf = useContext(VariantContext)
 
@@ -252,16 +254,21 @@ export function Board({
       </section>
 
       <section className="hand">
-        <header className="hand__header">Your hand · {me.hand.length} cards</header>
+        <header className="hand__header">
+          Your hand · {me.hand.length} cards
+          {hint && <span className="hand__note">{hint}</span>}
+        </header>
         <div className="hand__cards">
           {handIds.map((modId) => {
             const count = me.hand.filter((id) => id === modId).length
             const playable = !busy && modIntent(state, viewer, modId).kind !== 'unplayable'
+            const note = live && !busy ? blockedReason(state, viewer, modId) : null
             return (
               <div key={modId} className="hand__slot">
                 <ModCard
                   modId={modId}
                   playable={playable}
+                  note={note}
                   selected={selection.kind !== 'none' && selection.modId === modId}
                   onClick={() => onMod(modId)}
                 />

@@ -1,3 +1,4 @@
+import { advanceSuffix } from './explain.ts'
 import { getCar } from '../data/cars.ts'
 import { getMod } from '../data/mods.ts'
 import type { LogEntry } from '../engine/index.ts'
@@ -27,8 +28,10 @@ export function describeLogEntry(entry: LogEntry, names: readonly [string, strin
       return `${names[entry.player]} plays ${getMod(entry.modId).name}.`
     case 'discardPart':
       return `${names[entry.player]} loses ${getMod(entry.modId).name} from the ${getCar(entry.carId).name}.`
-    case 'advance':
-      return `${names[entry.player]}'s ${getCar(entry.carId).name} advances ${entry.toFt - entry.fromFt} ft to ${entry.toFt} ft.`
+    case 'advance': {
+      const why = advanceSuffix(entry.breakdown)
+      return `${names[entry.player]}'s ${getCar(entry.carId).name} advances ${entry.toFt - entry.fromFt} ft to ${entry.toFt} ft${why ? ` (${why})` : ''}.`
+    }
     case 'tractionIgnored':
       return `${names[entry.player]}'s car ${entry.reason === 'immune' ? 'is immune to' : 'is shielded from'} the Traction sabotage.`
     case 'advanceSkipped':

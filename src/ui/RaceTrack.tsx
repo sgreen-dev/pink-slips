@@ -1,6 +1,7 @@
 import { getCar } from '../data/cars.ts'
 import { TUNABLES, type MatchState, type PlayerIndex } from '../engine/index.ts'
 import type { RaceEnd } from './celebration.ts'
+import { laneNotes } from './explain.ts'
 
 interface RaceTrackProps {
   state: MatchState
@@ -36,9 +37,7 @@ export function RaceTrack({ state, names, lanes, frozen }: RaceTrackProps) {
           track,
           frozen ? frozen.distanceFt[player] : state.race.distanceFt[player],
         )
-        const pending = state.players[player].pendingSabotage
-        const sabotaged =
-          !frozen && (pending.flatReductionFt > 0 || pending.halve || pending.skipAdvance)
+        const notes = frozen ? [] : laneNotes(state, player)
         const won = frozen?.winner === player
         return (
           <div
@@ -50,7 +49,11 @@ export function RaceTrack({ state, names, lanes, frozen }: RaceTrackProps) {
             <div className="lane__label">
               <span className="lane__player">{names[player]}</span>
               <span className="lane__car">{car ? car.name : 'No car staged'}</span>
-              {sabotaged && <span className="lane__flag">Sabotage pending</span>}
+              {notes.map((note) => (
+                <span key={note.text} className={`lane__flag lane__flag--${note.tone}`}>
+                  {note.text}
+                </span>
+              ))}
             </div>
             <div className="lane__road">
               <div className="lane__finish" />

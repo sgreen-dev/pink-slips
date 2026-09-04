@@ -9,6 +9,8 @@ interface ModCardProps {
   onClick?: () => void
   /** Shown faded, such as a card the player does not own yet. */
   dimmed?: boolean
+  /** Why the card cannot be played right now, shown on a faded card in the hand. */
+  note?: string | null
   size?: 'sm' | 'md'
   /** Foil or holo finish. Without it the card asks the nearest VariantContext. */
   variant?: Variant
@@ -22,6 +24,7 @@ export function ModCard({
   selected,
   onClick,
   dimmed,
+  note,
   size = 'md',
   variant: variantProp,
 }: ModCardProps) {
@@ -52,6 +55,7 @@ export function ModCard({
         <div className="mod__cost">Costs {mod.fuelCost} fuel</div>
       ) : null}
       {mod.typeLock && <div className="mod__lock">{mod.typeLock.toUpperCase()} only</div>}
+      {note && <div className="mod__why">{note}</div>}
       {variant !== 'base' && (
         <span className={`mod__variant mod__variant--${variant}`}>{VARIANT_LABEL[variant]}</span>
       )}

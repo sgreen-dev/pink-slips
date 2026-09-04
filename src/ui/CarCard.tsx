@@ -67,13 +67,17 @@ function Tokens({ state }: { state: CarState }) {
       {state.parts.length > 0 && (
         <span className="card__parts">
           {state.parts.map((modId, i) => (
-            <span key={`${modId}-${i}`} className="chip">
+            <span key={`${modId}-${i}`} className="chip" title={getMod(modId).text}>
               {getMod(modId).name}
             </span>
           ))}
         </span>
       )}
-      {state.tractionShield && <span className="chip chip--shield">Shield</span>}
+      {state.tractionShield && (
+        <span className="chip chip--shield" title={getMod('launch-control').text}>
+          Shield
+        </span>
+      )}
     </div>
   )
 }
