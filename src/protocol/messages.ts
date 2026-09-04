@@ -9,6 +9,8 @@ export interface JoinMessage {
   type: 'join'
   name: string
   garage: PlayerConfig
+  /** From a matched message; a ranked room seats only ticket holders. */
+  ticket?: string
 }
 
 export interface ResumeMessage {
@@ -52,8 +54,35 @@ export interface ErrorMessage {
   reason: string
 }
 
+export interface RatingChange {
+  before: number
+  after: number
+}
+
+/** Sent once to each seat after the room reports a finished match. */
+export interface ResultMessage {
+  type: 'result'
+  /** Packs the account was given, or null for a guest, who keeps the local rule. */
+  packsEarned: number | null
+  rating: RatingChange | null
+}
+
+/** The queue found an opponent; join the room with the ticket. */
+export interface MatchedMessage {
+  type: 'matched'
+  code: string
+  ticket: string
+  opponent: string
+}
+
 export type ServerMessage =
-  WelcomeMessage | WaitingMessage | StateMessage | PresenceMessage | ErrorMessage
+  | WelcomeMessage
+  | WaitingMessage
+  | StateMessage
+  | PresenceMessage
+  | ErrorMessage
+  | ResultMessage
+  | MatchedMessage
 
 export const MAX_NAME_LENGTH = 24
 
@@ -67,6 +96,12 @@ function isStringArray(value: unknown): value is string[] {
 
 function isPlayerConfig(value: unknown): value is PlayerConfig {
   return isRecord(value) && isStringArray(value['garage']) && isStringArray(value['deck'])
+}
+
+function isRatingChange(value: unknown): value is RatingChange {
+  return (
+    isRecord(value) && typeof value['before'] === 'number' && typeof value['after'] === 'number'
+  )
 }
 
 /** Shape check only; the room checks legality against the match. */
@@ -92,7 +127,10 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
       const name = value['name']
       if (typeof name !== 'string' || !isPlayerConfig(value['garage'])) return null
       const trimmed = name.trim().slice(0, MAX_NAME_LENGTH)
-      return { type: 'join', name: trimmed || 'Player', garage: value['garage'] }
+      const ticket = value['ticket']
+      if (ticket !== undefined && typeof ticket !== 'string') return null
+      const join: JoinMessage = { type: 'join', name: trimmed || 'Player', garage: value['garage'] }
+      return ticket === undefined ? join : { ...join, ticket }
     }
     case 'resume':
       return typeof value['token'] === 'string' ? { type: 'resume', token: value['token'] } : null
@@ -137,6 +175,28 @@ export function parseServerMessage(raw: unknown): ServerMessage | null {
         : null
     case 'error':
       return typeof value['reason'] === 'string' ? { type: 'error', reason: value['reason'] } : null
+    case 'result': {
+      const packs = value['packsEarned']
+      const rating = value['rating']
+      if (packs !== null && typeof packs !== 'number') return null
+      if (rating !== null && !isRatingChange(rating)) return null
+      return {
+        type: 'result',
+        packsEarned: packs as number | null,
+        rating: rating as RatingChange | null,
+      }
+    }
+    case 'matched':
+      return typeof value['code'] === 'string' &&
+        typeof value['ticket'] === 'string' &&
+        typeof value['opponent'] === 'string'
+        ? {
+            type: 'matched',
+            code: value['code'],
+            ticket: value['ticket'],
+            opponent: value['opponent'],
+          }
+        : null
     default:
       return null
   }

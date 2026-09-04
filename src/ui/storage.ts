@@ -3,14 +3,9 @@
  * store never throws into the UI; readers get an empty list and writers get false.
  */
 
-export interface SavedGarage {
-  id: string
-  name: string
-  cars: readonly string[]
-  deck: readonly string[]
-  /** Milliseconds since the epoch. */
-  updatedAt: number
-}
+import { isSavedGarage, isStringArray, type SavedGarage } from '../protocol/records.ts'
+
+export type { SavedGarage }
 
 /** The subset of the Storage interface the app uses, so tests can pass a fake. */
 export interface StorageLike {
@@ -29,22 +24,6 @@ export function browserStorage(): StorageLike | null {
   } catch {
     return null
   }
-}
-
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === 'string')
-}
-
-function isSavedGarage(value: unknown): value is SavedGarage {
-  if (typeof value !== 'object' || value === null) return false
-  const record = value as Record<string, unknown>
-  return (
-    typeof record['id'] === 'string' &&
-    typeof record['name'] === 'string' &&
-    isStringArray(record['cars']) &&
-    isStringArray(record['deck']) &&
-    typeof record['updatedAt'] === 'number'
-  )
 }
 
 export function readRecord<T>(

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
+import { AccountContext, pushGarages } from './account.ts'
 import { copiesOwned } from '../collection/collection.ts'
 import { loadCollection } from '../collection/persist.ts'
 import { CARS } from '../data/cars.ts'
@@ -53,6 +54,10 @@ interface BuilderScreenProps {
 export function BuilderScreen({ onBack }: BuilderScreenProps) {
   const [draft, setDraft] = useState<GarageDraft>(() => loadDraft() ?? emptyDraft())
   const [saved, setSaved] = useState<SavedGarage[]>(() => loadGarages())
+  const account = useContext(AccountContext)
+  const sync = () => {
+    if (account) void pushGarages(account.endpoint, account.token, loadGarages())
+  }
   const [collection] = useState(() => loadCollection())
   const owned = collection.owned
   const variantOf = lookupFrom(collection.variants)
@@ -98,6 +103,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
     }
     if (upsertGarage(record)) {
       setSaved(loadGarages())
+      sync()
       setDraft({ ...draft, id, name: record.name })
       setNotice(`Saved ${record.name}. It is now on the start screen.`)
     } else {
@@ -113,6 +119,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
     }
     if (deleteGarage(draft.id)) {
       setSaved(loadGarages())
+      sync()
       setDraft(emptyDraft())
       setNotice('Deleted.')
     } else {

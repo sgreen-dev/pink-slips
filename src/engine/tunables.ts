@@ -66,4 +66,17 @@ export const TUNABLES = {
       Record<Tier, number>
     >,
   },
+  /** Online accounts and matchmaking (DESIGN.md 13). */
+  online: {
+    /** The rating every account starts with. */
+    ratingStart: 1000,
+    /** Elo K factor: the most a single match can move a rating. */
+    ratingK: 32,
+    /** Largest rating gap the queue accepts while both players are fresh. */
+    pairWindow: 200,
+    /** Wait, in ms, after which a player is paired with anyone. */
+    pairWaitMs: 30_000,
+    /** Rated players needed before the window applies at all. */
+    pairMinRated: 50,
+  },
 } as const

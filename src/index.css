@@ -1449,3 +1449,83 @@ h2 {
   max-width: 34rem;
   margin-inline: auto;
 }
+
+/* Accounts: the sign-in line, the profile, and the leaderboard. */
+.account {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem 0.8rem;
+  margin: 0 auto 1.2rem;
+  color: var(--muted);
+}
+.account strong {
+  color: var(--cream);
+}
+.account__note {
+  font-size: 0.85rem;
+}
+.profile__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.8rem;
+  max-width: 40rem;
+  margin: 1rem auto;
+  padding: 0;
+}
+.profile__stats div {
+  background: var(--asphalt-2);
+  border: 2px solid var(--line);
+  border-radius: 0.6rem;
+  padding: 0.7rem;
+}
+.profile__stats dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.profile__stats dd {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+}
+.leaderboard {
+  max-width: 40rem;
+  margin: 1.5rem auto 0;
+}
+.leaderboard h2,
+.online__queue h2 {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.5rem;
+}
+.leaderboard__table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.leaderboard__table th,
+.leaderboard__table td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+}
+.leaderboard__table th {
+  color: var(--muted);
+  font-weight: normal;
+  font-size: 0.85rem;
+}
+.leaderboard__me td {
+  color: var(--pink);
+}
+.online__queue {
+  max-width: 40rem;
+  margin: 1.2rem auto 0;
+  padding: 1rem;
+  border: 2px solid var(--line);
+  border-radius: 0.6rem;
+}
+.result__note {
+  color: var(--gold);
+  margin: -0.2rem 0 0.8rem;
+}

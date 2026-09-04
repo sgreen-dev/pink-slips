@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useReducer, useRef, useState } from 'react'
 import { packsEarned } from '../collection/collection.ts'
 import { addPacks, loadCollection } from '../collection/persist.ts'
 import { currentPlayer, isOver, type Action, type PlayerIndex } from '../engine/index.ts'
+import { AccountContext, fetchMe } from './account.ts'
 import { Board } from './Board.tsx'
 import { recordMatch } from './counter.ts'
 import { NO_SELECTION, type Selection } from './interaction.ts'
@@ -27,12 +28,16 @@ interface OnlineMatchProps {
   onAgain: () => void
 }
 
+/** How long to wait for the room's result message after the final state before going local. */
+const RESULT_GRACE_MS = 3000
+
 /**
  * One online match as one seat sees it. The room holds the match; this screen sends actions
  * and draws whatever view comes back, holding the race-end moment the same way the local
- * match does.
+ * match does. When the match ends, the room's result message says what the account earned.
  */
 export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchProps) {
+  const account = useContext(AccountContext)
   const [session, dispatch] = useReducer(reduceOnline, entry, (e) => startOnline(e.code, e.name))
   const client = useRef<RoomClient | null>(null)
   const [selection, setSelection] = useState<Selection>(NO_SELECTION)
@@ -40,23 +45,25 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
   const [variantOf] = useState(() => lookupFrom(loadCollection().variants))
   const recorded = useRef(false)
   const [earned, setEarned] = useState(0)
+  const [note, setNote] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const onContinue = useCallback(() => dispatch({ type: 'continue' }), [])
+  const accountToken = account?.token ?? null
 
   useEffect(() => {
-    const room = new RoomClient(socketUrl(endpoint, entry.code), {
+    const room = new RoomClient(socketUrl(endpoint, entry.code, accountToken), {
       onMessage: (message) => dispatch({ type: 'message', message }),
       onStatus: (status) => dispatch({ type: 'status', status }),
     })
     client.current = room
     if (entry.token) room.resume(entry.token)
-    else if (entry.garage) room.join(entry.name, entry.garage)
+    else if (entry.garage) room.join(entry.name, entry.garage, entry.ticket ?? undefined)
     room.connect()
     return () => {
       client.current = null
       room.close()
     }
-  }, [endpoint, entry])
+  }, [endpoint, entry, accountToken])
 
   // The seat is kept for a refresh or a dropped connection until the match ends.
   const { code, seat, token, view } = session
@@ -64,17 +71,37 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
     if (token !== null && seat !== null) saveOnlineSeat({ code, token, seat, name: entry.name })
   }, [code, token, seat, entry.name])
 
+  // At the end, the room says what the account earned; a guest keeps the local rule.
   const winner = view === null ? null : isOver(view)
+  const result = session.result
   useEffect(() => {
     if (winner === null || seat === null || recorded.current) return
-    recorded.current = true
-    clearOnlineSeat()
-    // One count per match: the first seat reports it.
-    if (seat === 0) void recordMatch()
-    const packs = packsEarned('online', winner === seat)
-    addPacks(packs)
-    setEarned(packs)
-  }, [winner, seat])
+    const settle = (packs: number | null, rating: { before: number; after: number } | null) => {
+      recorded.current = true
+      clearOnlineSeat()
+      // One count per match: the first seat reports it.
+      if (seat === 0) void recordMatch()
+      if (packs === null || !account) {
+        const local = packs ?? packsEarned('online', winner === seat)
+        addPacks(local)
+        setEarned(local)
+      } else {
+        // Refresh the account first so the pack pop-up opens from the right count.
+        void fetchMe(account.endpoint, account.token).then((me) => {
+          if (me.data) account.update(me.data)
+          else addPacks(packs)
+          setEarned(packs)
+        })
+      }
+      setNote(rating ? `Rating ${rating.before} → ${rating.after}` : null)
+    }
+    if (result) {
+      settle(result.packsEarned, result.rating)
+      return
+    }
+    const timer = setTimeout(() => settle(null, null), RESULT_GRACE_MS)
+    return () => clearTimeout(timer)
+  }, [winner, seat, result, account])
 
   const opponent: PlayerIndex = seat === 0 ? 1 : 0
   const opponentName = session.names[opponent]
@@ -113,20 +140,29 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
         : seat === null
           ? 'Taking a seat…'
           : 'Waiting for your opponent to join…'
+    const ranked = entry.ticket !== null
     return (
       <main className="start online">
-        <h1 className="online__title">Room</h1>
+        <h1 className="online__title">{ranked ? 'Ranked match' : 'Room'}</h1>
         <p className="online__code" aria-label={`Room code ${session.code}`}>
           {session.code}
         </p>
-        <p>Send this link to your opponent. The match starts as soon as they join.</p>
-        <p className="online__link">
-          <code>{link}</code>
-        </p>
+        {ranked ? (
+          <p>Your opponent is on the way. The match starts as soon as you are both seated.</p>
+        ) : (
+          <>
+            <p>Send this link to your opponent. The match starts as soon as they join.</p>
+            <p className="online__link">
+              <code>{link}</code>
+            </p>
+          </>
+        )}
         <div className="online__actions">
-          <button type="button" className="button button--primary" onClick={() => void copy()}>
-            {copied ? 'Link copied' : 'Copy link'}
-          </button>
+          {!ranked && (
+            <button type="button" className="button button--primary" onClick={() => void copy()}>
+              {copied ? 'Link copied' : 'Copy link'}
+            </button>
+          )}
           <button type="button" className="button" onClick={onLeave}>
             Leave
           </button>
@@ -146,8 +182,9 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
           winner={winner}
           names={session.names}
           title={headline(winner)}
+          note={note}
           packsEarned={earned}
-          rematchLabel="New room"
+          rematchLabel={entry.ticket ? 'Play again' : 'New room'}
           onRematch={onAgain}
           onNewMatch={onLeave}
         />
@@ -172,7 +209,9 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
   return (
     <VariantContext value={variantOf}>
       <div className="online__bar">
-        <span>Room {session.code}</span>
+        <span>
+          {entry.ticket ? 'Ranked · ' : ''}Room {session.code}
+        </span>
         <span className={warn ? 'online__bar--warn' : ''} role="status">
           {line}
         </span>

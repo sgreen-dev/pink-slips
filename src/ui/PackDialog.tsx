@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { copiesOwned, packCards, type Pack } from '../collection/collection.ts'
-import { loadCollection, openNextPack, type CollectionState } from '../collection/persist.ts'
+import { loadCollection, type CollectionState } from '../collection/persist.ts'
+import { AccountContext, openNext } from './account.ts'
 import { PackReveal } from './PackReveal.tsx'
-import { newSeed } from './seed.ts'
 
 interface PackDialogProps {
   /** Packs this match earned; the headline. */
@@ -22,6 +22,7 @@ function noun(n: number): string {
 
 /** After a match: how many packs it earned, and the chance to open them right here. */
 export function PackDialog({ earned, onClose }: PackDialogProps) {
+  const account = useContext(AccountContext)
   const [state, setState] = useState<CollectionState>(() => loadCollection())
   const [opened, setOpened] = useState<Opened | null>(null)
   const remaining = state.packs
@@ -34,8 +35,8 @@ export function PackDialog({ earned, onClose }: PackDialogProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose, remaining])
 
-  const open = () => {
-    const result = openNextPack(newSeed())
+  const open = async () => {
+    const result = await openNext(account)
     if (!result) return
     const fresh = new Set(
       packCards(result.pack)
@@ -66,7 +67,7 @@ export function PackDialog({ earned, onClose }: PackDialogProps) {
             <button
               type="button"
               className="button button--primary button--big"
-              onClick={open}
+              onClick={() => void open()}
               autoFocus
             >
               {opened ? 'Open another' : 'Open a pack'}

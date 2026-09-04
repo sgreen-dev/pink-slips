@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useReducer, useRef, useState } from 'react'
 import { packsEarned } from '../collection/collection.ts'
 import type { Level } from '../cpu/index.ts'
 import { addPacks, loadCollection } from '../collection/persist.ts'
@@ -9,6 +9,7 @@ import {
   type MatchConfig,
   type PlayerIndex,
 } from '../engine/index.ts'
+import { AccountContext, reportCpuResult } from './account.ts'
 import { Board } from './Board.tsx'
 import { reduceSession, startSession } from './celebration.ts'
 import { recordMatch } from './counter.ts'
@@ -50,8 +51,10 @@ export function Match({ mode, config, seed, names, level, onRematch, onNewMatch 
   const [options, setOptions] = useState<Action[] | null>(null)
   const cpu = mode === 'cpu'
   const recorded = useRef(false)
-  const [earned, setEarned] = useState(0)
+  /** Packs the account service granted; guests use the local rule at render time. */
+  const [granted, setGranted] = useState<number | null>(null)
   const [variantOf] = useState(() => lookupFrom(loadCollection().variants))
+  const account = useContext(AccountContext)
   const onContinue = useCallback(() => dispatch({ type: 'continue' }), [])
 
   // The CPU acts one step at a time and waits while the race-end banner is up.
@@ -71,10 +74,19 @@ export function Match({ mode, config, seed, names, level, onRematch, onNewMatch 
     if (winner === null || recorded.current) return
     recorded.current = true
     void recordMatch()
-    const packs = packsEarned(mode, winner === HUMAN_SEAT)
-    addPacks(packs)
-    setEarned(packs)
-  }, [winner, mode])
+    const won = winner === HUMAN_SEAT
+    if (account) {
+      void reportCpuResult(account.endpoint, account.token, mode, won).then((result) => {
+        if (!result) return
+        account.update(result.data)
+        setGranted(result.packs)
+      })
+    } else {
+      addPacks(packsEarned(mode, won))
+    }
+  }, [winner, mode, account])
+  const earned =
+    winner === null ? 0 : account ? (granted ?? 0) : packsEarned(mode, winner === HUMAN_SEAT)
 
   const headline = (player: PlayerIndex) =>
     cpu ? (player === HUMAN_SEAT ? 'You win' : 'The CPU wins') : `${names[player]} wins`

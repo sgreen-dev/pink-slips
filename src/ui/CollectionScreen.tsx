@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import {
   ALL_CARD_IDS,
   bestVariant,
@@ -7,7 +7,8 @@ import {
   packCards,
   type Pack,
 } from '../collection/collection.ts'
-import { loadCollection, openNextPack, type CollectionState } from '../collection/persist.ts'
+import { loadCollection, type CollectionState } from '../collection/persist.ts'
+import { AccountContext, openNext } from './account.ts'
 import { CARS } from '../data/cars.ts'
 import { MODS } from '../data/mods.ts'
 import { TIER_LABEL } from '../data/tiers.ts'
@@ -25,7 +26,6 @@ import { CarCard } from './CarCard.tsx'
 import { Filter } from './Filter.tsx'
 import { ModCard } from './ModCard.tsx'
 import { PackReveal } from './PackReveal.tsx'
-import { newSeed } from './seed.ts'
 
 interface CollectionScreenProps {
   onBack: () => void
@@ -39,6 +39,7 @@ interface Opened {
 
 /** Every card in the game, what the player owns, and the packs waiting to be opened (DESIGN.md 12). */
 export function CollectionScreen({ onBack }: CollectionScreenProps) {
+  const account = useContext(AccountContext)
   const [state, setState] = useState<CollectionState>(() => loadCollection())
   const [opened, setOpened] = useState<Opened | null>(null)
   const [tab, setTab] = useState<'cars' | 'mods'>('cars')
@@ -53,8 +54,8 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const mods = MODS.filter((mod) => family === 'all' || mod.family === family)
   const { packsPerMatch, packsPerCpuWin } = TUNABLES.collection
 
-  const open = () => {
-    const result = openNextPack(newSeed())
+  const open = async () => {
+    const result = await openNext(account)
     if (!result) return
     const fresh = new Set(
       packCards(result.pack)
@@ -83,7 +84,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
           type="button"
           className="button button--primary button--big"
           disabled={state.packs === 0}
-          onClick={open}
+          onClick={() => void open()}
         >
           {state.packs === 0
             ? 'No packs to open'

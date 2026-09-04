@@ -530,7 +530,7 @@ The engine is deterministic given a seed. Every rule in section 3 is a unit test
 1. Illustrated card art in one consistent style (phase 10)
 2. Packs and a collection, with holo and foil variants (phases 11 and 12)
 3. CPU difficulty levels (phase 13)
-4. Online play: rooms by link or code (phase 14, done), then accounts and matchmaking (phase 15)
+4. Online play: rooms by link or code (phase 14), then accounts, ranked matchmaking, and a leaderboard (phase 15); both done
 
 ---
 
@@ -571,4 +571,15 @@ Added in phase 11. Before it, every card was unlocked.
 
 **Client** (`src/ui/online.ts`, `OnlineScreen.tsx`, `OnlineMatch.tsx`). The online screen makes a room or joins by code, and a shared `?room=` link opens it with the code filled in. The seat's code and token are kept in `localStorage` under `pink-slips.online.v1` until the match ends, and the online screen offers to rejoin while they are there. The client reconnects on its own with a doubling wait from one to ten seconds and resumes with its token. The race-end moment works as in section 9, with one difference: views that arrive while the banner is up are held and applied on Continue. An online match earns packs by the CPU rule, one for playing and two for a win, and counts once on the matches-played counter, reported by seat 0. CPU and hotseat play are unchanged and work offline.
 
-**Not in this phase**: accounts, matchmaking, spectators, and a rematch inside the same room (phase 15).
+
+**Accounts and matchmaking** (phase 15). Sign-in goes through GitHub OAuth on the worker: `GET /auth/login` sends the browser to GitHub with a state nonce kept in a cookie on the worker's own domain, `GET /auth/callback` exchanges the code, asks GitHub for the user, and sends the browser back to the site with a session token in the URL fragment, which the app stores under `pink-slips.session.v1` and strips from the address. GitHub is the site's own host, and the flow is one small adapter, so another provider is a second adapter, not a redesign. The service reports at `GET /auth/status` whether a provider is configured, and the site shows the sign-in link only then. A session lasts thirty days; `POST /auth/logout` ends it.
+
+The accounts live in one Durable Object, `AccountDirectory`, behind a platform-free `Directory` class in `src/server/directory.ts`: one record per account with its provider identity, display name, rating, record, collection, saved garages, and sessions. A signed-in browser keeps a mirror of the account's collection and garages in `localStorage`, so every screen reads as before, and asks the service whenever something changes: the builder pushes garages with `PUT /me/garages`, the collection and the pack pop-up open packs with `POST /me/packs/open`, and a finished CPU or hotseat match reports itself with `POST /me/cpu-result`, which the service honours at most once a minute. Guest data is claimed once, on the first sign-in from a browser: card counts take the larger of the two copies, packs add up, garages are kept, and the account is marked claimed so nothing is ever merged twice. Nothing a client sends can set a pack count or a rating.
+
+Packs earned online are awarded by the server. A room learns the account behind each seat, from the ticket in a ranked room and from the session on the socket in a friend room, and when the match ends it reports the winner and loser to the directory once. The directory adds the packs by the online rule and, for a ranked match between two accounts, moves both ratings and records; the room then sends each seat a `result` message with its packs and rating change, and the client refreshes its mirror before the pack pop-up opens. A guest seat gets no packs from the server and keeps the local rule.
+
+Ratings are Elo with K of 32 from a start of 1000, whole numbers, applied only to ranked matches: 1000 beating 1000 gives 1016 and 984, and 1000 beating 1200 gives 1024 and 1176. Matchmaking is a queue of sockets on the directory object, one per waiting account: `GET /queue` with the session upgrades to a socket, and the object pairs the two longest-waiting players. Once more than 50 accounts hold a rating, two players who have both waited under 30 seconds are paired only when their ratings are within 200 points; anyone who has waited longer takes the next player. The pair gets a fresh room set up with one ticket per seat, a `matched` message with the code and ticket, and the room seats only the ticket holders, naming them from their accounts. A queue tick runs every five seconds while anyone waits. The numbers live under `online` in `src/engine/tunables.ts`.
+
+The profile screen shows the name, rating, record, cards owned, and packs waiting, with the leaderboard below: the top 50 accounts with at least one ranked match, by rating. Local development signs in through `GET /auth/dev?name=` when the worker runs with `DEV_LOGIN=true` in `server/.dev.vars`, which is not committed.
+
+**Not yet**: spectators, a rematch inside the same room, trading, and a second sign-in provider.

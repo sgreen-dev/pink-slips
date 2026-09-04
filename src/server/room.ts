@@ -2,6 +2,7 @@ import {
   apply,
   createMatch,
   isLegal,
+  isOver,
   redact,
   type Action,
   type MatchState,
@@ -15,13 +16,28 @@ import type { ClientMessage, ServerMessage } from '../protocol/messages.ts'
  * the full MatchState. It takes client messages, validates them, applies legal actions through
  * the engine, and hands back the messages to send, each addressed to a seat. Persistence and
  * sockets are the adapter's job; the room can be rebuilt from its snapshot at any time.
+ *
+ * A room made by the matchmaking queue is ranked: it is set up with one ticket per seat, seats
+ * only the ticket holders, and names them from their accounts. Any room can hold an account
+ * identity per seat, so the result can be reported for packs and, when ranked, ratings.
  */
+
+export interface SeatIdentity {
+  accountId: string
+  name: string
+}
+
+export interface Ticket {
+  ticket: string
+  identity: SeatIdentity
+}
 
 export interface Seat {
   name: string
   garage: PlayerConfig
   token: string
   connected: boolean
+  identity?: SeatIdentity | null
 }
 
 export interface RoomSnapshot {
@@ -29,6 +45,8 @@ export interface RoomSnapshot {
   seed: number
   seats: readonly [Seat | null, Seat | null]
   state: MatchState | null
+  tickets?: readonly [Ticket, Ticket] | null
+  reported?: boolean
 }
 
 export interface Outbound {
@@ -37,10 +55,19 @@ export interface Outbound {
   message: ServerMessage
 }
 
+/** Who won and lost, by account, handed out once when the match is over. */
+export interface RoomResult {
+  ranked: boolean
+  winner: SeatIdentity | null
+  loser: SeatIdentity | null
+  winnerSeat: PlayerIndex
+}
+
 export const REASONS = {
   alreadySeated: 'You already have a seat in this room.',
   full: 'This room is full.',
   badGarage: 'That garage is not legal for a match.',
+  badTicket: 'This match is reserved for the two players the queue matched.',
   unknownToken: 'That seat could not be found. The room may have expired.',
   notSeated: 'Join the room first.',
   notStarted: 'The match has not started yet.',
@@ -56,6 +83,8 @@ function otherSeat(seat: PlayerIndex): PlayerIndex {
 export class Room {
   private seats: [Seat | null, Seat | null]
   private state: MatchState | null
+  private tickets: [Ticket, Ticket] | null
+  private reported: boolean
   readonly code: string
   readonly seed: number
 
@@ -64,14 +93,34 @@ export class Room {
     this.seed = snapshot?.seed ?? seed
     this.seats = snapshot ? [snapshot.seats[0], snapshot.seats[1]] : [null, null]
     this.state = snapshot?.state ?? null
+    this.tickets = snapshot?.tickets ? [snapshot.tickets[0], snapshot.tickets[1]] : null
+    this.reported = snapshot?.reported ?? false
   }
 
   snapshot(): RoomSnapshot {
-    return { code: this.code, seed: this.seed, seats: [...this.seats], state: this.state }
+    return {
+      code: this.code,
+      seed: this.seed,
+      seats: [...this.seats],
+      state: this.state,
+      tickets: this.tickets ? [...this.tickets] : null,
+      reported: this.reported,
+    }
   }
 
   get started(): boolean {
     return this.state !== null
+  }
+
+  get ranked(): boolean {
+    return this.tickets !== null
+  }
+
+  /** Reserves the seats for two ticket holders. Only an empty, unstarted room can be set up. */
+  setup(tickets: readonly [Ticket, Ticket]): boolean {
+    if (this.state || this.seats[0] || this.seats[1] || this.tickets) return false
+    this.tickets = [tickets[0], tickets[1]]
+    return true
   }
 
   seatOf(token: string): PlayerIndex | null {
@@ -107,11 +156,17 @@ export class Room {
   /**
    * Handles one message from a socket. `from` is the seat that socket holds, or null before it
    * joins. `newToken` supplies reconnect tokens so the room stays free of randomness of its own.
+   * `identity` is the signed-in account behind the socket, when the adapter knows one.
    */
-  handle(from: PlayerIndex | null, message: ClientMessage, newToken: () => string): Outbound[] {
+  handle(
+    from: PlayerIndex | null,
+    message: ClientMessage,
+    newToken: () => string,
+    identity: SeatIdentity | null = null,
+  ): Outbound[] {
     switch (message.type) {
       case 'join':
-        return this.join(from, message.name, message.garage, newToken)
+        return this.join(from, message, newToken, identity)
       case 'resume':
         return this.resume(message.token)
       case 'act':
@@ -121,16 +176,31 @@ export class Room {
 
   private join(
     from: PlayerIndex | null,
-    name: string,
-    garage: PlayerConfig,
+    message: { name: string; garage: PlayerConfig; ticket?: string },
     newToken: () => string,
+    identity: SeatIdentity | null,
   ): Outbound[] {
     if (from !== null) return [fail(REASONS.alreadySeated)]
-    const seat: PlayerIndex | null = this.seats[0] === null ? 0 : this.seats[1] === null ? 1 : null
-    if (seat === null) return [fail(REASONS.full)]
-    if (!legalGarage(garage)) return [fail(REASONS.badGarage)]
+    let seat: PlayerIndex
+    let name = message.name
+    let who = identity
+    if (this.tickets) {
+      const index = this.tickets.findIndex((t) => t.ticket === message.ticket)
+      if (index < 0) return [fail(REASONS.badTicket)]
+      seat = index === 0 ? 0 : 1
+      if (this.seats[seat] !== null) return [fail(REASONS.full)]
+      who = this.tickets[seat].identity
+      name = who.name
+    } else if (this.seats[0] === null) {
+      seat = 0
+    } else if (this.seats[1] === null) {
+      seat = 1
+    } else {
+      return [fail(REASONS.full)]
+    }
+    if (!legalGarage(message.garage)) return [fail(REASONS.badGarage)]
     const token = newToken()
-    this.seats[seat] = { name, garage, token, connected: true }
+    this.seats[seat] = { name, garage: message.garage, token, connected: true, identity: who }
     const out: Outbound[] = [
       { to: null, message: { type: 'welcome', code: this.code, seat, token } },
       this.presenceFor(otherSeat(seat)),
@@ -184,6 +254,23 @@ export class Room {
     if (!held) return []
     this.seats[seat] = { ...held, connected: false }
     return [this.presenceFor(otherSeat(seat))]
+  }
+
+  /**
+   * The finished match's result, once. Null while the match runs, and null again after it has
+   * been taken, so the adapter reports each match one time.
+   */
+  takeResult(): RoomResult | null {
+    if (!this.state || this.reported) return null
+    const winner = isOver(this.state)
+    if (winner === null) return null
+    this.reported = true
+    return {
+      ranked: this.tickets !== null,
+      winner: this.seats[winner]?.identity ?? null,
+      loser: this.seats[otherSeat(winner)]?.identity ?? null,
+      winnerSeat: winner,
+    }
   }
 }
 

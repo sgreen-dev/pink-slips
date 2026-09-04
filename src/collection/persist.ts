@@ -1,4 +1,5 @@
 import { seedRng } from '../engine/index.ts'
+import type { CollectionState } from '../protocol/records.ts'
 import {
   browserStorage,
   loadGarages,
@@ -23,13 +24,7 @@ import {
 
 export const COLLECTION_KEY = 'pink-slips.collection.v1'
 
-export interface CollectionState {
-  owned: Collection
-  /** Packs earned and not yet opened. */
-  packs: number
-  /** Foil and holo copies among the owned ones. */
-  variants: VariantCounts
-}
+export type { CollectionState }
 
 /** What sits in storage. Records written before phase 12 have no variants. */
 interface StoredState {

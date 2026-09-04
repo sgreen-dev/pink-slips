@@ -30,3 +30,6 @@ scripts/art/cache/
 
 # Local state of wrangler dev
 .wrangler/
+
+# Local secrets for wrangler dev
+.dev.vars

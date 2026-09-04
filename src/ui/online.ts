@@ -3,6 +3,7 @@ import {
   isRoomCode,
   parseServerMessage,
   type ClientMessage,
+  type ResultMessage,
   type ServerMessage,
 } from '../protocol/messages.ts'
 import { raceEndBetween, type RaceEnd } from './celebration.ts'
@@ -21,9 +22,10 @@ export function roomEndpoint(): string | null {
   return trimmed === '' ? null : trimmed
 }
 
-export function socketUrl(endpoint: string, code: string): string {
+export function socketUrl(endpoint: string, code: string, session: string | null = null): string {
   const base = endpoint.replace(/^http/, 'ws')
-  return `${base}/room/${code}`
+  const query = session ? `?session=${encodeURIComponent(session)}` : ''
+  return `${base}/room/${code}${query}`
 }
 
 type Fetcher = (input: string, init?: RequestInit) => Promise<Response>
@@ -171,8 +173,8 @@ export class RoomClient {
     socket.addEventListener('error', () => this.dropped(socket))
   }
 
-  join(name: string, garage: PlayerConfig): void {
-    this.introduce({ type: 'join', name, garage })
+  join(name: string, garage: PlayerConfig, ticket?: string): void {
+    this.introduce(ticket ? { type: 'join', name, garage, ticket } : { type: 'join', name, garage })
   }
 
   resume(token: string): void {
@@ -229,6 +231,8 @@ export interface OnlineSession {
   opponentConnected: boolean
   waiting: boolean
   error: string | null
+  /** What the room said the seat earned, once the match ended. */
+  result: ResultMessage | null
 }
 
 export type OnlineEvent =
@@ -249,6 +253,7 @@ export function startOnline(code: string, name: string): OnlineSession {
     opponentConnected: false,
     waiting: false,
     error: null,
+    result: null,
   }
 }
 
@@ -283,6 +288,10 @@ function onMessage(session: OnlineSession, message: ServerMessage): OnlineSessio
       return { ...session, opponentConnected: message.opponentConnected }
     case 'error':
       return { ...session, error: message.reason }
+    case 'result':
+      return { ...session, result: message }
+    case 'matched':
+      return session
     case 'state': {
       const next = message.view
       const base = { ...session, names: message.names, waiting: false, error: null }

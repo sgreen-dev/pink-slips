@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react'
+import { useContext, useRef, useState } from 'react'
 import { loadCollection } from '../collection/persist.ts'
 import { LEVELS, LEVEL_BLURB, LEVEL_LABEL, type Level } from '../cpu/index.ts'
 import type { MatchConfig } from '../engine/index.ts'
+import { AccountContext } from './account.ts'
 import { garageOptions, type GarageOption } from './builder.ts'
 import { GaragePicker } from './GaragePicker.tsx'
 import type { Mode } from './Match.tsx'
@@ -15,9 +16,20 @@ interface StartScreenProps {
   onCollection: () => void
   /** Absent when no room service is configured, which hides the online button. */
   onOnline?: () => void
+  onProfile: () => void
+  /** Where a guest goes to sign in; null when signed in or when there is no service. */
+  signInHref: string | null
 }
 
-export function StartScreen({ onStart, onBuilder, onCollection, onOnline }: StartScreenProps) {
+export function StartScreen({
+  onStart,
+  onBuilder,
+  onCollection,
+  onOnline,
+  onProfile,
+  signInHref,
+}: StartScreenProps) {
+  const account = useContext(AccountContext)
   const [options] = useState<GarageOption[]>(() => garageOptions(loadGarages()))
   const [packs] = useState(() => loadCollection().packs)
   const rules = useRef<HTMLDialogElement>(null)
@@ -39,7 +51,9 @@ export function StartScreen({ onStart, onBuilder, onCollection, onOnline }: Star
           { garage: b.cars, deck: b.deck },
         ],
       },
-      mode === 'cpu' ? ['Player', `${LEVEL_LABEL[level]} CPU`] : ['Player 1', 'Player 2'],
+      mode === 'cpu'
+        ? [account?.data.profile.name ?? 'Player', `${LEVEL_LABEL[level]} CPU`]
+        : ['Player 1', 'Player 2'],
       level,
     )
   }
@@ -50,6 +64,29 @@ export function StartScreen({ onStart, onBuilder, onCollection, onOnline }: Star
         Real cars drag race a quarter mile. Win the race, take the car. First to three pink slips
         wins.
       </p>
+      {account ? (
+        <p className="account">
+          Signed in as <strong>{account.data.profile.name}</strong> · Rating{' '}
+          {account.data.profile.rating}
+          <button type="button" className="button button--small" onClick={onProfile}>
+            Profile
+          </button>
+          <button
+            type="button"
+            className="button button--small button--ghost"
+            onClick={account.signOut}
+          >
+            Sign out
+          </button>
+        </p>
+      ) : signInHref ? (
+        <p className="account">
+          <a className="button button--small" href={signInHref}>
+            Sign in with GitHub
+          </a>
+          <span className="account__note">to play ranked and keep your collection anywhere</span>
+        </p>
+      ) : null}
       <div className="start__modes" role="group" aria-label="Mode">
         <button
           type="button"

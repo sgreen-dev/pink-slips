@@ -16,8 +16,9 @@
   },
   "include": [
     "worker.ts",
-    "../src/server/room.ts",
-    "../src/protocol/messages.ts",
+    "../src/server/*.ts",
+    "../src/protocol/*.ts",
+    "../src/collection/collection.ts",
     "../src/engine/*.ts",
     "../src/data/*.ts"
   ],

@@ -8,8 +8,8 @@ import {
   type MatchState,
   type PlayerIndex,
 } from '../engine/index.ts'
-import { parseClientMessage, type ServerMessage } from '../protocol/messages.ts'
-import { REASONS, Room, type Outbound } from './room.ts'
+import { parseClientMessage, type ClientMessage, type ServerMessage } from '../protocol/messages.ts'
+import { REASONS, Room, type Outbound, type Ticket } from './room.ts'
 
 function garage(index: number) {
   const starter = STARTERS[index]
@@ -181,5 +181,81 @@ describe('room', () => {
     expect(copy.seatOf(a.token as string)).toBe(0)
     expect(copy.seatOf(b.token as string)).toBe(1)
     expect(copy.snapshot()).toEqual(room.snapshot())
+  })
+})
+
+/** Plays the match out with each client acting from its own view. */
+function playOut(a: FakeClient, b: FakeClient, seed: number): PlayerIndex {
+  const clients = [a, b] as const
+  for (let step = 0; step < 4000; step++) {
+    const view = a.view as MatchState
+    if (isOver(view) !== null) break
+    const seat = currentPlayer(view) as PlayerIndex
+    const me = clients[seat]
+    const action = chooseAction(me.view as MatchState, seat, seed)
+    me.send(JSON.stringify({ type: 'act', action }), [clients[seat === 0 ? 1 : 0]])
+  }
+  return isOver(a.view as MatchState) as PlayerIndex
+}
+
+describe('ranked rooms', () => {
+  const tickets: [Ticket, Ticket] = [
+    { ticket: 'tk-a', identity: { accountId: 'acct-a', name: 'Ann' } },
+    { ticket: 'tk-b', identity: { accountId: 'acct-b', name: 'Bo' } },
+  ]
+
+  it('seats only the ticket holders, names them from their accounts, and reports once', () => {
+    const room = new Room('RANKED', 7)
+    expect(room.setup(tickets)).toBe(true)
+    expect(room.setup(tickets)).toBe(false)
+    expect(room.ranked).toBe(true)
+    const a = new FakeClient(room)
+    const b = new FakeClient(room)
+    expect(a.send(JSON.stringify({ type: 'join', name: 'Cy', garage: garage(0) }), [b])).toEqual([
+      { type: 'error', reason: REASONS.badTicket },
+    ])
+    b.send(JSON.stringify({ type: 'join', name: 'Whoever', garage: garage(1), ticket: 'tk-b' }), [
+      a,
+    ])
+    expect(b.seat).toBe(1)
+    a.send(JSON.stringify({ type: 'join', name: 'Nope', garage: garage(0), ticket: 'tk-a' }), [b])
+    expect(a.seat).toBe(0)
+    expect(a.received.at(-1)).toMatchObject({ type: 'state', names: ['Ann', 'Bo'] })
+    // A second holder of a ticket finds the seat taken.
+    const c = new FakeClient(room)
+    const late = { type: 'join', name: 'C', garage: garage(2), ticket: 'tk-a' }
+    expect(c.send(JSON.stringify(late), [a, b])).toEqual([{ type: 'error', reason: REASONS.full }])
+    expect(room.takeResult()).toBeNull()
+    const winner = playOut(a, b, 5)
+    const result = room.takeResult()
+    expect(result?.ranked).toBe(true)
+    expect(result?.winnerSeat).toBe(winner)
+    expect(result?.winner).toEqual(tickets[winner].identity)
+    expect(result?.loser).toEqual(tickets[winner === 0 ? 1 : 0].identity)
+    expect(room.takeResult()).toBeNull()
+    // The snapshot carries the tickets and the reported flag.
+    const copy = new Room('x', 0, room.snapshot())
+    expect(copy.ranked).toBe(true)
+    expect(copy.takeResult()).toBeNull()
+  })
+
+  it('keeps the identity a friend room learns at join, unranked', () => {
+    const room = new Room('FRIEND', 3)
+    const a = new FakeClient(room)
+    const b = new FakeClient(room)
+    const ann = { accountId: 'acct-a', name: 'Ann' }
+    const join = (c: FakeClient, name: string, index: number, others: FakeClient[]) => {
+      const raw = JSON.stringify({ type: 'join', name, garage: garage(index) })
+      const message = parseClientMessage(raw) as ClientMessage
+      c.deliver(room.handle(c.seat, message, newToken, name === 'Ann' ? ann : null), others)
+    }
+    join(a, 'Ann', 0, [b])
+    join(b, 'Guest', 1, [a])
+    expect(room.ranked).toBe(false)
+    const winner = playOut(a, b, 9)
+    const result = room.takeResult()
+    expect(result?.ranked).toBe(false)
+    expect(winner === 0 ? result?.winner : result?.loser).toEqual(ann)
+    expect(winner === 0 ? result?.loser : result?.winner).toBeNull()
   })
 })

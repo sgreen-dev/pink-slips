@@ -9,6 +9,8 @@ interface ResultScreenProps {
   names: readonly [string, string]
   /** Headline, such as "You win" or "Player 2 wins". */
   title: string
+  /** A line under the title, such as the rating change. */
+  note?: string | null
   /** Packs this match added to the collection. */
   packsEarned: number
   /** Text on the first button; online play offers a new room instead of a rematch. */
@@ -26,6 +28,7 @@ export function ResultScreen({
   winner,
   names,
   title,
+  note = null,
   packsEarned,
   rematchLabel = 'Rematch',
   onRematch,
@@ -46,6 +49,7 @@ export function ResultScreen({
       <main className="result" inert={showPacks}>
         <h1 className="result__title">{title}</h1>
         <p className="result__sub">Three pink slips in {Math.ceil(state.turn.number / 2)} turns.</p>
+        {note && <p className="result__note">{note}</p>}
         {packsEarned > 0 && (
           <p className="result__packs">
             {waiting === null
