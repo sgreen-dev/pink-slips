@@ -207,8 +207,16 @@ async function auth(
     if (!env.GITHUB_CLIENT_ID || !env.GITHUB_CLIENT_SECRET) {
       return text('Sign-in is not set up on this service.', 503, headers)
     }
-    const user = await githubUser(env.GITHUB_CLIENT_ID, env.GITHUB_CLIENT_SECRET, code, url.origin)
-    if (!user) return text('GitHub did not confirm the sign-in. Try again.', 502, headers)
+    const result = await githubUser(
+      env.GITHUB_CLIENT_ID,
+      env.GITHUB_CLIENT_SECRET,
+      code,
+      url.origin,
+    )
+    if ('error' in result) {
+      return text(`GitHub did not confirm the sign-in (${result.error}). Try again.`, 502, headers)
+    }
+    const { user } = result
     return finishSignIn(env, 'github', String(user.id), user.login, returnTo)
   }
   if (path === '/auth/dev' && env.DEV_LOGIN === 'true') {
@@ -233,16 +241,23 @@ function safeAtob(value: string): string | null {
   }
 }
 
+type GithubResult = { user: { id: number; login: string } } | { error: string }
+
+/** Exchanges the code for a token and asks GitHub who it is. The error names what failed. */
 async function githubUser(
   clientId: string,
   clientSecret: string,
   code: string,
   origin: string,
-): Promise<{ id: number; login: string } | null> {
+): Promise<GithubResult> {
   try {
     const exchange = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
-      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'User-Agent': 'pink-slips',
+      },
       body: JSON.stringify({
         client_id: clientId,
         client_secret: clientSecret,
@@ -250,8 +265,21 @@ async function githubUser(
         redirect_uri: `${origin}/auth/callback`,
       }),
     })
-    const granted = (await exchange.json()) as { access_token?: string }
-    if (!granted.access_token) return null
+    const granted = (await exchange.json().catch(() => ({}))) as {
+      access_token?: string
+      error?: string
+      error_description?: string
+    }
+    if (!granted.access_token) {
+      const reason = granted.error ?? `token exchange returned ${exchange.status}`
+      console.error(
+        'github token exchange failed',
+        exchange.status,
+        reason,
+        granted.error_description,
+      )
+      return { error: reason }
+    }
     const profile = await fetch('https://api.github.com/user', {
       headers: {
         Authorization: `Bearer ${granted.access_token}`,
@@ -259,13 +287,17 @@ async function githubUser(
         'User-Agent': 'pink-slips',
       },
     })
-    if (!profile.ok) return null
+    if (!profile.ok) {
+      console.error('github user lookup failed', profile.status)
+      return { error: `user lookup returned ${profile.status}` }
+    }
     const user = (await profile.json()) as { id?: number; login?: string }
     return typeof user.id === 'number' && typeof user.login === 'string'
-      ? { id: user.id, login: user.login }
-      : null
-  } catch {
-    return null
+      ? { user: { id: user.id, login: user.login } }
+      : { error: 'user lookup returned no login' }
+  } catch (error) {
+    console.error('github sign-in threw', String(error))
+    return { error: 'GitHub could not be reached' }
   }
 }
 
