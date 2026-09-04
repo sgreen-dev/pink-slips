@@ -34,7 +34,7 @@
 | 15 | Online play, part 2: accounts and matchmaking | done | 7f08ebe, 1bad706 |
 | 16 | Sound | done | 8847fb6 |
 | 17 | Player name filter | done | c8d7c96 |
-| 18 | Concede online | done | HASH |
+| 18 | Concede online | done | 7387ec2 |
 
 ---
 
