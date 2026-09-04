@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-04
 
+- On the board, each garage shows its staged car first, so the two cars in the race lead their rows. The dev server no longer watches the source image and music folders, so a locked file there cannot stop it. (the commit that added this line)
 - This changelog, in its own directory, with a pointer from the README. (the commit that added this file)
 - The music shuffles: all six tracks in an order that never repeats one back to back, a new track on every change of screen, and each track playing to its end. The intermittent start on phones is noted in the backlog with what to check. (428a718)
 - Music plays on phones: a looping silent clip keeps iPhones in playback mode while the ringer switch is on, and the unlock listens on every kind of gesture until the audio engine runs. (c7d418b)

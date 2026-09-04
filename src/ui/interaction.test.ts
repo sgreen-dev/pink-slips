@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
+import type { CarState } from '../engine/index.ts'
 import { apply } from '../engine/index.ts'
 import { scenario } from '../engine/test-helpers.ts'
-import { buttonActions, carIntents, modIntent, NO_SELECTION, prompt } from './interaction.ts'
+import {
+  buttonActions,
+  carIntents,
+  modIntent,
+  NO_SELECTION,
+  prompt,
+  stagedFirst,
+} from './interaction.ts'
 
 const CIVIC = 'honda-civic-si'
 const MUSTANG = 'ford-mustang-gt'
@@ -120,5 +128,18 @@ describe('board interaction', () => {
     expect(buttonActions(paused, 1).map((a) => a.type)).toEqual(['discardPart', 'discardPart'])
     expect(prompt(paused, 1, NO_SELECTION, NAMES)).toMatch(/Parts Thief/)
     expect(prompt(paused, 0, NO_SELECTION, NAMES)).toMatch(/Waiting for Player 2/)
+  })
+})
+
+describe('stagedFirst', () => {
+  const car = (carId: string) => ({ carId }) as CarState
+  const garage = [car('a'), car('b'), car('c'), car('d')]
+
+  it('moves the staged car to the front and keeps the rest in order', () => {
+    expect(stagedFirst(garage, 'c').map((c) => c.carId)).toEqual(['c', 'a', 'b', 'd'])
+    expect(stagedFirst(garage, 'a')).toBe(garage)
+    expect(stagedFirst(garage, null)).toBe(garage)
+    expect(stagedFirst(garage, 'zzz')).toBe(garage)
+    expect(garage.map((c) => c.carId)).toEqual(['a', 'b', 'c', 'd'])
   })
 })

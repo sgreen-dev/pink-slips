@@ -7,6 +7,7 @@ import {
   type Action,
   type MatchState,
   type PlayerIndex,
+  type CarState,
 } from '../engine/index.ts'
 
 /**
@@ -158,4 +159,18 @@ export function turnSummary(state: MatchState, names: readonly [string, string])
 
 export function opponentOf(player: PlayerIndex): PlayerIndex {
   return otherPlayer(player)
+}
+
+/**
+ * The garage with the staged car first, so the two cars in the race lead their rows. The
+ * others keep their order, and with nothing staged the garage comes back as it is.
+ */
+export function stagedFirst(
+  garage: readonly CarState[],
+  stagedCarId: string | null,
+): readonly CarState[] {
+  const index = stagedCarId === null ? -1 : garage.findIndex((car) => car.carId === stagedCarId)
+  if (index <= 0) return garage
+  const staged = garage[index] as CarState
+  return [staged, ...garage.slice(0, index), ...garage.slice(index + 1)]
 }

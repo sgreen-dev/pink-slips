@@ -1,6 +1,6 @@
 import type { PlayerState } from '../engine/index.ts'
 import { CarCard, type CardSize } from './CarCard.tsx'
-import type { CarIntent, Selection } from './interaction.ts'
+import { stagedFirst, type CarIntent, type Selection } from './interaction.ts'
 
 interface GarageProps {
   player: PlayerState
@@ -33,7 +33,7 @@ export function Garage({
         </span>
       </header>
       <div className="garage__cars">
-        {player.garage.map((car) => {
+        {stagedFirst(player.garage, player.stagedCarId).map((car) => {
           const intent = intents?.get(car.carId)
           const selected =
             selection?.kind === 'towFrom' && selection.fromCarId === car.carId ? true : undefined
