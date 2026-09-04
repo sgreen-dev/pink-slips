@@ -178,11 +178,14 @@ async function auth(
   if (path === '/auth/login') {
     const returnTo = allowedReturn(url.searchParams.get('return'))
     if (!returnTo) return text('Bad return address', 400, headers)
-    if (!configured) return text('Sign-in is not set up on this service.', 503, headers)
+    const clientId = env.GITHUB_CLIENT_ID
+    if (!clientId || !configured) {
+      return text('Sign-in is not set up on this service.', 503, headers)
+    }
     const nonce = randomToken()
     const state = `${nonce}.${btoa(returnTo)}`
     const target = new URL('https://github.com/login/oauth/authorize')
-    target.searchParams.set('client_id', env.GITHUB_CLIENT_ID)
+    target.searchParams.set('client_id', clientId)
     target.searchParams.set('redirect_uri', `${url.origin}/auth/callback`)
     target.searchParams.set('state', state)
     return new Response(null, {
