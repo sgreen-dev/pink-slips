@@ -4,9 +4,14 @@ import { newSeed } from '../seed.ts'
 import { loadSoundSettings, saveSoundSettings, type SoundSettings } from './settings.ts'
 import { playEffect, type SoundName } from './sfx.ts'
 import { GESTURE_EVENTS, unlockOnGesture } from './unlock.ts'
+import { SoundDebug } from './SoundDebug.tsx'
 import { SoundContext, type SoundHandle } from './useSound.ts'
 
 const AUDIO_BASE = `${import.meta.env.BASE_URL}audio/`
+
+/** The readout is for chasing sound problems on a phone; it never shows otherwise. */
+const DEBUG =
+  typeof location !== 'undefined' && new URLSearchParams(location.search).get('sound') === 'debug'
 
 /**
  * Owns the sound settings, the music player, and the one gesture that unlocks audio.
@@ -56,5 +61,10 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     () => ({ settings, setSettings, play, setScene, played }),
     [settings, setSettings, play, setScene, played],
   )
-  return <SoundContext value={handle}>{children}</SoundContext>
+  return (
+    <SoundContext value={handle}>
+      {children}
+      {DEBUG && <SoundDebug player={player} />}
+    </SoundContext>
+  )
 }

@@ -8,6 +8,12 @@ import { audioContext } from './sfx.ts'
  */
 
 let silent: HTMLAudioElement | null = null
+let gestureAt = 0
+
+/** When the last gesture reached the unlock, for measuring how soon sound follows it. */
+export function lastGestureAt(): number {
+  return gestureAt
+}
 
 /** A tenth of a second of silence as a WAV data URL, built here so no file is needed. */
 function silentClip(): string {
@@ -46,6 +52,7 @@ export function engineRunning(): boolean {
  * on every gesture: once everything runs it does nothing.
  */
 export function unlockOnGesture(): void {
+  gestureAt = performance.now()
   const ctx = audioContext()
   if (ctx && ctx.state !== 'running') void ctx.resume().catch(() => undefined)
   if (typeof Audio === 'undefined') return

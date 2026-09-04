@@ -1612,3 +1612,18 @@ h2 {
   background-position: center;
   background-repeat: no-repeat;
 }
+
+/* The sound readout, only with ?sound=debug. */
+.sound__debug {
+  position: fixed;
+  left: 0.5rem;
+  bottom: 0.5rem;
+  z-index: 50;
+  margin: 0;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.4rem;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font: 12px var(--font-mono);
+  white-space: pre;
+}
