@@ -48,6 +48,8 @@ Online play is optional in the same way. The room service is a Cloudflare Worker
 
 Players and ranked play use the same worker and need no secrets: a player is made from a name and carried to another device with a recovery code. To check a deployment end to end, run `npm run online:smoke -- <worker url>`, which makes two players, pairs them, plays a match, and prints both rating changes.
 
+The music is six original tracks by the owner, shipped as MP3 in `public/audio/` and credited there. The originals live with the owner as WAV files in `music/`, which git ignores; `scripts/art/.venv/Scripts/python.exe scripts/audio/encode.py` re-encodes them. Sound effects are synthesized in the browser and need no files.
+
 ## Project layout
 
 `DESIGN.md` is the source of truth for the game. `BUILD_PLAN.md` tracks what was built and in what order. `docs/balance-log.md` records every change to the tunable numbers and the evidence behind it.

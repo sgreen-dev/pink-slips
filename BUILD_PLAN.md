@@ -32,6 +32,7 @@
 | 13 | CPU difficulty levels | done | ffc297b |
 | 14 | Online play, part 1: the engine behind a server | done | 0c7176d |
 | 15 | Online play, part 2: accounts and matchmaking | done | 7f08ebe, 1bad706 |
+| 16 | Sound | done | HASH |
 
 ---
 
@@ -425,13 +426,37 @@
 
 ---
 
+## Phase 16 — Sound
+
+**Goal**: the game sounds like a drag race and a pack opening, with one visible control to turn music or effects off.
+
+**Design to record first** (`DESIGN.md` section 8 addendum, section 9 line): six original tracks by the owner, encoded to MP3; effects synthesized in the browser, keyed off the engine log; sound on by default from the first gesture; a speaker button with Music and Effects switches, remembered.
+
+**Deliverables**
+
+- `scripts/audio/encode.py` and the encoded tracks in `public/audio/` with `CREDITS.md`; the WAV originals stay out of git
+- `src/ui/sound/`: settings, the log-to-sound mapping, the synthesized effects, the music player, the provider with the unlock gesture, and the speaker button
+- Effects in the local and online matches and the pack reveal; the music following the screen
+
+**Tests**
+
+- The mapping over played-out matches: every advance a launch, every race end a sting, the final one a fanfare, a skipped advance a stall, the coin flip and the draws at the start, the turn cue only for the viewer, nothing for no change
+- The track choice: the menu track on menus, a seed-chosen race track in matches, the same track for both seats of a room
+- The settings: on by default, round-trip through storage, a bad record ignored
+
+**Done when**: the live site is silent until the first tap, then plays the menu track; a match plays a race track and every listed moment sounds; the switches turn each off and the choice survives a reload.
+
+**Prompt**: Do phase 16 of BUILD_PLAN.md.
+
+---
+
 ## Backlog
 
 Anything new goes here first and becomes a phase when picked up. Items sit in value order within their tier, judged by how many players feel them and how often; a new item goes to the tier that fits, at the end. Numbers never change, since the design and past commits refer to them.
 
 ### High value: felt in every session by most players
 
-9. Sound: identify the moments where a sound effect or music would add to the game, such as the launch on an advance, a car crossing the line, the race-end banner, the coin flip, a pack opening, and the match result, then decide on a style, a source with a licence the repo can carry, and a mute control that is remembered. Design first, in a `DESIGN.md` section 8 addendum, before any audio is added
+9. Sound: identify the moments where a sound effect or music would add to the game, such as the launch on an advance, a car crossing the line, the race-end banner, the coin flip, a pack opening, and the match result, then decide on a style, a source with a licence the repo can carry, and a mute control that is remembered. Design first, in a `DESIGN.md` section 8 addendum, before any audio is added *Taken into phase 16 on 2026-09-04.*
    *Why here:* Every race, every pack, every finish; the largest change in feel still open.
 6. A filter on player names, once there are enough players for one to matter
    *Why here:* A public leaderboard for an audience that includes kids; one bad name is seen by everyone.

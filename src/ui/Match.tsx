@@ -17,6 +17,8 @@ import { HandOverScreen } from './HandOverScreen.tsx'
 import { NO_SELECTION, type Selection } from './interaction.ts'
 import { RaceEndBanner } from './RaceEndBanner.tsx'
 import { ResultScreen } from './ResultScreen.tsx'
+import { beforeStart, soundsBetween } from './sound/events.ts'
+import { useSound } from './sound/useSound.ts'
 import { VariantContext, lookupFrom } from './variants.ts'
 
 export type Mode = 'cpu' | 'hotseat'
@@ -56,6 +58,15 @@ export function Match({ mode, config, seed, names, level, onRematch, onNewMatch 
   const [variantOf] = useState(() => lookupFrom(loadCollection().variants))
   const account = useContext(AccountContext)
   const onContinue = useCallback(() => dispatch({ type: 'continue' }), [])
+  const sound = useSound()
+  const heard = useRef<typeof state>(beforeStart(state))
+
+  // Every change of state sounds its log entries; the cue is for the human's turn.
+  useEffect(() => {
+    const events = soundsBetween(heard.current, state, cpu ? HUMAN_SEAT : null)
+    heard.current = state
+    for (const event of events) sound.play(event.name, event.intensity)
+  }, [state, cpu, sound])
 
   // The CPU acts one step at a time and waits while the race-end banner is up.
   useEffect(() => {

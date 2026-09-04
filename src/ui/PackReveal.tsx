@@ -1,4 +1,7 @@
+import { useEffect } from 'react'
 import type { Pack } from '../collection/collection.ts'
+import { getCar } from '../data/cars.ts'
+import { useSound } from './sound/useSound.ts'
 import { CarCard } from './CarCard.tsx'
 import { ModCard } from './ModCard.tsx'
 
@@ -10,6 +13,16 @@ interface PackRevealProps {
 
 /** The five cards of an opened pack, sliding in one after another, with New badges and finishes. */
 export function PackReveal({ pack, fresh }: PackRevealProps) {
+  const sound = useSound()
+  useEffect(() => {
+    sound.play('sparkle')
+    const rare =
+      pack.cars.some((card) => card.variant === 'holo' || getCar(card.id).tier === 'hyper') ||
+      pack.mods.some((card) => card.variant === 'holo')
+    if (rare) sound.play('shimmer')
+    // One reveal, one sound: the pack is the identity here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pack])
   return (
     <div className="collection__reveal">
       {pack.cars.map((card, i) => (

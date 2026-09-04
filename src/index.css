@@ -1565,3 +1565,35 @@ h2 {
   gap: 0.6rem;
   margin: 0.6rem 0;
 }
+
+/* Sound: the speaker button and its two switches. */
+.sound {
+  position: relative;
+  display: inline-block;
+}
+.sound__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.3rem);
+  z-index: 5;
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--asphalt-2);
+  border: 2px solid var(--line);
+  border-radius: 0.5rem;
+  text-align: left;
+  white-space: nowrap;
+}
+.start__modes .sound__menu {
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.sound__switch {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}

@@ -16,6 +16,7 @@ import { ModCard } from './ModCard.tsx'
 import { describeLogEntry } from './narrate.ts'
 import { RaceTrack } from './RaceTrack.tsx'
 import { RulesButton, RulesDialog } from './RulesDialog.tsx'
+import { SoundButton } from './sound/SoundButton.tsx'
 import { BASE_ONLY, VariantContext } from './variants.ts'
 
 interface BoardProps {
@@ -121,6 +122,7 @@ export function Board({
         <span className="board__brand">Pink Slips</span>
         <span className="board__status">{turnSummary(state, names)}</span>
         <RulesButton dialogRef={rules} label="Rules" small />
+        <SoundButton />
       </header>
 
       <VariantContext value={plainOpponent ? BASE_ONLY : variantOf}>

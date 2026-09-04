@@ -18,6 +18,8 @@ import {
 import type { OnlineEntry } from './OnlineScreen.tsx'
 import { RaceEndBanner } from './RaceEndBanner.tsx'
 import { ResultScreen } from './ResultScreen.tsx'
+import { beforeStart, soundsBetween } from './sound/events.ts'
+import { useSound } from './sound/useSound.ts'
 import { VariantContext, lookupFrom } from './variants.ts'
 
 interface OnlineMatchProps {
@@ -67,6 +69,14 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
 
   // The seat is kept for a refresh or a dropped connection until the match ends.
   const { code, seat, token, view } = session
+  const sound = useSound()
+  const heard = useRef<typeof view>(null)
+  useEffect(() => {
+    if (view === null) return
+    const events = soundsBetween(heard.current ?? beforeStart(view), view, seat)
+    heard.current = view
+    for (const event of events) sound.play(event.name, event.intensity)
+  }, [view, seat, sound])
   useEffect(() => {
     if (token !== null && seat !== null) saveOnlineSeat({ code, token, seat, name: entry.name })
   }, [code, token, seat, entry.name])

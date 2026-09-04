@@ -23,6 +23,8 @@ import { OnlineScreen, type OnlineEntry } from './OnlineScreen.tsx'
 import { PlayerDialog, type PlayerView } from './PlayerDialog.tsx'
 import { ProfileScreen } from './ProfileScreen.tsx'
 import { newSeed } from './seed.ts'
+import { hashText, trackFor } from './sound/events.ts'
+import { useSound } from './sound/useSound.ts'
 import { StartScreen } from './StartScreen.tsx'
 import { loadGarages } from './storage.ts'
 
@@ -49,6 +51,15 @@ const ENDPOINT = roomEndpoint()
 function firstScreen(): Screen {
   const code = ENDPOINT ? roomFromSearch(window.location.search) : null
   return code ? { kind: 'online', prefill: code } : { kind: 'start' }
+}
+
+/** Keeps the music on the track the current screen calls for. */
+function Soundtrack({ kind, seed }: { kind: string; seed: number }) {
+  const { setTrack } = useSound()
+  useEffect(() => {
+    setTrack(trackFor(kind, seed))
+  }, [kind, seed, setTrack])
+  return null
 }
 
 export function App() {
@@ -174,8 +185,15 @@ export function App() {
       />
     )
   }
+  const trackSeed =
+    screen.kind === 'match'
+      ? screen.seed
+      : screen.kind === 'onlineMatch'
+        ? hashText(screen.entry.code)
+        : 0
   return (
     <AccountContext value={account}>
+      <Soundtrack kind={screen.kind} seed={trackSeed} />
       {page}
       {dialog && ENDPOINT && (
         <PlayerDialog

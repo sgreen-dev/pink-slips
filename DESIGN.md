@@ -476,6 +476,13 @@ Fonts load from Google Fonts. The card is a portrait 5:7 with a thick type-color
 
 ---
 
+**Sound** (phase 16). Music and effects, on by default, with one control. Browsers refuse to play anything before the page is clicked or tapped, so nothing sounds until the first gesture; that gesture unlocks audio and starts the music.
+
+- *Music*: six original tracks composed by the owner, encoded to MP3 at about 128 kbps because MP3 plays in every browser, credited in `public/audio/CREDITS.md`. The one-minute track loops on the start, builder, collection, profile, and online screens. A match picks one of the five two-minute tracks from its seed, so a rematch changes track and both seats of an online room hear the same one, and the track carries on through the race-end banner and the result screen. Music fades over one second on a change, pauses while the tab is hidden, and plays at about a third of full scale, under the effects.
+- *Effects*, all synthesized with the Web Audio API in one style, so there are no files and no licences: stage (a low thump and click), fuel (a short filtered tick), advance (an engine launch, a sawtooth sweep with noise that grows with the distance), a skipped advance (a two-blip stall), boost (a rising whoosh), part (a metallic clink), sabotage (a descending buzz), an ignored sabotage (a deflecting ping), coin flip (spinning ticks ending in a chime), race end (a three-note major sting with a noise swell), match end (a longer fanfare in place of the sting), draw and reshuffle (card flutters), and the viewer's own turn starting against the CPU or online (a soft cue). Outside the engine: a pack reveal (a high sparkle) and a rare pull, an Ultra Rare car or a holo, adding a shimmer. Ordinary buttons are silent.
+- *Control*: a speaker button on the start screen and in the board header opens two switches, Music and Effects, remembered under `pink-slips.sound.v1`.
+- *Why*: the launch, the finish, and the reveal are the moments the game is built around, and a sound is what makes each land, for every age in the audience.
+
 ## 9. Architecture
 
 A static web app, plus two small Cloudflare Workers: the matches-played counter, and the room service that holds online matches (section 13).
@@ -504,6 +511,8 @@ The engine is deterministic given a seed. Every rule in section 3 is a unit test
 
 **Race-end moment**: derived from the log, not from the engine's phase. When a newly applied state adds a `raceEnd` entry, the match screen keeps a record of the finishing positions and the captured car, freezes the track on it, and holds the CPU and the hand-over until Continue clears it. The engine moves to staging in the same step as before; only the screen waits.
 
+**Sound**: `src/ui/sound/` holds the settings, a pure mapping from log entries to effect names (`soundsBetween`, tested over played-out matches), the synthesized effects, the music player, and a provider that owns the unlock gesture; screens diff their states the way the race-end moment does and play what the diff names.
+
 **Persistence**: custom garages and decks in `localStorage`, wrapped in try/catch, with starters always available. The collection and its unopened packs sit next to them under their own key, through the same wrapper (section 12).
 
 **Matches-played counter**: the one number that lives outside the browser. A Cloudflare Worker in `counter/` keeps a count in KV, answers GET with it, and adds one on POST from the game's origin, at most once every ten seconds per address. The site reads the worker URL from `VITE_COUNTER_URL` at build time; without it the counter is silent. One increment per finished match, sent from the client when the result screen appears, so abandoned matches do not count. KV writes are not atomic, and a lost count now and then is accepted. The count shows as one muted line at the bottom of the start screen and nowhere else.
@@ -520,6 +529,7 @@ The engine is deterministic given a seed. Every rule in section 3 is a unit test
 
 - 52 cars at v1, 102 after the roster expansion; 32 mods; 3 starter garages
 - CPU, hotseat, and online play
+- Music and sound effects, with a remembered control
 - Every card unlocked (until phase 11 added packs and a collection; see section 12)
 - Deck builder with saved garages
 - Simulator and tuned numbers

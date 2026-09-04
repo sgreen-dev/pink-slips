@@ -9,6 +9,7 @@ import type { Mode } from './Match.tsx'
 import { MatchCounter } from './MatchCounter.tsx'
 import type { PlayerView } from './PlayerDialog.tsx'
 import { RulesButton, RulesDialog } from './RulesDialog.tsx'
+import { SoundButton } from './sound/SoundButton.tsx'
 import { loadGarages } from './storage.ts'
 
 interface StartScreenProps {
@@ -147,6 +148,7 @@ export function StartScreen({
           Collection{packs > 0 ? ` · ${packs} ${packs === 1 ? 'pack' : 'packs'} to open` : ''}
         </button>
         <RulesButton dialogRef={rules} />
+        <SoundButton />
       </div>
       {mode === 'cpu' && (
         <div className="start__levels" role="group" aria-label="CPU level">
