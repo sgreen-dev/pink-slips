@@ -30,7 +30,7 @@
 | 11 | Collection and packs | done | a2b459d |
 | 12 | Holo and foil variants | done | da7c6c2 |
 | 13 | CPU difficulty levels | done | ffc297b |
-| 14 | Online play, part 1: the engine behind a server | todo | |
+| 14 | Online play, part 1: the engine behind a server | done | 0c7176d |
 | 15 | Online play, part 2: accounts and matchmaking | todo | |
 
 ---
