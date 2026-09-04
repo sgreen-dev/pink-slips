@@ -203,7 +203,7 @@ const SPORTS: readonly Car[] = [
     productionYears: '1989–1993',
     source:
       'Mazda 1990 MX-5 Miata specifications (115 bhp, 2,160 lb without options); Car and Driver, September 1989',
-    imageUrl: '',
+    imageUrl: '/art/mazda-mx-5-miata-na.webp',
   },
   {
     id: 'toyota-mr2-spyder',
@@ -220,7 +220,7 @@ const SPORTS: readonly Car[] = [
     engine: '1.8 L inline-4 (1ZZ-FE)',
     productionYears: '2000–2005',
     source: 'Toyota 2000 MR2 Spyder specifications (138 hp, 2,195 lb manual)',
-    imageUrl: '',
+    imageUrl: '/art/toyota-mr2-spyder.webp',
   },
   {
     id: 'porsche-914',
@@ -237,7 +237,7 @@ const SPORTS: readonly Car[] = [
     engine: '1.7 L flat-4, Bosch D-Jetronic',
     productionYears: '1970–1973',
     source: 'Porsche 914 1.7 technical data (80 PS DIN, 940 kg); Auto Motor und Sport 22/1969',
-    imageUrl: '',
+    imageUrl: '/art/porsche-914.webp',
   },
   {
     id: 'porsche-boxster-s-987',
@@ -256,7 +256,7 @@ const SPORTS: readonly Car[] = [
     productionYears: '2009–2012',
     source:
       'Porsche 2009 Boxster S technical specifications (310 hp, 2,987 lb), via Kelley Blue Book spec page',
-    imageUrl: '',
+    imageUrl: '/art/porsche-boxster-s-987.webp',
   },
   {
     id: 'bmw-z4-m40i',
@@ -273,7 +273,7 @@ const SPORTS: readonly Car[] = [
     engine: '3.0 L turbo inline-6',
     productionYears: '2019–present',
     source: 'BMW Group USA press release, The New BMW Z4 (382 hp, 3,443 lb)',
-    imageUrl: '',
+    imageUrl: '/art/bmw-z4-m40i.webp',
   },
   {
     id: 'porsche-718-cayman-gts',
@@ -290,7 +290,7 @@ const SPORTS: readonly Car[] = [
     engine: '4.0 L flat-6',
     productionYears: '2021–present',
     source: 'Porsche Cars North America press kit, 718 GTS 4.0 models (394 hp, 3,031 lb manual)',
-    imageUrl: '',
+    imageUrl: '/art/porsche-718-cayman-gts.webp',
   },
   {
     id: 'porsche-911-turbo-s-992',
@@ -309,7 +309,7 @@ const SPORTS: readonly Car[] = [
     productionYears: '2021–2024',
     source:
       'Porsche Newsroom, 2021 911 Turbo S (640 hp); Porsche EU technical data, 1,640 kg curb weight',
-    imageUrl: '',
+    imageUrl: '/art/porsche-911-turbo-s-992.webp',
   },
 ]
 
@@ -486,7 +486,7 @@ const LUXURY: readonly Car[] = [
     engine: '2.5 L inline-4',
     productionYears: '2021–present',
     source: 'Lexus 2021 ES 250 AWD specifications (203 hp, 3,780 lb), via Cars.com spec page',
-    imageUrl: '',
+    imageUrl: '/art/lexus-es-250.webp',
   },
   {
     id: 'mercedes-benz-e-300',
@@ -504,7 +504,7 @@ const LUXURY: readonly Car[] = [
     engine: '2.0 L turbo inline-4',
     productionYears: '2017–2019',
     source: 'Mercedes-Benz USA 2017 E 300 sedan specifications (241 hp, 3,650 lb)',
-    imageUrl: '',
+    imageUrl: '/art/mercedes-benz-e-300.webp',
   },
   {
     id: 'bmw-330i',
@@ -522,7 +522,7 @@ const LUXURY: readonly Car[] = [
     engine: '2.0 L turbo inline-4',
     productionYears: '2019–present',
     source: 'BMW USA 2020 330i sedan specifications (255 hp, 3,582 lb), via Cars.com spec page',
-    imageUrl: '',
+    imageUrl: '/art/bmw-330i.webp',
   },
   {
     id: 'cadillac-ct5-v',
@@ -539,7 +539,7 @@ const LUXURY: readonly Car[] = [
     engine: '3.0 L twin-turbo V6',
     productionYears: '2020–present',
     source: 'Cadillac 2020 CT5-V specifications (360 hp SAE net, 3,974 lb), via Cars.com spec page',
-    imageUrl: '',
+    imageUrl: '/art/cadillac-ct5-v.webp',
   },
   {
     id: 'bentley-continental-gt-v8',
@@ -556,7 +556,7 @@ const LUXURY: readonly Car[] = [
     engine: '4.0 L twin-turbo V8',
     productionYears: '2020–2024',
     source: 'Bentley Motors, Continental GT V8 launch release (550 PS, 2,164 kg)',
-    imageUrl: '',
+    imageUrl: '/art/bentley-continental-gt-v8.webp',
   },
   {
     id: 'mercedes-amg-c-63-s',
@@ -574,7 +574,7 @@ const LUXURY: readonly Car[] = [
     engine: '4.0 L twin-turbo V8',
     productionYears: '2015–2021',
     source: 'Mercedes-Benz USA 2018 AMG C 63 S sedan specifications (503 hp, 3,957 lb)',
-    imageUrl: '',
+    imageUrl: '/art/mercedes-amg-c-63-s.webp',
   },
   {
     id: 'bmw-m8-competition',
@@ -591,7 +591,7 @@ const LUXURY: readonly Car[] = [
     engine: '4.4 L twin-turbo V8',
     productionYears: '2020–2025',
     source: 'BMW Group press release, M8 Competition Coupé technical data (625 PS, 1,885 kg DIN)',
-    imageUrl: '',
+    imageUrl: '/art/bmw-m8-competition.webp',
   },
   {
     id: 'ferrari-812-competizione',
@@ -608,7 +608,7 @@ const LUXURY: readonly Car[] = [
     engine: '6.5 L V12',
     productionYears: '2021–2023',
     source: 'Ferrari press release, 812 Competizione (830 cv, 1,487 kg dry weight)',
-    imageUrl: '',
+    imageUrl: '/art/ferrari-812-competizione.webp',
   },
 ]
 
@@ -814,7 +814,7 @@ const MUSCLE: readonly Car[] = [
     productionYears: '1965–1966',
     source:
       'Ford 1965 Mustang specifications (120 hp gross, 2,445 lb base curb weight), via mustangattitude',
-    imageUrl: '',
+    imageUrl: '/art/ford-mustang-1965-six.webp',
   },
   {
     id: 'ford-mustang-v6-2005',
@@ -832,7 +832,7 @@ const MUSCLE: readonly Car[] = [
     engine: '4.0 L V6',
     productionYears: '2005–2010',
     source: 'Ford 2005 Mustang V6 specifications (210 hp, 3,300 lb)',
-    imageUrl: '',
+    imageUrl: '/art/ford-mustang-v6-2005.webp',
   },
   {
     id: 'dodge-challenger-sxt',
@@ -849,7 +849,7 @@ const MUSCLE: readonly Car[] = [
     engine: '3.6 L V6',
     productionYears: '2015–2023',
     source: 'Dodge 2019 Challenger SXT specifications (305 hp, 3,894 lb), via Cars.com spec page',
-    imageUrl: '',
+    imageUrl: '/art/dodge-challenger-sxt.webp',
   },
   {
     id: 'ford-mustang-mach-1',
@@ -884,7 +884,7 @@ const MUSCLE: readonly Car[] = [
     engine: '6.2 L supercharged V8',
     productionYears: '2015–2023',
     source: 'Dodge 2019 Challenger SRT Hellcat specifications (717 hp, 4,449 lb)',
-    imageUrl: '',
+    imageUrl: '/art/dodge-challenger-srt-hellcat.webp',
   },
   {
     id: 'ford-shelby-gt500-2020',
@@ -920,7 +920,7 @@ const MUSCLE: readonly Car[] = [
     engine: '6.2 L supercharged V8 (LT5)',
     productionYears: '2019',
     source: 'Chevrolet 2019 Corvette ZR1 specifications (755 hp, 3,560 lb)',
-    imageUrl: '',
+    imageUrl: '/art/chevrolet-corvette-zr1-c7.webp',
   },
 ]
 
@@ -1084,7 +1084,7 @@ const JDM: readonly Car[] = [
     engine: '1.8 L inline-4',
     productionYears: '1999–2000',
     source: 'Mazda 1999 MX-5 Miata specifications (140 bhp, 2,348 lb)',
-    imageUrl: '',
+    imageUrl: '/art/mazda-mx-5-miata-nb.webp',
   },
   {
     id: 'nissan-240sx-s14',
@@ -1102,7 +1102,7 @@ const JDM: readonly Car[] = [
     engine: '2.4 L inline-4 (KA24DE)',
     productionYears: '1995–1998',
     source: 'Nissan 1995 240SX specifications (155 hp, 2,800 lb)',
-    imageUrl: '',
+    imageUrl: '/art/nissan-240sx-s14.webp',
   },
   {
     id: 'toyota-celica-gt-s',
@@ -1120,7 +1120,7 @@ const JDM: readonly Car[] = [
     engine: '1.8 L inline-4 (2ZZ-GE)',
     productionYears: '2000–2005',
     source: 'Toyota 2000 Celica GT-S specifications (180 hp, 2,500 lb)',
-    imageUrl: '',
+    imageUrl: '/art/toyota-celica-gt-s.webp',
   },
   {
     id: 'mitsubishi-lancer-evolution-ix',
@@ -1138,7 +1138,7 @@ const JDM: readonly Car[] = [
     productionYears: '2006',
     source:
       'Mitsubishi Motors North America 2006 Lancer Evolution IX specifications (286 hp, 3,263 lb)',
-    imageUrl: '',
+    imageUrl: '/art/mitsubishi-lancer-evolution-ix.webp',
   },
   {
     id: 'acura-nsx-na1',
@@ -1156,7 +1156,7 @@ const JDM: readonly Car[] = [
     engine: '3.0 L V6 (C30A VTEC)',
     productionYears: '1991–1996',
     source: 'Acura 1991 NSX specifications (270 hp, 3,010 lb manual)',
-    imageUrl: '',
+    imageUrl: '/art/acura-nsx-na1.webp',
   },
   {
     id: 'honda-civic-type-r-fl5',
@@ -1174,7 +1174,7 @@ const JDM: readonly Car[] = [
     engine: '2.0 L turbo inline-4 (K20C1)',
     productionYears: '2023–present',
     source: 'Honda 2023 Civic Type R specifications (315 hp, 3,188 lb)',
-    imageUrl: '',
+    imageUrl: '/art/honda-civic-type-r-fl5.webp',
   },
   {
     id: 'toyota-gr-supra-3-0',
@@ -1191,7 +1191,7 @@ const JDM: readonly Car[] = [
     engine: '3.0 L turbo inline-6',
     productionYears: '2021–present',
     source: 'Toyota 2021 GR Supra 3.0 specifications (382 hp, 3,400 lb)',
-    imageUrl: '',
+    imageUrl: '/art/toyota-gr-supra-3-0.webp',
   },
   {
     id: 'acura-nsx-type-s',
@@ -1208,7 +1208,7 @@ const JDM: readonly Car[] = [
     engine: '3.5 L twin-turbo V6 hybrid',
     productionYears: '2022',
     source: 'Acura 2022 NSX Type S specifications (600 hp, 3,891 lb)',
-    imageUrl: '',
+    imageUrl: '/art/acura-nsx-type-s.webp',
   },
   {
     id: 'lexus-lfa',
@@ -1225,7 +1225,7 @@ const JDM: readonly Car[] = [
     engine: '4.8 L V10',
     productionYears: '2011–2012',
     source: 'Lexus LFA press kit (552 hp, 3,263 lb)',
-    imageUrl: '',
+    imageUrl: '/art/lexus-lfa.webp',
   },
 ]
 
@@ -1386,7 +1386,7 @@ const EV: readonly Car[] = [
     engine: 'Single rear motor, 82 kWh battery',
     productionYears: '2021–2023',
     source: 'Volkswagen of America 2021 ID.4 Pro specifications (201 hp, 4,559 lb)',
-    imageUrl: '',
+    imageUrl: '/art/volkswagen-id-4-pro.webp',
   },
   {
     id: 'chevrolet-bolt-ev',
@@ -1403,7 +1403,7 @@ const EV: readonly Car[] = [
     engine: 'Single front motor, 65 kWh battery',
     productionYears: '2017–2023',
     source: 'Chevrolet 2022 Bolt EV specifications (200 hp, 3,589 lb), via Cars.com spec page',
-    imageUrl: '',
+    imageUrl: '/art/chevrolet-bolt-ev.webp',
   },
   {
     id: 'ford-f-150-lightning',
@@ -1421,7 +1421,7 @@ const EV: readonly Car[] = [
     productionYears: '2022–present',
     source:
       'Ford 2022 F-150 Lightning Pro specifications (426 hp, 6,015 lb), via Cars.com spec page',
-    imageUrl: '',
+    imageUrl: '/art/ford-f-150-lightning.webp',
   },
   {
     id: 'volvo-c40-recharge-twin',
@@ -1438,7 +1438,7 @@ const EV: readonly Car[] = [
     engine: 'Dual motors, 78 kWh battery',
     productionYears: '2022–2023',
     source: 'Volvo Car USA 2022 C40 Recharge Twin specifications (402 hp, 4,710 lb)',
-    imageUrl: '',
+    imageUrl: '/art/volvo-c40-recharge-twin.webp',
   },
   {
     id: 'rivian-r1t',
@@ -1456,7 +1456,7 @@ const EV: readonly Car[] = [
     productionYears: '2022–present',
     source:
       'Rivian 2022 R1T Explore dual-motor specifications (600 hp, 6,585 lb), via Cars.com spec page',
-    imageUrl: '',
+    imageUrl: '/art/rivian-r1t.webp',
   },
   {
     id: 'kia-ev6-gt',
@@ -1473,7 +1473,7 @@ const EV: readonly Car[] = [
     engine: 'Dual motors, 77.4 kWh battery',
     productionYears: '2023–present',
     source: 'Kia America 2023 EV6 GT specifications (576 hp, 4,795 lb)',
-    imageUrl: '',
+    imageUrl: '/art/kia-ev6-gt.webp',
   },
   {
     id: 'lotus-eletre-r',
@@ -1490,7 +1490,7 @@ const EV: readonly Car[] = [
     engine: 'Dual motors, 112 kWh battery',
     productionYears: '2023–present',
     source: 'Lotus Eletre R technical specifications (905 hp, 2,690 kg kerb weight)',
-    imageUrl: '',
+    imageUrl: '/art/lotus-eletre-r.webp',
   },
   {
     id: 'tesla-model-x-plaid',
@@ -1507,7 +1507,7 @@ const EV: readonly Car[] = [
     engine: 'Tri-motor',
     productionYears: '2021–2026',
     source: 'Tesla Model X Plaid specifications (1,020 hp, 5,248 lb)',
-    imageUrl: '',
+    imageUrl: '/art/tesla-model-x-plaid.webp',
   },
   {
     id: 'lucid-air-sapphire',
@@ -1524,7 +1524,7 @@ const EV: readonly Car[] = [
     engine: 'Tri-motor',
     productionYears: '2023–present',
     source: 'Lucid Motors, Air Sapphire specifications (1,234 hp, 5,336 lb)',
-    imageUrl: '',
+    imageUrl: '/art/lucid-air-sapphire.webp',
   },
 ]
 
@@ -1671,7 +1671,7 @@ const OFFROAD: readonly Car[] = [
     engine: '4.0 L V6',
     productionYears: '2010–2024',
     source: 'Toyota 2023 4Runner SR5 specifications (270 hp, 4,400 lb), via Cars.com spec page',
-    imageUrl: '',
+    imageUrl: '/art/toyota-4runner-sr5.webp',
   },
   {
     id: 'toyota-land-cruiser-2024',
@@ -1690,7 +1690,7 @@ const OFFROAD: readonly Car[] = [
     productionYears: '2024–present',
     source:
       'Toyota 2024 Land Cruiser 1958 specifications (326 hp, 5,038 lb), via Cars.com spec page',
-    imageUrl: '',
+    imageUrl: '/art/toyota-land-cruiser-2024.webp',
   },
   {
     id: 'ford-ranger-raptor',
@@ -1707,7 +1707,7 @@ const OFFROAD: readonly Car[] = [
     engine: '3.0 L twin-turbo V6',
     productionYears: '2024–present',
     source: 'Ford 2024 Ranger Raptor specifications (405 hp, 5,325 lb)',
-    imageUrl: '',
+    imageUrl: '/art/ford-ranger-raptor.webp',
   },
   {
     id: 'mercedes-amg-g-63',
@@ -1725,7 +1725,7 @@ const OFFROAD: readonly Car[] = [
     productionYears: '2019–present',
     source:
       'Mercedes-Benz USA 2021 AMG G 63 specifications (577 hp, 5,842 lb), via Cars.com spec page',
-    imageUrl: '',
+    imageUrl: '/art/mercedes-amg-g-63.webp',
   },
   {
     id: 'bmw-x5-m',
@@ -1742,7 +1742,7 @@ const OFFROAD: readonly Car[] = [
     engine: '4.4 L twin-turbo V8',
     productionYears: '2020–2023',
     source: 'BMW USA 2023 X5 M specifications (600 hp, 5,455 lb), via Cars.com spec page',
-    imageUrl: '',
+    imageUrl: '/art/bmw-x5-m.webp',
   },
   {
     id: 'dodge-durango-srt-hellcat',
@@ -1759,7 +1759,7 @@ const OFFROAD: readonly Car[] = [
     engine: '6.2 L supercharged V8',
     productionYears: '2021–present',
     source: 'Dodge 2021 Durango SRT Hellcat specifications (710 hp, 5,710 lb)',
-    imageUrl: '',
+    imageUrl: '/art/dodge-durango-srt-hellcat.webp',
   },
   {
     id: 'jeep-grand-cherokee-trackhawk',
@@ -1777,7 +1777,7 @@ const OFFROAD: readonly Car[] = [
     productionYears: '2018–2021',
     source:
       'FCA North America press release, 2018 Jeep Grand Cherokee Trackhawk specifications (707 hp, 5,363 lb)',
-    imageUrl: '',
+    imageUrl: '/art/jeep-grand-cherokee-trackhawk.webp',
   },
   {
     id: 'aston-martin-dbx707',
@@ -1794,7 +1794,7 @@ const OFFROAD: readonly Car[] = [
     engine: '4.0 L twin-turbo V8',
     productionYears: '2022–present',
     source: 'Aston Martin DBX707 technical specifications (707 PS, 2,245 kg)',
-    imageUrl: '',
+    imageUrl: '/art/aston-martin-dbx707.webp',
   },
   {
     id: 'ferrari-purosangue',
@@ -1811,7 +1811,7 @@ const OFFROAD: readonly Car[] = [
     engine: '6.5 L V12',
     productionYears: '2023–present',
     source: 'Ferrari Purosangue specifications (725 cv); Road & Track, 2023, 2,170 kg kerb weight',
-    imageUrl: '',
+    imageUrl: '/art/ferrari-purosangue.webp',
   },
   {
     id: 'lamborghini-urus-se',
@@ -1828,7 +1828,7 @@ const OFFROAD: readonly Car[] = [
     engine: '4.0 L twin-turbo V8 plug-in hybrid',
     productionYears: '2024–present',
     source: 'Lamborghini Urus SE technical data (800 CV combined, 2,505 kg kerb weight)',
-    imageUrl: '',
+    imageUrl: '/art/lamborghini-urus-se.webp',
   },
 ]
 
