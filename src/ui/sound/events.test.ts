@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createMatch, isOver, type MatchState } from '../../engine/index.ts'
 import { playOutRandomly, starterConfig } from '../../engine/test-helpers.ts'
-import { beforeStart, hashText, soundsBetween, trackFor } from './events.ts'
-import { MENU_TRACK, MENU_VOLUME, RACE_TRACKS, RACE_VOLUME, volumeFor } from './music.ts'
+import { beforeStart, shuffleOrder, soundsBetween } from './events.ts'
+import { ALL_TRACKS, MENU_VOLUME, RACE_VOLUME, volumeFor } from './music.ts'
 
 /** Every state along a random play-out, from the first to the last. */
 function statesAlong(seed: number): MatchState[] {
@@ -68,27 +68,26 @@ describe('soundsBetween', () => {
   })
 })
 
-describe('trackFor', () => {
-  it('plays the menu track on menus and a seed-chosen race track in matches', () => {
-    for (const kind of ['start', 'builder', 'collection', 'profile', 'online']) {
-      expect(trackFor(kind, 7)).toBe(MENU_TRACK)
-    }
-    const picks = new Set<string>()
-    for (let seed = 0; seed < 20; seed++) {
-      const track = trackFor('match', seed)
-      expect(RACE_TRACKS).toContain(track)
-      picks.add(track)
-    }
-    expect(picks.size).toBe(RACE_TRACKS.length)
-    expect(trackFor('onlineMatch', hashText('ABC234'))).toBe(
-      trackFor('onlineMatch', hashText('ABC234')),
-    )
-    expect(hashText('ABC234')).not.toBe(hashText('ABC235'))
+describe('shuffleOrder', () => {
+  it('plays every track once, in an order that depends on the seed', () => {
+    const first = shuffleOrder(ALL_TRACKS, 1)
+    expect([...first].sort()).toEqual([...ALL_TRACKS].sort())
+    const orders = new Set<string>()
+    for (let seed = 1; seed <= 30; seed++) orders.add(shuffleOrder(ALL_TRACKS, seed).join(','))
+    expect(orders.size).toBeGreaterThan(10)
   })
 
-  it('plays race music lower than menu music', () => {
-    expect(volumeFor(MENU_TRACK)).toBe(MENU_VOLUME)
-    for (const track of RACE_TRACKS) expect(volumeFor(track)).toBe(RACE_VOLUME)
+  it('never opens with the track just played', () => {
+    for (let seed = 1; seed <= 60; seed++) {
+      const previous = ALL_TRACKS[seed % ALL_TRACKS.length] as string
+      expect(shuffleOrder(ALL_TRACKS, seed, previous)[0]).not.toBe(previous)
+    }
+    expect(shuffleOrder(['only'], 3, 'only')).toEqual(['only'])
+  })
+
+  it('plays races lower than menus', () => {
+    expect(volumeFor('menu')).toBe(MENU_VOLUME)
+    expect(volumeFor('race')).toBe(RACE_VOLUME)
     expect(RACE_VOLUME).toBeLessThan(MENU_VOLUME)
   })
 })

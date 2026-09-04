@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react'
+import type { Scene } from './music.ts'
 import type { SoundName } from './sfx.ts'
 import type { SoundSettings } from './settings.ts'
 
@@ -7,8 +8,8 @@ export interface SoundHandle {
   setSettings: (next: SoundSettings) => void
   /** Plays an effect when effects are on and audio is unlocked. */
   play: (name: SoundName, intensity?: number) => void
-  /** Chooses the music track; null fades the music out. */
-  setTrack: (track: string | null) => void
+  /** Tells the music which scene is on screen; a change starts the next track. */
+  setScene: (scene: Scene) => void
   /** Effects played so far, for checks that cannot listen. */
   played: number
 }
@@ -19,7 +20,7 @@ const INERT: SoundHandle = {
   settings: { music: false, effects: false },
   setSettings: () => undefined,
   play: () => undefined,
-  setTrack: () => undefined,
+  setScene: () => undefined,
   played: 0,
 }
 

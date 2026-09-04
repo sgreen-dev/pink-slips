@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { MusicPlayer } from './music.ts'
+import { MusicPlayer, type Scene } from './music.ts'
+import { newSeed } from '../seed.ts'
 import { loadSoundSettings, saveSoundSettings, type SoundSettings } from './settings.ts'
 import { playEffect, type SoundName } from './sfx.ts'
 import { GESTURE_EVENTS, unlockOnGesture } from './unlock.ts'
@@ -14,7 +15,7 @@ const AUDIO_BASE = `${import.meta.env.BASE_URL}audio/`
 export function SoundProvider({ children }: { children: ReactNode }) {
   const [settings, setSettingsState] = useState<SoundSettings>(loadSoundSettings)
   const [played, setPlayed] = useState(0)
-  const [player] = useState(() => new MusicPlayer(AUDIO_BASE))
+  const [player] = useState(() => new MusicPlayer(AUDIO_BASE, newSeed()))
 
   useEffect(() => {
     player.setEnabled(settings.music)
@@ -49,11 +50,11 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     [effects, player],
   )
 
-  const setTrack = useCallback((track: string | null) => player.setTrack(track), [player])
+  const setScene = useCallback((scene: Scene) => player.setScene(scene), [player])
 
   const handle = useMemo<SoundHandle>(
-    () => ({ settings, setSettings, play, setTrack, played }),
-    [settings, setSettings, play, setTrack, played],
+    () => ({ settings, setSettings, play, setScene, played }),
+    [settings, setSettings, play, setScene, played],
   )
   return <SoundContext value={handle}>{children}</SoundContext>
 }

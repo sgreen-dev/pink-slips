@@ -1,5 +1,4 @@
 import { TUNABLES, type MatchState, type PlayerIndex } from '../../engine/index.ts'
-import { MENU_TRACK, RACE_TRACKS } from './music.ts'
 import type { SoundName } from './sfx.ts'
 
 /**
@@ -60,19 +59,29 @@ export function beforeStart(state: MatchState): MatchState {
   return { ...state, log: [] }
 }
 
-/** The menu track on every menu screen; a race track chosen by the seed for a match. */
-export function trackFor(kind: string, seed: number): string {
-  if (kind !== 'match' && kind !== 'onlineMatch') return MENU_TRACK
-  const index = Math.abs(Math.trunc(seed)) % RACE_TRACKS.length
-  return RACE_TRACKS[index] ?? MENU_TRACK
-}
-
-/** A small stable hash, so a room code picks the same race track for both players. */
-export function hashText(text: string): number {
-  let hash = 2166136261
-  for (let i = 0; i < text.length; i++) {
-    hash ^= text.charCodeAt(i)
-    hash = Math.imul(hash, 16777619) >>> 0
+/**
+ * A shuffled order of the tracks from a seed. Redrawn until its first track differs from
+ * `avoid`, so a new order after the last one never repeats the track just played.
+ */
+export function shuffleOrder(
+  tracks: readonly string[],
+  seed: number,
+  avoid: string | null = null,
+): string[] {
+  let state = seed >>> 0 || 1
+  const next = () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0
+    return state / 0x100000000
   }
-  return hash
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const order = [...tracks]
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(next() * (i + 1))
+      const swap = order[i] as string
+      order[i] = order[j] as string
+      order[j] = swap
+    }
+    if (order.length < 2 || order[0] !== avoid) return order
+  }
+  return [...tracks]
 }
