@@ -31,7 +31,7 @@
 | 12 | Holo and foil variants | done | da7c6c2 |
 | 13 | CPU difficulty levels | done | ffc297b |
 | 14 | Online play, part 1: the engine behind a server | done | 0c7176d |
-| 15 | Online play, part 2: accounts and matchmaking | done, sign-in secrets pending | 7f08ebe |
+| 15 | Online play, part 2: accounts and matchmaking | done, two-account live check pending | 7f08ebe |
 
 ---
 
@@ -421,7 +421,7 @@
 
 **Prompt**: Do phase 15 of BUILD_PLAN.md.
 
-**Owner step outstanding**: register a GitHub OAuth app with callback `https://pink-slips-rooms.pink-slips-counter.workers.dev/auth/callback`, then from `server/` run `npx wrangler secret put GITHUB_CLIENT_ID` and `npx wrangler secret put GITHUB_CLIENT_SECRET`. The site hides the sign-in link until the service reports a provider, so the live "done when" check of two signed-in strangers waits on those secrets; the same flow was run end to end locally with the development sign-in.
+**Live check so far** (2026-09-04): the GitHub OAuth app and both worker secrets are in place, and a live sign-in claimed the guest data, joined the ranked queue, and showed the profile. The remaining check is two signed-in accounts on different machines being paired, which needs a second GitHub account; the pairing itself was run end to end locally with two accounts through the development sign-in.
 
 ---
 
