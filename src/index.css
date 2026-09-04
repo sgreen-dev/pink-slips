@@ -1529,3 +1529,39 @@ h2 {
   color: var(--gold);
   margin: -0.2rem 0 0.8rem;
 }
+
+/* The player pop-up: create, recover, and the recovery code. */
+.player {
+  max-width: 30rem;
+}
+.player__form {
+  display: grid;
+  gap: 0.9rem;
+  justify-items: center;
+  text-align: center;
+}
+.player__title {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+.player__lead {
+  color: var(--muted);
+  margin: 0;
+  max-width: 26rem;
+}
+.player__code {
+  font-size: 2.2rem;
+  letter-spacing: 0.15em;
+  margin: 0.2rem 0;
+  user-select: all;
+}
+.profile__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 0.6rem;
+  margin: 0.6rem 0;
+}

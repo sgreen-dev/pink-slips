@@ -7,6 +7,7 @@ import { garageOptions, type GarageOption } from './builder.ts'
 import { GaragePicker } from './GaragePicker.tsx'
 import type { Mode } from './Match.tsx'
 import { MatchCounter } from './MatchCounter.tsx'
+import type { PlayerView } from './PlayerDialog.tsx'
 import { RulesButton, RulesDialog } from './RulesDialog.tsx'
 import { loadGarages } from './storage.ts'
 
@@ -17,8 +18,8 @@ interface StartScreenProps {
   /** Absent when no room service is configured, which hides the online button. */
   onOnline?: () => void
   onProfile: () => void
-  /** Where a guest goes to sign in; null when signed in or when there is no service. */
-  signInHref: string | null
+  /** Opens the player pop-up; absent without a service. */
+  onPlayer?: (view: PlayerView) => void
 }
 
 export function StartScreen({
@@ -27,7 +28,7 @@ export function StartScreen({
   onCollection,
   onOnline,
   onProfile,
-  signInHref,
+  onPlayer,
 }: StartScreenProps) {
   const account = useContext(AccountContext)
   const [options] = useState<GarageOption[]>(() => garageOptions(loadGarages()))
@@ -37,6 +38,7 @@ export function StartScreen({
   const [level, setLevel] = useState<Level>('street')
   const [first, setFirst] = useState(0)
   const [second, setSecond] = useState(1)
+  const [confirmOut, setConfirmOut] = useState(false)
   const labels: [string, string] =
     mode === 'cpu' ? ['Your garage', 'CPU garage'] : ['Player 1 garage', 'Player 2 garage']
   const start = () => {
@@ -66,25 +68,54 @@ export function StartScreen({
       </p>
       {account ? (
         <p className="account">
-          Signed in as <strong>{account.data.profile.name}</strong> · Rating{' '}
+          Playing as <strong>{account.data.profile.name}</strong> · Rating{' '}
           {account.data.profile.rating}
           <button type="button" className="button button--small" onClick={onProfile}>
             Profile
           </button>
+          {confirmOut ? (
+            <>
+              <span className="account__note">You will need your recovery code to come back.</span>
+              <button
+                type="button"
+                className="button button--small button--primary"
+                onClick={account.signOut}
+              >
+                Sign out
+              </button>
+              <button
+                type="button"
+                className="button button--small button--ghost"
+                onClick={() => setConfirmOut(false)}
+              >
+                Stay
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="button button--small button--ghost"
+              onClick={() => setConfirmOut(true)}
+            >
+              Sign out
+            </button>
+          )}
+        </p>
+      ) : onPlayer ? (
+        <p className="account">
+          <button type="button" className="button button--small" onClick={() => onPlayer('create')}>
+            Create a player
+          </button>
+          <span className="account__note">
+            to play ranked and keep your collection on any device
+          </span>
           <button
             type="button"
             className="button button--small button--ghost"
-            onClick={account.signOut}
+            onClick={() => onPlayer('recover')}
           >
-            Sign out
+            I have a recovery code
           </button>
-        </p>
-      ) : signInHref ? (
-        <p className="account">
-          <a className="button button--small" href={signInHref}>
-            Sign in with GitHub
-          </a>
-          <span className="account__note">to play ranked and keep your collection anywhere</span>
         </p>
       ) : null}
       <div className="start__modes" role="group" aria-label="Mode">

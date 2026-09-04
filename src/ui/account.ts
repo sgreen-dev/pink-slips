@@ -1,17 +1,18 @@
 import { createContext } from 'react'
 import type { Pack } from '../collection/collection.ts'
 import { openNextPack, saveCollection } from '../collection/persist.ts'
-import type { CollectionState } from '../protocol/records.ts'
 import { parseServerMessage, type MatchedMessage } from '../protocol/messages.ts'
+import type { CollectionState } from '../protocol/records.ts'
 import type { AccountData, LeaderboardRow } from '../server/directory.ts'
 import type { SocketLike, SocketFactory } from './online.ts'
 import { newSeed } from './seed.ts'
 import { browserStorage, saveGarages, type StorageLike } from './storage.ts'
 
 /**
- * The signed-in account (DESIGN.md 13). The service holds the collection and the garages of
- * an account; the browser keeps a mirror in localStorage so every screen reads as before, and
- * asks the service whenever something changes. Guests keep using localStorage alone.
+ * The player account (DESIGN.md 13). A player is made from a name and lives on the service,
+ * which holds its collection and garages; the browser keeps a mirror in localStorage so every
+ * screen reads as before, and asks the service whenever something changes. A recovery code
+ * carries the player to another browser. Guests keep using localStorage alone.
  */
 
 export const SESSION_KEY = 'pink-slips.session.v1'
@@ -40,33 +41,6 @@ export function clearSession(store: StorageLike | null = browserStorage()): void
   }
 }
 
-/** The session token the service put in the URL fragment after sign-in, if any. */
-export function sessionFromHash(hash: string): string | null {
-  const params = new URLSearchParams(hash.replace(/^#/, ''))
-  const token = params.get('session')
-  return token && /^[A-Za-z0-9]+$/.test(token) ? token : null
-}
-
-/** Whether the service has a sign-in provider configured. */
-export async function signInAvailable(
-  endpoint: string,
-  fetcher: Fetcher | undefined = globalThis.fetch,
-): Promise<boolean> {
-  if (!fetcher) return false
-  try {
-    const response = await fetcher(`${endpoint}/auth/status`, { method: 'GET' })
-    if (!response.ok) return false
-    const data = (await response.json()) as { signIn?: unknown }
-    return data.signIn === true
-  } catch {
-    return false
-  }
-}
-
-export function signInUrl(endpoint: string, returnTo: string): string {
-  return `${endpoint}/auth/login?return=${encodeURIComponent(returnTo)}`
-}
-
 type Fetcher = (input: string, init?: RequestInit) => Promise<Response>
 
 async function call<T>(
@@ -88,6 +62,74 @@ async function call<T>(
   } catch {
     return { status: 0, body: null }
   }
+}
+
+export interface NewPlayer {
+  token: string
+  data: AccountData
+  recoveryCode: string
+}
+
+/** Makes a player from a name. Null when the service refuses or cannot be reached. */
+export function createPlayer(
+  endpoint: string,
+  name: string,
+  fetcher: Fetcher | undefined = globalThis.fetch,
+): Promise<NewPlayer | null> {
+  return call<NewPlayer>(
+    endpoint,
+    '/auth/player',
+    null,
+    { method: 'POST', body: JSON.stringify({ name }) },
+    fetcher,
+  ).then((r) => r.body)
+}
+
+/** Takes a player back with its recovery code. `unknown` means no player has that code. */
+export async function recoverPlayer(
+  endpoint: string,
+  code: string,
+  fetcher: Fetcher | undefined = globalThis.fetch,
+): Promise<{ token: string; data: AccountData } | 'unknown' | null> {
+  const { status, body } = await call<{ token: string; data: AccountData }>(
+    endpoint,
+    '/auth/recover',
+    null,
+    { method: 'POST', body: JSON.stringify({ code }) },
+    fetcher,
+  )
+  if (status === 404) return 'unknown'
+  return body
+}
+
+/** Replaces the recovery code and returns the new one, shown once. */
+export function rotateRecovery(
+  endpoint: string,
+  token: string,
+  fetcher: Fetcher | undefined = globalThis.fetch,
+): Promise<string | null> {
+  return call<{ recoveryCode: string }>(
+    endpoint,
+    '/me/recovery',
+    token,
+    { method: 'POST' },
+    fetcher,
+  ).then((r) => r.body?.recoveryCode ?? null)
+}
+
+export function renamePlayer(
+  endpoint: string,
+  token: string,
+  name: string,
+  fetcher: Fetcher | undefined = globalThis.fetch,
+): Promise<AccountData | null> {
+  return call<AccountData>(
+    endpoint,
+    '/me/name',
+    token,
+    { method: 'PUT', body: JSON.stringify({ name }) },
+    fetcher,
+  ).then((r) => r.body)
 }
 
 /** The account behind a token. `signedOut` means the service no longer knows the token. */

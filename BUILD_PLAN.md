@@ -31,7 +31,7 @@
 | 12 | Holo and foil variants | done | da7c6c2 |
 | 13 | CPU difficulty levels | done | ffc297b |
 | 14 | Online play, part 1: the engine behind a server | done | 0c7176d |
-| 15 | Online play, part 2: accounts and matchmaking | done, two-account live check pending | 7f08ebe |
+| 15 | Online play, part 2: accounts and matchmaking | done | 7f08ebe, HASH |
 
 ---
 
@@ -400,7 +400,7 @@
 
 **Design to record first** (`DESIGN.md` section 13 addendum):
 
-- Accounts through the hosting provider's sign-in, one display name per account. The collection and saved garages move to the account and sync on sign-in; `localStorage` stays the guest fallback and the guest data is claimed on first sign-in.
+- Accounts made from a name alone, with a recovery code to carry one to another device; no sign-in provider, since most of the audience has none. (Built first with GitHub sign-in on 2026-09-04, replaced the same day.) The collection and saved garages move to the account and sync on sign-in; `localStorage` stays the guest fallback and the guest data is claimed on first sign-in.
 - Matchmaking is a queue that pairs the two longest-waiting players. Each account carries a rating, Elo with K of 32, updated after every online match. Once more than 50 players hold a rating, the queue prefers pairs within 200 points when both have waited under 30 seconds.
 - A profile page shows the name, rating, record, and collection size. A leaderboard shows the top 50.
 
@@ -421,7 +421,7 @@
 
 **Prompt**: Do phase 15 of BUILD_PLAN.md.
 
-**Live check so far** (2026-09-04): the GitHub OAuth app and both worker secrets are in place, and a live sign-in claimed the guest data, joined the ranked queue, and showed the profile. The remaining check is two signed-in accounts on different machines being paired, which needs a second GitHub account; the pairing itself was run end to end locally with two accounts through the development sign-in.
+**Live check**: `npm run online:smoke -- https://pink-slips-rooms.pink-slips-counter.workers.dev` makes two players, pairs them through the queue, plays the match, and prints both rating changes; see the result recorded in the commit message of the phase.
 
 ---
 
@@ -434,3 +434,5 @@ Anything new goes here first and becomes a phase when picked up.
 3. Seasonal starter garages built from the collection's most-opened cards
 4. Optional stakes mode, off by default and hotseat only: a start-screen toggle under which a captured car changes hands for real, the winner's collection gaining it and the loser's losing one copy, with starter cards exempt so a garage can always be rebuilt. Today pink slips are match prizes only and the collection never shrinks; that stays the default. Needs a DESIGN.md section 12 addendum and a test that starter cards are never taken
 5. Card art for the Ford Mustang Mach 1 (2021) and the Ford Shelby GT500 (2020), the two roster-expansion cars still on the silhouette placeholder: no photograph under an accepted license was on Commons when the other 48 were sourced. Add a row to `scripts/art/sources.csv` and run `scripts/art/make_art.py <id>` when one appears
+6. A filter on player names, once there are enough players for one to matter
+7. Linking an outside sign-in (GitHub, Google) to a player as a second way to recover it, if lost recovery codes turn out to be common

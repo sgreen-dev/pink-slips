@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { NO_VARIANTS, ownedCount, starterCollection } from '../collection/collection.ts'
 import { TUNABLES } from '../engine/index.ts'
+import { normalizeRecoveryCode, RECOVERY_LENGTH } from '../protocol/messages.ts'
 import type { CollectionState } from '../protocol/records.ts'
-import { CPU_RESULT_GAP_MS, Directory, SESSION_TTL_MS, type Store } from './directory.ts'
+import {
+  CPU_RESULT_GAP_MS,
+  Directory,
+  recoveryCodeFrom,
+  SESSION_RENEW_MS,
+  SESSION_TTL_MS,
+  type Store,
+} from './directory.ts'
 import { updateRatings } from './rating.ts'
 
 class MemoryStore implements Store {
@@ -23,13 +31,24 @@ class MemoryStore implements Store {
   }
 }
 
+/** Deterministic random values and a reversible fake hash. */
 function setUp() {
-  let ids = 0
+  let seed = 7
   let clock = 1_000_000
   const store = new MemoryStore()
+  // Thirty-two varied hex digits per call, the shape of a UUID without dashes.
+  const random = () => {
+    let out = ''
+    for (let i = 0; i < 32; i++) {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff
+      out += ((seed >>> 16) & 15).toString(16)
+    }
+    return out
+  }
   const directory = new Directory(
     store,
-    () => `id-${++ids}`,
+    random,
+    async (text) => `hash(${text})`,
     () => clock,
   )
   return { directory, store, tick: (ms: number) => (clock += ms) }
@@ -38,11 +57,10 @@ function setUp() {
 const { packsPerMatch, packsPerCpuWin } = TUNABLES.collection
 
 describe('directory', () => {
-  it('creates an account once per provider identity and starts it from the starter set', async () => {
+  it('makes a player from a name and starts it from the starter set', async () => {
     const { directory } = setUp()
-    const first = await directory.signIn('github', '42', '  Ann  ')
-    expect(first.created).toBe(true)
-    expect(first.data.profile).toMatchObject({
+    const made = await directory.createPlayer('  Ann  ')
+    expect(made.data.profile).toMatchObject({
       name: 'Ann',
       rating: TUNABLES.online.ratingStart,
       wins: 0,
@@ -50,19 +68,61 @@ describe('directory', () => {
       packs: 0,
       claimed: false,
     })
-    expect(first.data.collection.owned).toEqual(starterCollection())
-    const again = await directory.signIn('github', '42', 'Ann')
-    expect(again.created).toBe(false)
-    expect(again.data.profile.id).toBe(first.data.profile.id)
-    expect(again.token).not.toBe(first.token)
-    expect((await directory.accountFor(first.token))?.id).toBe(first.data.profile.id)
-    expect((await directory.accountFor(again.token))?.id).toBe(first.data.profile.id)
+    expect(made.data.collection.owned).toEqual(starterCollection())
+    expect(made.recoveryCode).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/)
+    expect((await directory.accountFor(made.token))?.id).toBe(made.data.profile.id)
     expect(await directory.accountFor('nope')).toBeNull()
+    const other = await directory.createPlayer('')
+    expect(other.data.profile.name).toBe('Player')
+    expect(other.data.profile.id).not.toBe(made.data.profile.id)
+  })
+
+  it('recovers a player with its code and nobody else', async () => {
+    const { directory } = setUp()
+    const ann = await directory.createPlayer('Ann')
+    const bo = await directory.createPlayer('Bo')
+    const back = await directory.recover(ann.recoveryCode.toLowerCase().replace(/-/g, ' '))
+    expect(back?.data.profile.id).toBe(ann.data.profile.id)
+    expect(back?.token).not.toBe(ann.token)
+    expect((await directory.accountFor(back?.token ?? ''))?.name).toBe('Ann')
+    expect((await directory.recover(bo.recoveryCode))?.data.profile.name).toBe('Bo')
+    expect(await directory.recover('AAAA-AAAA-AAAA')).toBeNull()
+    expect(await directory.recover('not a code')).toBeNull()
+    expect(await directory.recover('')).toBeNull()
+  })
+
+  it('rotates the recovery code so the old one stops working', async () => {
+    const { directory } = setUp()
+    const ann = await directory.createPlayer('Ann')
+    const fresh = await directory.rotateRecovery(ann.token)
+    expect(fresh).not.toBeNull()
+    expect(fresh).not.toBe(ann.recoveryCode)
+    expect(await directory.recover(ann.recoveryCode)).toBeNull()
+    expect((await directory.recover(fresh ?? ''))?.data.profile.id).toBe(ann.data.profile.id)
+    expect(await directory.rotateRecovery('nope')).toBeNull()
+  })
+
+  it('renames within the name rules', async () => {
+    const { directory } = setUp()
+    const ann = await directory.createPlayer('Ann')
+    const renamed = await directory.rename(ann.token, `  ${'x'.repeat(40)}  `)
+    expect(renamed?.profile.name).toBe('x'.repeat(24))
+    expect((await directory.rename(ann.token, 42))?.profile.name).toBe('x'.repeat(24))
+    expect((await directory.rename(ann.token, '   '))?.profile.name).toBe('Player')
+  })
+
+  it('builds codes from hex and normalises what players type', () => {
+    expect(recoveryCodeFrom('00'.repeat(12))).toBe('A'.repeat(RECOVERY_LENGTH))
+    expect(recoveryCodeFrom('ff'.repeat(12))).toBe('9'.repeat(RECOVERY_LENGTH))
+    expect(() => recoveryCodeFrom('00')).toThrow()
+    expect(normalizeRecoveryCode(' abcd-efgh-jklm ')).toBe('ABCDEFGHJKLM')
+    expect(normalizeRecoveryCode('ABCD-EFGH-JKL')).toBeNull()
+    expect(normalizeRecoveryCode('ABCD-EFGH-JKL0')).toBeNull()
   })
 
   it('claims guest data once and never again', async () => {
     const { directory } = setUp()
-    const { token } = await directory.signIn('github', '1', 'Ann')
+    const { token } = await directory.createPlayer('Ann')
     const guest: CollectionState = {
       owned: { ...starterCollection(), 'mazda-mx-5-miata': 3 },
       packs: 3,
@@ -83,7 +143,7 @@ describe('directory', () => {
 
   it('never lets a client award itself a pack', async () => {
     const { directory, tick } = setUp()
-    const { token } = await directory.signIn('github', '1', 'Ann')
+    const { token } = await directory.createPlayer('Ann')
     const packsNow = async () => (await directory.accountFor(token))?.collection.packs
     // A malformed claim still uses up the one claim and grants nothing.
     await directory.claim(token, { collection: { owned: {}, packs: 99 }, garages: 'x' })
@@ -107,7 +167,7 @@ describe('directory', () => {
 
   it('opens packs from the account and stops at an empty stack', async () => {
     const { directory } = setUp()
-    const { token } = await directory.signIn('github', '1', 'Ann')
+    const { token } = await directory.createPlayer('Ann')
     expect(await directory.openPack(token, 1)).toBeNull()
     await directory.cpuResult(token, 'cpu', true)
     const opened = await directory.openPack(token, 7)
@@ -124,8 +184,8 @@ describe('directory', () => {
 
   it('records a ranked result with Elo, the record, and packs for both sides', async () => {
     const { directory } = setUp()
-    const ann = await directory.signIn('github', '1', 'Ann')
-    const bo = await directory.signIn('github', '2', 'Bo')
+    const ann = await directory.createPlayer('Ann')
+    const bo = await directory.createPlayer('Bo')
     const a = ann.data.profile.id
     const b = bo.data.profile.id
     const expected = updateRatings(TUNABLES.online.ratingStart, TUNABLES.online.ratingStart)
@@ -154,9 +214,7 @@ describe('directory', () => {
   it('ranks the leaderboard by rating among players with a record', async () => {
     const { directory } = setUp()
     const ids: string[] = []
-    for (let i = 0; i < 4; i++) {
-      ids.push((await directory.signIn('github', String(i), `P${i}`)).data.profile.id)
-    }
+    for (let i = 0; i < 4; i++) ids.push((await directory.createPlayer(`P${i}`)).data.profile.id)
     const [p0, p1, p2] = ids as [string, string, string, string]
     await directory.recordResult(p0, p1, true)
     await directory.recordResult(p0, p2, true)
@@ -166,14 +224,18 @@ describe('directory', () => {
     expect((await directory.leaderboard()).map((r) => r.name)).toEqual(['P0', 'P2', 'P1'])
   })
 
-  it('expires sessions and honours sign-out', async () => {
+  it('keeps a session alive while it is used and ends it on sign-out', async () => {
     const { directory, tick } = setUp()
-    const { token } = await directory.signIn('github', '1', 'Ann')
-    tick(SESSION_TTL_MS - 1)
-    expect(await directory.accountFor(token)).not.toBeNull()
-    tick(2)
+    const { token } = await directory.createPlayer('Ann')
+    // Used once a month, the session never runs out.
+    for (let month = 0; month < 24; month++) {
+      tick(30 * SESSION_RENEW_MS)
+      expect(await directory.accountFor(token)).not.toBeNull()
+    }
+    // Left alone for over a year, it does.
+    tick(SESSION_TTL_MS + 1)
     expect(await directory.accountFor(token)).toBeNull()
-    const fresh = await directory.signIn('github', '1', 'Ann')
+    const fresh = await directory.createPlayer('Ann')
     await directory.signOut(fresh.token)
     expect(await directory.accountFor(fresh.token)).toBeNull()
     expect(NO_VARIANTS).toEqual({ foil: {}, holo: {} })

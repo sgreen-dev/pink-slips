@@ -209,3 +209,17 @@ export const CODE_LENGTH = 6
 export function isRoomCode(value: string): boolean {
   return value.length === CODE_LENGTH && [...value].every((c) => CODE_ALPHABET.includes(c))
 }
+
+/** Recovery codes: twelve characters from the same alphabet, shown in groups of four. */
+export const RECOVERY_LENGTH = 12
+
+export function formatRecoveryCode(code: string): string {
+  return code.match(/.{1,4}/g)?.join('-') ?? code
+}
+
+/** A code as a player typed it: any case, dashes and spaces ignored. Null when malformed. */
+export function normalizeRecoveryCode(raw: string): string | null {
+  const code = raw.toUpperCase().replace(/[^A-Z0-9]/g, '')
+  const valid = code.length === RECOVERY_LENGTH && [...code].every((c) => CODE_ALPHABET.includes(c))
+  return valid ? code : null
+}

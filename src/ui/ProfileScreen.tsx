@@ -1,15 +1,31 @@
 import { useContext, useEffect, useState } from 'react'
+import { MAX_NAME_LENGTH } from '../protocol/messages.ts'
 import type { LeaderboardRow } from '../server/directory.ts'
-import { AccountContext, fetchLeaderboard, fetchMe } from './account.ts'
+import {
+  AccountContext,
+  fetchLeaderboard,
+  fetchMe,
+  renamePlayer,
+  rotateRecovery,
+} from './account.ts'
 
 interface ProfileScreenProps {
   onBack: () => void
+  /** Shows a recovery code in the player pop-up. */
+  onShowCode: (code: string) => void
 }
 
-/** The signed-in player's name, rating, record, and collection, with the leaderboard below. */
-export function ProfileScreen({ onBack }: ProfileScreenProps) {
+/**
+ * The player's name, rating, record, and collection, with the leaderboard below. The name can
+ * be changed, a new recovery code issued, and the player signed out of this browser.
+ */
+export function ProfileScreen({ onBack, onShowCode }: ProfileScreenProps) {
   const account = useContext(AccountContext)
   const [rows, setRows] = useState<LeaderboardRow[] | null>(null)
+  const [name, setName] = useState(account?.data.profile.name ?? '')
+  const [busy, setBusy] = useState<'name' | 'code' | null>(null)
+  const [confirmOut, setConfirmOut] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
   const endpoint = account?.endpoint ?? null
   const token = account?.token ?? null
   const update = account?.update ?? null
@@ -32,6 +48,30 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
 
   const profile = account?.data.profile ?? null
   const played = profile ? profile.wins + profile.losses : 0
+  const cleanName = name.trim().slice(0, MAX_NAME_LENGTH)
+
+  const saveName = async () => {
+    if (!account || !cleanName || cleanName === account.data.profile.name) return
+    setBusy('name')
+    const data = await renamePlayer(account.endpoint, account.token, cleanName)
+    setBusy(null)
+    if (data) {
+      account.update(data)
+      setNotice(`You are now ${data.profile.name}.`)
+    } else {
+      setNotice('The service did not answer. Try again in a moment.')
+    }
+  }
+
+  const newCode = async () => {
+    if (!account) return
+    setBusy('code')
+    const code = await rotateRecovery(account.endpoint, account.token)
+    setBusy(null)
+    if (code) onShowCode(code)
+    else setNotice('The service did not answer. Try again in a moment.')
+  }
+
   return (
     <main className="start profile">
       <header className="builder__header">
@@ -63,14 +103,81 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
           </div>
         </dl>
       ) : (
-        <p className="start__tagline">Sign in to see your rating and record.</p>
+        <p className="start__tagline">Create a player to see your rating and record.</p>
       )}
       {account && (
-        <p className="online__actions">
-          <button type="button" className="button button--ghost" onClick={account.signOut}>
-            Sign out
-          </button>
-        </p>
+        <>
+          <form
+            className="profile__row"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void saveName()
+            }}
+          >
+            <label className="online__field">
+              Your name
+              <input
+                type="text"
+                value={name}
+                maxLength={MAX_NAME_LENGTH}
+                onChange={(event) => setName(event.target.value)}
+              />
+            </label>
+            <button
+              type="submit"
+              className="button"
+              disabled={busy !== null || !cleanName || cleanName === account.data.profile.name}
+            >
+              {busy === 'name' ? 'Saving…' : 'Save name'}
+            </button>
+          </form>
+          <div className="profile__row">
+            <button
+              type="button"
+              className="button"
+              disabled={busy !== null}
+              onClick={() => void newCode()}
+            >
+              {busy === 'code' ? 'Making a code…' : 'Show a new recovery code'}
+            </button>
+            <span className="online__status">
+              The code carries this player to another device. A new one retires the old one.
+            </span>
+          </div>
+          <div className="profile__row">
+            {confirmOut ? (
+              <>
+                <span className="online__status">
+                  Sign out of this browser? You will need your recovery code to get this player
+                  back.
+                </span>
+                <button type="button" className="button button--primary" onClick={account.signOut}>
+                  Sign out
+                </button>
+                <button
+                  type="button"
+                  className="button button--ghost"
+                  onClick={() => setConfirmOut(false)}
+                >
+                  Stay
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="button button--ghost"
+                onClick={() => setConfirmOut(true)}
+              >
+                Sign out
+              </button>
+            )}
+          </div>
+          {notice && (
+            <p className="online__status" role="status">
+              {notice}
+            </p>
+          )}
+        </>
       )}
       <section className="leaderboard">
         <h2>Leaderboard</h2>

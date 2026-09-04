@@ -13,20 +13,15 @@ import { Room, type RoomSnapshot, type SeatIdentity, type Ticket } from '../src/
 /**
  * The online service (DESIGN.md 13): a Cloudflare Worker in front of two kinds of Durable
  * Object. One MatchRoom per room holds a match and its WebSockets. One AccountDirectory holds
- * every account, its sessions, and the matchmaking queue. Sign-in goes through GitHub OAuth,
- * with a local-only shortcut for development.
+ * every player, its sessions, and the matchmaking queue. A player is made from a name alone
+ * and carried to another browser with a recovery code; there is no sign-in provider.
  *
- * Deploy from this directory: npx wrangler deploy. Secrets: GITHUB_CLIENT_ID and
- * GITHUB_CLIENT_SECRET from the OAuth app whose callback is <worker>/auth/callback.
+ * Deploy from this directory: npx wrangler deploy. No secrets are needed.
  */
 
 interface Env {
   ROOMS: DurableObjectNamespace<MatchRoom>
   ACCOUNTS: DurableObjectNamespace<AccountDirectory>
-  GITHUB_CLIENT_ID?: string
-  GITHUB_CLIENT_SECRET?: string
-  /** "true" only in local development: /auth/dev signs anyone in by name. */
-  DEV_LOGIN?: string
 }
 
 interface Attachment {
@@ -50,7 +45,8 @@ const ROOM_TTL_MS = 24 * 60 * 60 * 1000
 const QUEUE_TICK_MS = 5000
 /** Delay from a player joining the queue to the first pairing attempt. */
 const QUEUE_FIRST_MS = 200
-const STATE_COOKIE = 'oauth_state'
+/** New players one address may make in an hour. */
+const CREATIONS_PER_HOUR = 5
 
 function corsHeaders(request: Request): Record<string, string> {
   const origin = request.headers.get('Origin') ?? ''
@@ -61,6 +57,12 @@ function corsHeaders(request: Request): Record<string, string> {
     'Cache-Control': 'no-store',
     Vary: 'Origin',
   }
+}
+
+/** A browser always sends its origin on an upgrade; a script sends none. Other sites are refused. */
+function originAllowed(request: Request): boolean {
+  const origin = request.headers.get('Origin')
+  return origin === null || ALLOWED_ORIGINS.includes(origin)
 }
 
 function json(value: unknown, status = 200, headers: Record<string, string> = {}): Response {
@@ -78,6 +80,11 @@ function randomToken(): string {
   return crypto.randomUUID().replace(/-/g, '')
 }
 
+async function sha256(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
 function newCode(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(CODE_LENGTH))
   return [...bytes].map((b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('')
@@ -86,21 +93,6 @@ function newCode(): string {
 function bearer(request: Request): string | null {
   const header = request.headers.get('Authorization') ?? ''
   return header.startsWith('Bearer ') ? header.slice(7).trim() || null : null
-}
-
-/** A return address on the site, and nothing else. */
-function allowedReturn(raw: string | null): string | null {
-  if (!raw) return null
-  return ALLOWED_ORIGINS.some((origin) => raw.startsWith(`${origin}/`)) ? raw : null
-}
-
-function cookieValue(request: Request, name: string): string | null {
-  const cookies = request.headers.get('Cookie') ?? ''
-  for (const part of cookies.split(';')) {
-    const [key, ...rest] = part.trim().split('=')
-    if (key === name) return rest.join('=')
-  }
-  return null
 }
 
 function directoryOf(env: Env): DurableObjectStub<AccountDirectory> {
@@ -115,6 +107,20 @@ async function readJson(request: Request): Promise<unknown> {
   }
 }
 
+/** Recent player creations by address. Lives as long as the worker instance, which is enough. */
+const recentCreations = new Map<string, number[]>()
+
+function allowCreation(ip: string, now: number): boolean {
+  const hour = 60 * 60 * 1000
+  const recent = (recentCreations.get(ip) ?? []).filter((at) => now - at < hour)
+  if (recent.length >= CREATIONS_PER_HOUR) {
+    recentCreations.set(ip, recent)
+    return false
+  }
+  recentCreations.set(ip, [...recent, now])
+  return true
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
@@ -124,7 +130,16 @@ export default {
 
     if (path === '/new') return json({ code: newCode() }, 200, headers)
 
-    if (path.startsWith('/auth/')) return auth(request, env, url, headers)
+    if (path === '/auth/player' && request.method === 'POST') {
+      const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
+      if (!allowCreation(ip, Date.now())) {
+        return text('Too many new players from this address. Try again later.', 429, headers)
+      }
+      return directoryOf(env).fetch(request)
+    }
+    if ((path === '/auth/recover' || path === '/auth/logout') && request.method === 'POST') {
+      return directoryOf(env).fetch(request)
+    }
 
     if (path === '/me' || path.startsWith('/me/') || path === '/leaderboard') {
       return directoryOf(env).fetch(request)
@@ -134,9 +149,7 @@ export default {
       if (request.headers.get('Upgrade') !== 'websocket') {
         return text('Expected a WebSocket', 426, headers)
       }
-      if (!ALLOWED_ORIGINS.includes(request.headers.get('Origin') ?? '')) {
-        return text('Origin not allowed', 403, headers)
-      }
+      if (!originAllowed(request)) return text('Origin not allowed', 403, headers)
       return directoryOf(env).fetch(request)
     }
 
@@ -146,9 +159,7 @@ export default {
     if (request.headers.get('Upgrade') !== 'websocket') {
       return text('Expected a WebSocket', 426, headers)
     }
-    if (!ALLOWED_ORIGINS.includes(request.headers.get('Origin') ?? '')) {
-      return text('Origin not allowed', 403, headers)
-    }
+    if (!originAllowed(request)) return text('Origin not allowed', 403, headers)
     // A signed-in player carries an identity into the room, for packs at the end.
     const session = url.searchParams.get('session')
     let identity: SeatIdentity | null = null
@@ -165,165 +176,13 @@ export default {
   },
 }
 
-/** Sign-in: GitHub OAuth, or the local shortcut. Ends by sending the browser back to the site. */
-async function auth(
-  request: Request,
-  env: Env,
-  url: URL,
-  headers: Record<string, string>,
-): Promise<Response> {
-  const path = url.pathname
-  const configured = Boolean(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET)
-  if (path === '/auth/status') return json({ signIn: configured }, 200, headers)
-  if (path === '/auth/login') {
-    const returnTo = allowedReturn(url.searchParams.get('return'))
-    if (!returnTo) return text('Bad return address', 400, headers)
-    const clientId = env.GITHUB_CLIENT_ID
-    if (!clientId || !configured) {
-      return text('Sign-in is not set up on this service.', 503, headers)
-    }
-    const nonce = randomToken()
-    const state = `${nonce}.${btoa(returnTo)}`
-    const target = new URL('https://github.com/login/oauth/authorize')
-    target.searchParams.set('client_id', clientId)
-    target.searchParams.set('redirect_uri', `${url.origin}/auth/callback`)
-    target.searchParams.set('state', state)
-    return new Response(null, {
-      status: 302,
-      headers: {
-        Location: target.toString(),
-        'Set-Cookie': `${STATE_COOKIE}=${nonce}; Path=/auth; Max-Age=600; HttpOnly; Secure; SameSite=Lax`,
-      },
-    })
-  }
-  if (path === '/auth/callback') {
-    const code = url.searchParams.get('code')
-    const state = url.searchParams.get('state') ?? ''
-    const [nonce, encoded] = state.split('.')
-    const returnTo = allowedReturn(encoded ? safeAtob(encoded) : null)
-    if (!code || !nonce || !returnTo || cookieValue(request, STATE_COOKIE) !== nonce) {
-      return text('Sign-in did not complete. Go back to the game and try again.', 400, headers)
-    }
-    if (!env.GITHUB_CLIENT_ID || !env.GITHUB_CLIENT_SECRET) {
-      return text('Sign-in is not set up on this service.', 503, headers)
-    }
-    const result = await githubUser(
-      env.GITHUB_CLIENT_ID,
-      env.GITHUB_CLIENT_SECRET,
-      code,
-      url.origin,
-    )
-    if ('error' in result) {
-      return text(`GitHub did not confirm the sign-in (${result.error}). Try again.`, 502, headers)
-    }
-    const { user } = result
-    return finishSignIn(env, 'github', String(user.id), user.login, returnTo)
-  }
-  if (path === '/auth/dev' && env.DEV_LOGIN === 'true') {
-    const returnTo = allowedReturn(url.searchParams.get('return'))
-    const name = url.searchParams.get('name') ?? ''
-    if (!returnTo || !name) return text('Needs name and return', 400, headers)
-    return finishSignIn(env, 'dev', name.toLowerCase(), name, returnTo)
-  }
-  if (path === '/auth/logout' && request.method === 'POST') {
-    const token = bearer(request)
-    if (token) await directoryOf(env).fetch(request)
-    return new Response(null, { status: 204, headers })
-  }
-  return text('Not found', 404, headers)
-}
-
-function safeAtob(value: string): string | null {
-  try {
-    return atob(value)
-  } catch {
-    return null
-  }
-}
-
-type GithubResult = { user: { id: number; login: string } } | { error: string }
-
-/** Exchanges the code for a token and asks GitHub who it is. The error names what failed. */
-async function githubUser(
-  clientId: string,
-  clientSecret: string,
-  code: string,
-  origin: string,
-): Promise<GithubResult> {
-  try {
-    const exchange = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        'User-Agent': 'pink-slips',
-      },
-      body: JSON.stringify({
-        client_id: clientId,
-        client_secret: clientSecret,
-        code,
-        redirect_uri: `${origin}/auth/callback`,
-      }),
-    })
-    const granted = (await exchange.json().catch(() => ({}))) as {
-      access_token?: string
-      error?: string
-      error_description?: string
-    }
-    if (!granted.access_token) {
-      const reason = granted.error ?? `token exchange returned ${exchange.status}`
-      console.error(
-        'github token exchange failed',
-        exchange.status,
-        reason,
-        granted.error_description,
-      )
-      return { error: reason }
-    }
-    const profile = await fetch('https://api.github.com/user', {
-      headers: {
-        Authorization: `Bearer ${granted.access_token}`,
-        Accept: 'application/vnd.github+json',
-        'User-Agent': 'pink-slips',
-      },
-    })
-    if (!profile.ok) {
-      console.error('github user lookup failed', profile.status)
-      return { error: `user lookup returned ${profile.status}` }
-    }
-    const user = (await profile.json()) as { id?: number; login?: string }
-    return typeof user.id === 'number' && typeof user.login === 'string'
-      ? { user: { id: user.id, login: user.login } }
-      : { error: 'user lookup returned no login' }
-  } catch (error) {
-    console.error('github sign-in threw', String(error))
-    return { error: 'GitHub could not be reached' }
-  }
-}
-
-async function finishSignIn(
-  env: Env,
-  provider: string,
-  providerId: string,
-  name: string,
-  returnTo: string,
-): Promise<Response> {
-  const response = await directoryOf(env).fetch('https://directory/internal/sign-in', {
-    method: 'POST',
-    body: JSON.stringify({ provider, providerId, name }),
-  })
-  if (!response.ok) return text('The account service did not answer.', 502)
-  const { token } = (await response.json()) as { token: string }
-  return new Response(null, { status: 302, headers: { Location: `${returnTo}#session=${token}` } })
+function attachment(ws: WebSocket): Attachment {
+  const value = ws.deserializeAttachment() as Attachment | null
+  return value ?? { seat: null, identity: null }
 }
 
 function queueAttachment(ws: WebSocket): QueueAttachment {
   return ws.deserializeAttachment() as QueueAttachment
-}
-
-function attachment(ws: WebSocket): Attachment {
-  const value = ws.deserializeAttachment() as Attachment | null
-  return value ?? { seat: null, identity: null }
 }
 
 function send(ws: WebSocket, message: ServerMessage): void {
@@ -359,7 +218,7 @@ export class AccountDirectory extends DurableObject<Env> {
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
-    this.directory = new Directory(new ObjectStore(ctx.storage), randomToken)
+    this.directory = new Directory(new ObjectStore(ctx.storage), randomToken, sha256)
   }
 
   override async fetch(request: Request): Promise<Response> {
@@ -368,20 +227,17 @@ export class AccountDirectory extends DurableObject<Env> {
     const path = url.pathname
     const token = bearer(request) ?? url.searchParams.get('session')
 
-    if (path === '/internal/sign-in' && request.method === 'POST') {
+    if (path === '/auth/player' && request.method === 'POST') {
       const body = (await readJson(request)) as Record<string, unknown> | null
-      const provider = body?.['provider']
-      const providerId = body?.['providerId']
       const name = body?.['name']
-      if (
-        typeof provider !== 'string' ||
-        typeof providerId !== 'string' ||
-        typeof name !== 'string'
-      ) {
-        return text('Bad sign-in', 400)
-      }
-      const signedIn = await this.directory.signIn(provider, providerId, name)
-      return json({ token: signedIn.token })
+      const made = await this.directory.createPlayer(typeof name === 'string' ? name : '')
+      return json(made, 200, headers)
+    }
+    if (path === '/auth/recover' && request.method === 'POST') {
+      const body = (await readJson(request)) as Record<string, unknown> | null
+      const code = body?.['code']
+      const found = typeof code === 'string' ? await this.directory.recover(code) : null
+      return found ? json(found, 200, headers) : text('No player has that code.', 404, headers)
     }
     if (path === '/internal/whoami') {
       const account = token ? await this.directory.accountFor(token) : null
@@ -419,6 +275,15 @@ export class AccountDirectory extends DurableObject<Env> {
       const body = (await readJson(request)) as Record<string, unknown> | null
       const data = await this.directory.saveGarages(token, body?.['garages'])
       return data ? json(data, 200, headers) : text('', 401, headers)
+    }
+    if (path === '/me/name' && request.method === 'PUT') {
+      const body = (await readJson(request)) as Record<string, unknown> | null
+      const data = await this.directory.rename(token, body?.['name'])
+      return data ? json(data, 200, headers) : text('', 401, headers)
+    }
+    if (path === '/me/recovery' && request.method === 'POST') {
+      const recoveryCode = await this.directory.rotateRecovery(token)
+      return recoveryCode ? json({ recoveryCode }, 200, headers) : text('', 401, headers)
     }
     if (path === '/me/packs/open' && request.method === 'POST') {
       const seed = crypto.getRandomValues(new Uint32Array(1))[0] ?? 1

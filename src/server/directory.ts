@@ -13,7 +13,14 @@ import {
   type VariantCounts,
 } from '../collection/collection.ts'
 import { seedRng, TUNABLES } from '../engine/index.ts'
-import { MAX_NAME_LENGTH, type RatingChange } from '../protocol/messages.ts'
+import {
+  CODE_ALPHABET,
+  formatRecoveryCode,
+  MAX_NAME_LENGTH,
+  normalizeRecoveryCode,
+  RECOVERY_LENGTH,
+  type RatingChange,
+} from '../protocol/messages.ts'
 import {
   isCollectionState,
   isGarageList,
@@ -23,10 +30,12 @@ import {
 import { updateRatings } from './rating.ts'
 
 /**
- * Accounts (DESIGN.md 13), independent of any platform. The directory holds every account,
- * its collection and garages, its rating and record, and the sessions that sign it in. Packs
- * are only ever added here: by a match result the room reports, or by a CPU result the client
- * reports, at most one a minute. Nothing a client sends can set a pack count or a rating.
+ * Accounts (DESIGN.md 13), independent of any platform. A player is made from a name alone:
+ * the directory keeps the account, its collection and garages, its rating and record, the
+ * sessions that hold it in a browser, and the hash of the recovery code that carries it to
+ * another one. Packs are only ever added here: by a match result the room reports, or by a
+ * CPU result the client reports, at most one a minute. Nothing a client sends can set a pack
+ * count or a rating.
  */
 
 /** What the directory needs from storage. The adapter maps it onto the platform. */
@@ -53,6 +62,8 @@ export interface Account {
   createdAt: number
   /** When the last CPU result was accepted, for the rate limit. */
   lastCpuResultAt: number
+  /** Hash of the recovery code; the code itself is never stored. */
+  recoveryHash?: string
 }
 
 /** The public face of an account. */
@@ -102,7 +113,9 @@ interface Stats {
   rated: number
 }
 
-export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
+/** A session lasts a year from its last use; it is renewed once a day while in use. */
+export const SESSION_TTL_MS = 365 * 24 * 60 * 60 * 1000
+export const SESSION_RENEW_MS = 24 * 60 * 60 * 1000
 /** Shortest gap between two CPU results from one account. */
 export const CPU_RESULT_GAP_MS = 60_000
 export const LEADERBOARD_SIZE = 50
@@ -110,6 +123,7 @@ export const LEADERBOARD_SIZE = 50
 const ACCOUNT = 'acct:'
 const PROVIDER = 'prov:'
 const SESSION = 'sess:'
+const RECOVERY = 'rec:'
 const STATS = 'stats'
 
 function cleanName(raw: string): string {
@@ -127,66 +141,113 @@ function mergeVariants(a: VariantCounts, b: VariantCounts): VariantCounts {
   return { foil: maxCounts(a.foil, b.foil), holo: maxCounts(a.holo, b.holo) }
 }
 
+/** A recovery code from random hex: every two hex digits pick one alphabet character. */
+export function recoveryCodeFrom(hex: string): string {
+  let code = ''
+  for (let i = 0; code.length < RECOVERY_LENGTH && i + 2 <= hex.length; i += 2) {
+    code += CODE_ALPHABET[parseInt(hex.slice(i, i + 2), 16) % CODE_ALPHABET.length]
+  }
+  if (code.length < RECOVERY_LENGTH) throw new Error('Not enough randomness for a code')
+  return code
+}
+
 export class Directory {
   private readonly store: Store
   private readonly random: () => string
+  private readonly hash: (text: string) => Promise<string>
   private readonly now: () => number
   private readonly t: typeof TUNABLES
 
   constructor(
     store: Store,
     random: () => string,
+    hash: (text: string) => Promise<string>,
     now: () => number = () => Date.now(),
     t: typeof TUNABLES = TUNABLES,
   ) {
     this.store = store
     this.random = random
+    this.hash = hash
     this.now = now
     this.t = t
   }
 
-  /** Signs a provider identity in, creating the account the first time, and opens a session. */
-  async signIn(
-    provider: string,
-    providerId: string,
+  /** Makes a player from a name and opens a session. The recovery code is returned once. */
+  async createPlayer(
     name: string,
-  ): Promise<{ token: string; data: AccountData; created: boolean }> {
-    const key = `${PROVIDER}${provider}:${providerId}`
-    let id = await this.store.get<string>(key)
-    let account = id ? await this.store.get<Account>(`${ACCOUNT}${id}`) : undefined
-    let created = false
-    if (!account) {
-      id = this.random()
-      account = {
-        id,
-        provider,
-        providerId,
-        name: cleanName(name),
-        rating: this.t.online.ratingStart,
-        wins: 0,
-        losses: 0,
-        claimed: false,
-        collection: { owned: starterCollection(), packs: 0, variants: NO_VARIANTS },
-        garages: [],
-        createdAt: this.now(),
-        lastCpuResultAt: 0,
-      }
-      created = true
-      await this.store.put(key, id)
-      await this.save(account)
+  ): Promise<{ token: string; data: AccountData; recoveryCode: string }> {
+    const id = this.random()
+    const code = recoveryCodeFrom(this.random())
+    const account: Account = {
+      id,
+      provider: 'player',
+      providerId: id,
+      name: cleanName(name),
+      rating: this.t.online.ratingStart,
+      wins: 0,
+      losses: 0,
+      claimed: false,
+      collection: { owned: starterCollection(), packs: 0, variants: NO_VARIANTS },
+      garages: [],
+      createdAt: this.now(),
+      lastCpuResultAt: 0,
+      recoveryHash: await this.hash(code),
     }
+    await this.store.put(`${PROVIDER}player:${id}`, id)
+    await this.store.put(`${RECOVERY}${account.recoveryHash}`, id)
+    await this.save(account)
+    const token = await this.openSession(id)
+    return { token, data: this.dataOf(account), recoveryCode: formatRecoveryCode(code) }
+  }
+
+  /** Takes a player back with the recovery code. Null for a code nobody holds. */
+  async recover(raw: string): Promise<{ token: string; data: AccountData } | null> {
+    const code = normalizeRecoveryCode(raw)
+    if (!code) return null
+    const id = await this.store.get<string>(`${RECOVERY}${await this.hash(code)}`)
+    const account = id ? await this.load(id) : null
+    if (!account) return null
+    return { token: await this.openSession(account.id), data: this.dataOf(account) }
+  }
+
+  /** Replaces the recovery code; the old one stops working at once. */
+  async rotateRecovery(token: string): Promise<string | null> {
+    const account = await this.accountFor(token)
+    if (!account) return null
+    const code = recoveryCodeFrom(this.random())
+    const recoveryHash = await this.hash(code)
+    if (account.recoveryHash) await this.store.delete(`${RECOVERY}${account.recoveryHash}`)
+    await this.store.put(`${RECOVERY}${recoveryHash}`, account.id)
+    await this.save({ ...account, recoveryHash })
+    return formatRecoveryCode(code)
+  }
+
+  async rename(token: string, name: unknown): Promise<AccountData | null> {
+    const account = await this.accountFor(token)
+    if (!account) return null
+    if (typeof name !== 'string') return this.dataOf(account)
+    const next = { ...account, name: cleanName(name) }
+    await this.save(next)
+    return this.dataOf(next)
+  }
+
+  private async openSession(accountId: string): Promise<string> {
     const token = this.random()
-    const session: Session = { accountId: account.id, expiresAt: this.now() + SESSION_TTL_MS }
+    const session: Session = { accountId, expiresAt: this.now() + SESSION_TTL_MS }
     await this.store.put(`${SESSION}${token}`, session)
-    return { token, data: this.dataOf(account), created }
+    return token
   }
 
   async accountFor(token: string): Promise<Account | null> {
     const session = await this.store.get<Session>(`${SESSION}${token}`)
     if (!session) return null
-    if (session.expiresAt <= this.now()) {
+    const now = this.now()
+    if (session.expiresAt <= now) {
       await this.store.delete(`${SESSION}${token}`)
       return null
+    }
+    if (session.expiresAt - now < SESSION_TTL_MS - SESSION_RENEW_MS) {
+      await this.store.put(`${SESSION}${token}`, { ...session, expiresAt: now + SESSION_TTL_MS })
     }
     return (await this.store.get<Account>(`${ACCOUNT}${session.accountId}`)) ?? null
   }

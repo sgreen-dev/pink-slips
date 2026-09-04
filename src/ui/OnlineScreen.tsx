@@ -193,7 +193,9 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
             </div>
           )
         ) : (
-          <p className="online__status">Sign in on the start screen to play ranked matches.</p>
+          <p className="online__status">
+            Create a player on the start screen to play ranked matches.
+          </p>
         )}
       </section>
       <section className="online__queue">

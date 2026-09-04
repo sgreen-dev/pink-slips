@@ -11,9 +11,6 @@ import {
   loadSession,
   mirror,
   saveSession,
-  sessionFromHash,
-  signInAvailable,
-  signInUrl,
   signOutOnline,
   type AccountHandle,
 } from './account.ts'
@@ -23,6 +20,7 @@ import { Match, type Mode } from './Match.tsx'
 import { roomEndpoint, roomFromSearch } from './online.ts'
 import { OnlineMatch } from './OnlineMatch.tsx'
 import { OnlineScreen, type OnlineEntry } from './OnlineScreen.tsx'
+import { PlayerDialog, type PlayerView } from './PlayerDialog.tsx'
 import { ProfileScreen } from './ProfileScreen.tsx'
 import { newSeed } from './seed.ts'
 import { StartScreen } from './StartScreen.tsx'
@@ -53,36 +51,14 @@ function firstScreen(): Screen {
   return code ? { kind: 'online', prefill: code } : { kind: 'start' }
 }
 
-/** The token from a sign-in that just came back, or the one kept from last time. */
-function firstSession(): string | null {
-  const fromHash = sessionFromHash(window.location.hash)
-  if (fromHash) {
-    saveSession(fromHash)
-    window.history.replaceState(null, '', window.location.pathname + window.location.search)
-    return fromHash
-  }
-  return loadSession()
-}
-
 export function App() {
   const [screen, setScreen] = useState<Screen>(firstScreen)
-  const [token, setToken] = useState<string | null>(firstSession)
+  const [token, setToken] = useState<string | null>(loadSession)
   const [data, setData] = useState<AccountData | null>(null)
-  // Bumped whenever the account data changes so screens re-read the mirrored storage.
+  // Bumped when a player signs in or out so screens re-read the mirrored storage.
   const [generation, setGeneration] = useState(0)
-  const [canSignIn, setCanSignIn] = useState(false)
-
-  // A guest sees the sign-in link only when the service has a provider configured.
-  useEffect(() => {
-    if (!ENDPOINT || token) return
-    let live = true
-    void signInAvailable(ENDPOINT).then((ready) => {
-      if (live) setCanSignIn(ready)
-    })
-    return () => {
-      live = false
-    }
-  }, [token])
+  // The player pop-up: making a player, recovering one, or reading a recovery code.
+  const [dialog, setDialog] = useState<{ view: PlayerView; code: string | null } | null>(null)
 
   // With a token, fetch the account; claim the guest data the first time; mirror it locally.
   useEffect(() => {
@@ -131,14 +107,18 @@ export function App() {
     setScreen({ kind: 'start' })
   }, [token])
 
+  /** A player was made or recovered in the pop-up: from now on this browser holds it. */
+  const signedIn = useCallback((fresh: string) => {
+    saveSession(fresh)
+    setData(null)
+    setToken(fresh)
+  }, [])
+
   const account: AccountHandle | null =
     ENDPOINT && token && data ? { endpoint: ENDPOINT, token, data, update, signOut } : null
   const toStart = () => setScreen({ kind: 'start' })
   const toOnline = () => setScreen({ kind: 'online', prefill: null })
-  const signInHref =
-    ENDPOINT && canSignIn
-      ? signInUrl(ENDPOINT, window.location.origin + window.location.pathname)
-      : null
+  const openPlayer = (view: PlayerView, code: string | null = null) => setDialog({ view, code })
 
   let page: ReactNode
   if (screen.kind === 'start') {
@@ -152,7 +132,7 @@ export function App() {
         onCollection={() => setScreen({ kind: 'collection' })}
         onOnline={ENDPOINT ? toOnline : undefined}
         onProfile={() => setScreen({ kind: 'profile' })}
-        signInHref={account ? null : signInHref}
+        onPlayer={ENDPOINT ? openPlayer : undefined}
       />
     )
   } else if (screen.kind === 'builder') {
@@ -160,7 +140,7 @@ export function App() {
   } else if (screen.kind === 'collection') {
     page = <CollectionScreen key={generation} onBack={toStart} />
   } else if (screen.kind === 'profile') {
-    page = <ProfileScreen onBack={toStart} />
+    page = <ProfileScreen onBack={toStart} onShowCode={(code) => openPlayer('code', code)} />
   } else if (screen.kind === 'online') {
     page = ENDPOINT ? (
       <OnlineScreen
@@ -194,5 +174,18 @@ export function App() {
       />
     )
   }
-  return <AccountContext value={account}>{page}</AccountContext>
+  return (
+    <AccountContext value={account}>
+      {page}
+      {dialog && ENDPOINT && (
+        <PlayerDialog
+          endpoint={ENDPOINT}
+          view={dialog.view}
+          code={dialog.code}
+          onSignedIn={signedIn}
+          onClose={() => setDialog(null)}
+        />
+      )}
+    </AccountContext>
+  )
 }

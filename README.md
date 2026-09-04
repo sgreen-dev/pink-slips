@@ -46,7 +46,7 @@ The matches-played counter on the start screen is optional. It reads a small Clo
 
 Online play is optional in the same way. The room service is a Cloudflare Worker with Durable Objects in `server/`; deploy it with `npx wrangler deploy` from that directory, then set the worker URL as the repository variable `VITE_ROOM_URL`. Without the variable the start screen has no online button, and CPU and hotseat play work as before. Room codes are six characters, rooms live a day after their last move, and the worker only accepts connections from the site and the local dev server.
 
-Sign-in and ranked play use the same worker. Register a GitHub OAuth app whose callback URL is the worker URL plus `/auth/callback`, then from `server/` run `npx wrangler secret put GITHUB_CLIENT_ID` and `npx wrangler secret put GITHUB_CLIENT_SECRET`. Until both secrets exist the site hides the sign-in link and everything else keeps working for guests. For local development, `server/.dev.vars` with `DEV_LOGIN=true` lets `/auth/dev?name=Ann&return=http://localhost:5173/pink-slips/` sign anyone in.
+Players and ranked play use the same worker and need no secrets: a player is made from a name and carried to another device with a recovery code. To check a deployment end to end, run `npm run online:smoke -- <worker url>`, which makes two players, pairs them, plays a match, and prints both rating changes.
 
 ## Project layout
 

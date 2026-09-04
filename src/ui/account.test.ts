@@ -3,15 +3,16 @@ import { COLLECTION_KEY } from '../collection/persist.ts'
 import type { AccountData } from '../server/directory.ts'
 import {
   clearSession,
+  createPlayer,
   fetchMe,
   loadSession,
   mirror,
   QueueClient,
   queueUrl,
+  recoverPlayer,
+  renamePlayer,
+  rotateRecovery,
   saveSession,
-  sessionFromHash,
-  signInAvailable,
-  signInUrl,
   type QueueStatus,
 } from './account.ts'
 import type { SocketLike } from './online.ts'
@@ -57,44 +58,37 @@ const sample: AccountData = {
   garages: [{ id: 'g', name: 'G', cars: ['x'], deck: [], updatedAt: 1 }],
 }
 
+/** A fetcher that answers every call with one status and body, and records the requests. */
+function answering(status: number, body: unknown) {
+  const calls: { url: string; init?: RequestInit }[] = []
+  const fetcher = async (url: string, init?: RequestInit) => {
+    calls.push({ url, init })
+    return new Response(body === null ? '' : JSON.stringify(body), { status })
+  }
+  return { fetcher, calls }
+}
+
+const down = async () => {
+  throw new Error('offline')
+}
+
 describe('the session', () => {
-  it('comes from the sign-in fragment or storage, and clears', () => {
-    expect(sessionFromHash('#session=abc123')).toBe('abc123')
-    expect(sessionFromHash('#other=1&session=abc123')).toBe('abc123')
-    expect(sessionFromHash('#session=../evil')).toBeNull()
-    expect(sessionFromHash('')).toBeNull()
+  it('lives in storage and clears', () => {
     const store = fakeStore()
     expect(loadSession(store)).toBeNull()
     saveSession('tok', store)
     expect(loadSession(store)).toBe('tok')
     clearSession(store)
     expect(loadSession(store)).toBeNull()
-    expect(signInUrl('https://s.dev', 'https://x.dev/pink-slips/')).toBe(
-      'https://s.dev/auth/login?return=https%3A%2F%2Fx.dev%2Fpink-slips%2F',
-    )
     expect(queueUrl('https://s.dev', 'tok')).toBe('wss://s.dev/queue?session=tok')
   })
 
   it('tells a lost session apart from a service that is down', async () => {
-    const ok = async () => new Response(JSON.stringify(sample), { status: 200 })
+    const ok = answering(200, sample).fetcher
     expect(await fetchMe('https://s.dev', 'tok', ok)).toEqual({ data: sample, signedOut: false })
-    const gone = async () => new Response('', { status: 401 })
+    const gone = answering(401, null).fetcher
     expect(await fetchMe('https://s.dev', 'tok', gone)).toEqual({ data: null, signedOut: true })
-    const down = async () => {
-      throw new Error('offline')
-    }
     expect(await fetchMe('https://s.dev', 'tok', down)).toEqual({ data: null, signedOut: false })
-  })
-
-  it('shows sign-in only when the service says it is configured', async () => {
-    const yes = async () => new Response(JSON.stringify({ signIn: true }))
-    const no = async () => new Response(JSON.stringify({ signIn: false }))
-    const down = async () => {
-      throw new Error('offline')
-    }
-    expect(await signInAvailable('https://s.dev', yes)).toBe(true)
-    expect(await signInAvailable('https://s.dev', no)).toBe(false)
-    expect(await signInAvailable('https://s.dev', down)).toBe(false)
   })
 
   it('mirrors the account over the local collection and garages', () => {
@@ -102,6 +96,37 @@ describe('the session', () => {
     mirror(sample, store)
     expect(JSON.parse(store.data.get(COLLECTION_KEY) ?? '')).toEqual(sample.collection)
     expect(JSON.parse(store.data.get(GARAGES_KEY) ?? '')).toEqual(sample.garages)
+  })
+})
+
+describe('players', () => {
+  it('are made from a name and come with a recovery code', async () => {
+    const made = { token: 't', data: sample, recoveryCode: 'ABCD-EFGH-JKLM' }
+    const { fetcher, calls } = answering(200, made)
+    expect(await createPlayer('https://s.dev', 'Ann', fetcher)).toEqual(made)
+    expect(calls[0]?.url).toBe('https://s.dev/auth/player')
+    expect(JSON.parse(String(calls[0]?.init?.body))).toEqual({ name: 'Ann' })
+    expect(await createPlayer('https://s.dev', 'Ann', answering(429, null).fetcher)).toBeNull()
+    expect(await createPlayer('https://s.dev', 'Ann', down)).toBeNull()
+  })
+
+  it('recover with a code, telling an unknown code apart from an outage', async () => {
+    const found = { token: 't2', data: sample }
+    const ok = answering(200, found).fetcher
+    expect(await recoverPlayer('https://s.dev', 'ABCD-EFGH-JKLM', ok)).toEqual(found)
+    const missing = answering(404, null).fetcher
+    expect(await recoverPlayer('https://s.dev', 'nope', missing)).toBe('unknown')
+    expect(await recoverPlayer('https://s.dev', 'ABCD-EFGH-JKLM', down)).toBeNull()
+  })
+
+  it('rotate their code and rename', async () => {
+    const rotated = answering(200, { recoveryCode: 'NEWW-CODE-HERE' })
+    expect(await rotateRecovery('https://s.dev', 't', rotated.fetcher)).toBe('NEWW-CODE-HERE')
+    expect(rotated.calls[0]?.init?.headers).toMatchObject({ Authorization: 'Bearer t' })
+    expect(await rotateRecovery('https://s.dev', 't', answering(401, null).fetcher)).toBeNull()
+    const renamed = answering(200, { ...sample, profile: { ...sample.profile, name: 'Annie' } })
+    const result = await renamePlayer('https://s.dev', 't', 'Annie', renamed.fetcher)
+    expect(result?.profile.name).toBe('Annie')
   })
 })
 

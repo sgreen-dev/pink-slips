@@ -18,7 +18,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "data:report": "node src/data/report.ts",
-    "sim": "node src/sim/cli.ts"
+    "sim": "node src/sim/cli.ts",
+    "online:smoke": "node scripts/online-smoke.ts"
   },
   "dependencies": {
     "react": "^19.2.8",
