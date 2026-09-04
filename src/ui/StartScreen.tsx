@@ -1,4 +1,4 @@
-import { useContext, useRef, useState } from 'react'
+import { useContext, useRef, useState, type CSSProperties } from 'react'
 import { loadCollection } from '../collection/persist.ts'
 import { LEVELS, LEVEL_BLURB, LEVEL_LABEL, type Level } from '../cpu/index.ts'
 import type { MatchConfig } from '../engine/index.ts'
@@ -22,6 +22,9 @@ interface StartScreenProps {
   /** Opens the player pop-up; absent without a service. */
   onPlayer?: (view: PlayerView) => void
 }
+
+/** The start screen art, served from public/backgrounds. */
+const BACKDROP = `${import.meta.env.BASE_URL}backgrounds/start-screen2.webp`
 
 export function StartScreen({
   onStart,
@@ -62,6 +65,11 @@ export function StartScreen({
   }
   return (
     <main className="start">
+      <div
+        className="backdrop"
+        aria-hidden="true"
+        style={{ '--backdrop': `url(${BACKDROP})` } as CSSProperties}
+      />
       <h1 className="start__title">Pink Slips</h1>
       <p className="start__tagline">
         Real cars drag race a quarter mile. Win the race, take the car. First to three pink slips

@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-04
 
+- The start screen gets the neon road background, washed dark for readable text. (the commit that added this line)
 - On the board, each garage shows its staged car first, so the two cars in the race lead their rows. The dev server no longer watches the source image and music folders, so a locked file there cannot stop it. (the commit that added this line)
 - This changelog, in its own directory, with a pointer from the README. (the commit that added this file)
 - The music shuffles: all six tracks in an order that never repeats one back to back, a new track on every change of screen, and each track playing to its end. The intermittent start on phones is noted in the backlog with what to check. (428a718)

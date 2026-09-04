@@ -1,0 +1,7 @@
+# Background credits
+
+The background art in this folder was supplied by the owner for Pink Slips and is part of this repository under its terms. The sources are the PNG files in `game-images/game-background/`; `scripts/art/encode_background.py` produces these WebP copies.
+
+| File | Where it shows |
+| --- | --- |
+| start-screen2.webp | The start screen |

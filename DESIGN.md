@@ -476,6 +476,8 @@ Fonts load from Google Fonts. The card is a portrait 5:7 with a thick type-color
 
 ---
 
+**Start backdrop**: the start screen shows the owner's neon road scene edge to edge, served as WebP from `public/backgrounds/`, under a dark wash that runs from about 55 percent at the top to 85 percent at the bottom so the title reads over the sun and the garage pickers sit on the dark road. The other screens keep the flat asphalt.
+
 **Board order**: each garage row shows its staged car first, so the two cars in the race lead their rows and stay in view on a phone, where the row scrolls; the other cars keep the order the engine holds them in.
 
 **Sound** (phase 16). Music and effects, on by default, with one control. Browsers refuse to play anything before the page is clicked or tapped, so nothing sounds until the first gesture; that gesture unlocks audio and starts the music.

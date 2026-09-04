@@ -1597,3 +1597,18 @@ h2 {
   font-size: 0.9rem;
   cursor: pointer;
 }
+
+/* The start screen art, washed dark so the title and buttons read over it. */
+.start {
+  position: relative;
+}
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(23, 23, 26, 0.55), rgba(23, 23, 26, 0.85)), var(--backdrop);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
