@@ -33,7 +33,7 @@
 | 14 | Online play, part 1: the engine behind a server | done | 0c7176d |
 | 15 | Online play, part 2: accounts and matchmaking | done | 7f08ebe, 1bad706 |
 | 16 | Sound | done | 8847fb6 |
-| 17 | Player name filter | done | HASH |
+| 17 | Player name filter | done | c8d7c96 |
 
 ---
 
