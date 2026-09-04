@@ -1,6 +1,12 @@
 import { useContext, useEffect, useRef } from 'react'
 import { getMod } from '../data/mods.ts'
-import { otherPlayer, type Action, type MatchState, type PlayerIndex } from '../engine/index.ts'
+import {
+  otherPlayer,
+  type Action,
+  type MatchState,
+  type PlayerIndex,
+  currentPlayer,
+} from '../engine/index.ts'
 import type { RaceEnd } from './celebration.ts'
 import { Garage } from './Garage.tsx'
 import {
@@ -74,6 +80,8 @@ export function Board({
   const buttons = buttonActions(state, viewer)
   const handIds = [...new Set(me.hand)]
   const busy = selection.kind !== 'none' || options !== null
+  // The viewer's own turn: the prompt and the next-step button breathe so the next step is obvious.
+  const live = !inert && currentPlayer(state) === viewer
   const rules = useRef<HTMLDialogElement>(null)
   const variantOf = useContext(VariantContext)
 
@@ -151,7 +159,10 @@ export function Board({
       />
 
       <section className="controls">
-        <p className="controls__prompt" aria-live="polite">
+        <p
+          className={`controls__prompt ${live ? 'controls__prompt--live' : ''}`}
+          aria-live="polite"
+        >
           {prompt(state, viewer, selection, names)}
           {canUndo && !busy ? ' Undo takes back your last mod.' : ''}
         </p>
@@ -163,7 +174,7 @@ export function Board({
                     action.type === 'playBoost' ? (action.targetModId ?? action.modId) : action.type
                   }
                   type="button"
-                  className="button button--primary"
+                  className={`button button--primary ${live ? 'button--next' : ''}`}
                   onClick={() => {
                     onAction(action)
                     onOptions(null)
@@ -179,7 +190,9 @@ export function Board({
                 <button
                   key={`${action.type}-${'modId' in action ? action.modId : ''}`}
                   type="button"
-                  className={`button ${action.type === 'advance' ? 'button--primary' : ''}`}
+                  className={`button ${action.type === 'advance' ? 'button--primary' : ''} ${
+                    live && !busy ? 'button--next' : ''
+                  }`}
                   onClick={() => onAction(action)}
                   disabled={busy}
                 >

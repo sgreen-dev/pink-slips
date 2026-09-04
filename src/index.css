@@ -1627,3 +1627,38 @@ h2 {
   font: 12px var(--font-mono);
   white-space: pre;
 }
+
+/* The next step breathes: the prompt on the player's turn and the button that moves the turn on. */
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0.15rem rgba(242, 193, 78, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 0.5rem rgba(242, 193, 78, 0.15);
+  }
+}
+@keyframes prompt-glow {
+  0%,
+  100% {
+    text-shadow: 0 0 0.2em rgba(242, 193, 78, 0.25);
+  }
+  50% {
+    text-shadow: 0 0 0.9em rgba(242, 193, 78, 0.7);
+  }
+}
+.controls__prompt--live {
+  color: var(--gold);
+  font-weight: 600;
+  animation: prompt-glow 1.2s ease-in-out infinite;
+}
+.button--next {
+  box-shadow: 0 0 0 0.15rem rgba(242, 193, 78, 0.45);
+  animation: glow 1.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .controls__prompt--live,
+  .button--next {
+    animation: none;
+  }
+}

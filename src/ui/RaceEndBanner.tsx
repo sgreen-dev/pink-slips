@@ -33,7 +33,7 @@ export function RaceEndBanner({ raceEnd, headline, onContinue }: RaceEndBannerPr
         </p>
         <button
           type="button"
-          className="button button--primary button--big"
+          className="button button--primary button--big button--next"
           onClick={onContinue}
           autoFocus
         >
