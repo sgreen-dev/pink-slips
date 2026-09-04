@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { MAX_NAME_LENGTH, normalizeRecoveryCode } from '../protocol/messages.ts'
+import { nameProblem } from '../protocol/names.ts'
 import { createPlayer, recoverPlayer } from './account.ts'
 
 export type PlayerView = 'create' | 'recover' | 'code'
@@ -35,11 +36,20 @@ export function PlayerDialog({ endpoint, view, code, onSignedIn, onClose }: Play
     return () => window.removeEventListener('keydown', onKey)
   }, [current, onClose])
 
+  const problem = name.trim() === '' ? null : nameProblem(name)
   const create = async () => {
+    if (problem) {
+      setError(problem)
+      return
+    }
     setBusy(true)
     setError(null)
     const made = await createPlayer(endpoint, name)
     setBusy(false)
+    if (made === 'refused') {
+      setError('That name is not allowed here. Try another.')
+      return
+    }
     if (!made) {
       setError('The service did not answer. Try again in a moment.')
       return
@@ -108,8 +118,13 @@ export function PlayerDialog({ endpoint, view, code, onSignedIn, onClose }: Play
                 onChange={(event) => setName(event.target.value)}
               />
             </label>
+            {problem && <p className="online__error">{problem}</p>}
             <div className="online__actions">
-              <button type="submit" className="button button--primary button--big" disabled={busy}>
+              <button
+                type="submit"
+                className="button button--primary button--big"
+                disabled={busy || problem !== null}
+              >
                 {busy ? 'Creating…' : 'Create my player'}
               </button>
               <button type="button" className="button" onClick={onClose}>

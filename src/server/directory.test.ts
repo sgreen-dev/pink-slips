@@ -102,11 +102,33 @@ describe('directory', () => {
     expect(await directory.rotateRecovery('nope')).toBeNull()
   })
 
+  it('refuses a blocked name at creation, on rename, and masks one already stored', async () => {
+    const { directory, store } = setUp()
+    expect(Directory.nameProblem('sh1t')).not.toBeNull()
+    expect(Directory.nameProblem('')).toBeNull()
+    await expect(directory.createPlayer('sh1t')).rejects.toThrow()
+    const ann = await directory.createPlayer('Ann')
+    expect((await directory.rename(ann.token, 'b!tch'))?.profile.name).toBe('Ann')
+    // A name stored before the filter existed shows as Player everywhere.
+    for (const [key, value] of store.data) {
+      if (key.startsWith('acct:'))
+        store.data.set(key, { ...(value as object), name: 'a$$', wins: 1 })
+    }
+    expect((await directory.accountFor(ann.token))?.name).toBe('a$$')
+    expect((await directory.load(ann.data.profile.id))?.name).toBe('a$$')
+    const rows = await directory.leaderboard()
+    expect(rows[0]?.name).toBe('Player')
+    const me = await directory.accountFor(ann.token)
+    expect(me && directory.dataOf(me).profile.name).toBe('Player')
+  })
+
   it('renames within the name rules', async () => {
     const { directory } = setUp()
     const ann = await directory.createPlayer('Ann')
-    const renamed = await directory.rename(ann.token, `  ${'x'.repeat(40)}  `)
+    const renamed = await directory.rename(ann.token, `  ${'x'.repeat(24)}  `)
     expect(renamed?.profile.name).toBe('x'.repeat(24))
+    // Too long is refused rather than cut, and a non-string changes nothing.
+    expect((await directory.rename(ann.token, 'x'.repeat(40)))?.profile.name).toBe('x'.repeat(24))
     expect((await directory.rename(ann.token, 42))?.profile.name).toBe('x'.repeat(24))
     expect((await directory.rename(ann.token, '   '))?.profile.name).toBe('Player')
   })

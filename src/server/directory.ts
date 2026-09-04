@@ -16,11 +16,11 @@ import { seedRng, TUNABLES } from '../engine/index.ts'
 import {
   CODE_ALPHABET,
   formatRecoveryCode,
-  MAX_NAME_LENGTH,
   normalizeRecoveryCode,
   RECOVERY_LENGTH,
   type RatingChange,
 } from '../protocol/messages.ts'
+import { MAX_NAME_LENGTH, nameProblem, safeDisplayName } from '../protocol/names.ts'
 import {
   isCollectionState,
   isGarageList,
@@ -131,6 +131,11 @@ function cleanName(raw: string): string {
   return name || 'Player'
 }
 
+/** The name as it may be shown. Records made before the filter are masked here too. */
+function shown(account: Account): string {
+  return safeDisplayName(account.name)
+}
+
 function maxCounts(a: Collection, b: Collection): Collection {
   const merged: Record<string, number> = { ...a }
   for (const [id, count] of Object.entries(b)) merged[id] = Math.max(merged[id] ?? 0, count)
@@ -172,10 +177,19 @@ export class Directory {
     this.t = t
   }
 
-  /** Makes a player from a name and opens a session. The recovery code is returned once. */
+  /** Why a name cannot be used, or null. An empty name is allowed here and becomes Player. */
+  static nameProblem(name: string): string | null {
+    return name.trim() === '' ? null : nameProblem(name)
+  }
+
+  /**
+   * Makes a player from a name and opens a session. The recovery code is returned once. The
+   * caller checks the name first with `nameProblem`; a refused name is not stored.
+   */
   async createPlayer(
     name: string,
   ): Promise<{ token: string; data: AccountData; recoveryCode: string }> {
+    if (Directory.nameProblem(name)) throw new Error('Name refused')
     const id = this.random()
     const code = recoveryCodeFrom(this.random())
     const account: Account = {
@@ -225,7 +239,7 @@ export class Directory {
   async rename(token: string, name: unknown): Promise<AccountData | null> {
     const account = await this.accountFor(token)
     if (!account) return null
-    if (typeof name !== 'string') return this.dataOf(account)
+    if (typeof name !== 'string' || Directory.nameProblem(name)) return this.dataOf(account)
     const next = { ...account, name: cleanName(name) }
     await this.save(next)
     return this.dataOf(next)
@@ -264,7 +278,7 @@ export class Directory {
     return {
       profile: {
         id: account.id,
-        name: account.name,
+        name: shown(account),
         rating: account.rating,
         wins: account.wins,
         losses: account.losses,
@@ -411,7 +425,7 @@ export class Directory {
       .filter((a) => a.wins + a.losses > 0)
       .sort((a, b) => b.rating - a.rating || b.wins - a.wins || a.createdAt - b.createdAt)
       .slice(0, limit)
-      .map(({ id, name, rating, wins, losses }) => ({ id, name, rating, wins, losses }))
+      .map((a) => ({ id: a.id, name: shown(a), rating: a.rating, wins: a.wins, losses: a.losses }))
   }
 
   private async save(account: Account): Promise<void> {

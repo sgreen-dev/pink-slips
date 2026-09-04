@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-04
 
+- Phase 17, the player name filter: blocked words are refused in any dressing, a few names are reserved for the game, the reason shows before the button, and names stored before the filter are masked. (the commit that added this line)
 - The phone music start is confirmed fixed and its backlog entry closed. (the commit that added this line)
 - Music starts on the tap: tracks stream through media elements routed into the audio engine instead of being fetched whole and decoded first, the first ramp is 80 ms, and a readout behind `?sound=debug` shows the time from tap to sound. (the commit that added this line)
 - The start screen gets the neon road background, washed dark for readable text. (the commit that added this line)

@@ -33,6 +33,7 @@
 | 14 | Online play, part 1: the engine behind a server | done | 0c7176d |
 | 15 | Online play, part 2: accounts and matchmaking | done | 7f08ebe, 1bad706 |
 | 16 | Sound | done | 8847fb6 |
+| 17 | Player name filter | done | HASH |
 
 ---
 
@@ -450,6 +451,29 @@
 
 ---
 
+## Phase 17 — Player name filter
+
+**Goal**: no player name on the leaderboard, a profile, or a room is one a kid should not see.
+
+**Design to record first** (`DESIGN.md` section 13): one filter shared by the service and the browser, with normalisation of spelling tricks, a short list refused anywhere, a longer list refused as whole words, reserved names, and masking of names stored before the filter.
+
+**Deliverables**
+
+- `src/protocol/names.ts`: the normalisation, the lists, `nameProblem`, `safeDisplayName`
+- The directory refusing a blocked name at creation and rename, and masking stored names on the profile, the leaderboard, and the room identity; the worker answering 400 with the reason
+- The player pop-up and the profile showing the reason under the field before the button
+- Room join names masked in the protocol parser
+
+**Tests**
+
+- Ordinary names pass, including ones that contain a blocked word; blocked words fail in any dressing; reserved names and empty names are refused with their own reasons; a refused name is never stored; a stored one is masked
+
+**Done when**: a blocked name cannot be created or set on the live service, and the tests pass.
+
+**Prompt**: Do phase 17 of BUILD_PLAN.md.
+
+---
+
 ## Backlog
 
 Anything new goes here first and becomes a phase when picked up. Items sit in value order within their tier, judged by how many players feel them and how often; a new item goes to the tier that fits, at the end. Numbers never change, since the design and past commits refer to them.
@@ -458,7 +482,7 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 
 9. Sound: identify the moments where a sound effect or music would add to the game, such as the launch on an advance, a car crossing the line, the race-end banner, the coin flip, a pack opening, and the match result, then decide on a style, a source with a licence the repo can carry, and a mute control that is remembered. Design first, in a `DESIGN.md` section 8 addendum, before any audio is added *Taken into phase 16 on 2026-09-04.*
    *Why here:* Every race, every pack, every finish; the largest change in feel still open.
-6. A filter on player names, once there are enough players for one to matter
+6. A filter on player names, once there are enough players for one to matter *Taken into phase 17 on 2026-09-04.*
    *Why here:* A public leaderboard for an audience that includes kids; one bad name is seen by everyone.
 1. Trading duplicates, or converting them, once the collection has been live long enough to show how many duplicates players hold
    *Why here:* A full collection takes about 600 packs, so duplicates pile up early, and every pack after the first few dozen feels worse without it.

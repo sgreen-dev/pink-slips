@@ -70,19 +70,21 @@ export interface NewPlayer {
   recoveryCode: string
 }
 
-/** Makes a player from a name. Null when the service refuses or cannot be reached. */
-export function createPlayer(
+/** Makes a player from a name. `refused` when the name is not allowed; null when unreachable. */
+export async function createPlayer(
   endpoint: string,
   name: string,
   fetcher: Fetcher | undefined = globalThis.fetch,
-): Promise<NewPlayer | null> {
-  return call<NewPlayer>(
+): Promise<NewPlayer | 'refused' | null> {
+  const { status, body } = await call<NewPlayer>(
     endpoint,
     '/auth/player',
     null,
     { method: 'POST', body: JSON.stringify({ name }) },
     fetcher,
-  ).then((r) => r.body)
+  )
+  if (status === 400) return 'refused'
+  return body
 }
 
 /** Takes a player back with its recovery code. `unknown` means no player has that code. */
@@ -117,19 +119,22 @@ export function rotateRecovery(
   ).then((r) => r.body?.recoveryCode ?? null)
 }
 
-export function renamePlayer(
+/** Renames the player. `refused` when the name is not allowed; null when unreachable. */
+export async function renamePlayer(
   endpoint: string,
   token: string,
   name: string,
   fetcher: Fetcher | undefined = globalThis.fetch,
-): Promise<AccountData | null> {
-  return call<AccountData>(
+): Promise<AccountData | 'refused' | null> {
+  const { status, body } = await call<AccountData>(
     endpoint,
     '/me/name',
     token,
     { method: 'PUT', body: JSON.stringify({ name }) },
     fetcher,
-  ).then((r) => r.body)
+  )
+  if (status === 400) return 'refused'
+  return body
 }
 
 /** The account behind a token. `signedOut` means the service no longer knows the token. */

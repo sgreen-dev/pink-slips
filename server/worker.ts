@@ -6,6 +6,7 @@ import {
   parseClientMessage,
   type ServerMessage,
 } from '../src/protocol/messages.ts'
+import { safeDisplayName } from '../src/protocol/names.ts'
 import { Directory, type Store } from '../src/server/directory.ts'
 import { pickPair, type Waiting } from '../src/server/queue.ts'
 import { Room, type RoomSnapshot, type SeatIdentity, type Ticket } from '../src/server/room.ts'
@@ -229,8 +230,10 @@ export class AccountDirectory extends DurableObject<Env> {
 
     if (path === '/auth/player' && request.method === 'POST') {
       const body = (await readJson(request)) as Record<string, unknown> | null
-      const name = body?.['name']
-      const made = await this.directory.createPlayer(typeof name === 'string' ? name : '')
+      const name = typeof body?.['name'] === 'string' ? body['name'] : ''
+      const problem = Directory.nameProblem(name)
+      if (problem) return text(problem, 400, headers)
+      const made = await this.directory.createPlayer(name)
       return json(made, 200, headers)
     }
     if (path === '/auth/recover' && request.method === 'POST') {
@@ -241,7 +244,7 @@ export class AccountDirectory extends DurableObject<Env> {
     }
     if (path === '/internal/whoami') {
       const account = token ? await this.directory.accountFor(token) : null
-      return json(account ? { accountId: account.id, name: account.name } : null)
+      return json(account ? { accountId: account.id, name: safeDisplayName(account.name) } : null)
     }
     if (path === '/internal/result' && request.method === 'POST') {
       const body = (await readJson(request)) as Record<string, unknown> | null
@@ -278,7 +281,10 @@ export class AccountDirectory extends DurableObject<Env> {
     }
     if (path === '/me/name' && request.method === 'PUT') {
       const body = (await readJson(request)) as Record<string, unknown> | null
-      const data = await this.directory.rename(token, body?.['name'])
+      const name = typeof body?.['name'] === 'string' ? body['name'] : ''
+      const problem = Directory.nameProblem(name)
+      if (problem) return text(problem, 400, headers)
+      const data = await this.directory.rename(token, name)
       return data ? json(data, 200, headers) : text('', 401, headers)
     }
     if (path === '/me/recovery' && request.method === 'POST') {

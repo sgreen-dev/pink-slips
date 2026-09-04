@@ -1,4 +1,5 @@
 import type { Action, MatchState, PlayerConfig, PlayerIndex } from '../engine/index.ts'
+import { MAX_NAME_LENGTH, safeDisplayName } from './names.ts'
 
 /**
  * The online protocol (DESIGN.md 13), shared by the room service and the client. Every message
@@ -84,7 +85,7 @@ export type ServerMessage =
   | ResultMessage
   | MatchedMessage
 
-export const MAX_NAME_LENGTH = 24
+export { MAX_NAME_LENGTH }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -126,7 +127,7 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
     case 'join': {
       const name = value['name']
       if (typeof name !== 'string' || !isPlayerConfig(value['garage'])) return null
-      const trimmed = name.trim().slice(0, MAX_NAME_LENGTH)
+      const trimmed = safeDisplayName(name)
       const ticket = value['ticket']
       if (ticket !== undefined && typeof ticket !== 'string') return null
       const join: JoinMessage = { type: 'join', name: trimmed || 'Player', garage: value['garage'] }

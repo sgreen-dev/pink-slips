@@ -107,6 +107,7 @@ describe('players', () => {
     expect(calls[0]?.url).toBe('https://s.dev/auth/player')
     expect(JSON.parse(String(calls[0]?.init?.body))).toEqual({ name: 'Ann' })
     expect(await createPlayer('https://s.dev', 'Ann', answering(429, null).fetcher)).toBeNull()
+    expect(await createPlayer('https://s.dev', 'x', answering(400, null).fetcher)).toBe('refused')
     expect(await createPlayer('https://s.dev', 'Ann', down)).toBeNull()
   })
 
@@ -126,7 +127,10 @@ describe('players', () => {
     expect(await rotateRecovery('https://s.dev', 't', answering(401, null).fetcher)).toBeNull()
     const renamed = answering(200, { ...sample, profile: { ...sample.profile, name: 'Annie' } })
     const result = await renamePlayer('https://s.dev', 't', 'Annie', renamed.fetcher)
-    expect(result?.profile.name).toBe('Annie')
+    expect(result !== 'refused' && result?.profile.name).toBe('Annie')
+    expect(await renamePlayer('https://s.dev', 't', 'x', answering(400, null).fetcher)).toBe(
+      'refused',
+    )
   })
 })
 

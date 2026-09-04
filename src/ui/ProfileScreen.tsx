@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from 'react'
 import { MAX_NAME_LENGTH } from '../protocol/messages.ts'
+import { nameProblem } from '../protocol/names.ts'
 import type { LeaderboardRow } from '../server/directory.ts'
 import {
   AccountContext,
@@ -49,13 +50,16 @@ export function ProfileScreen({ onBack, onShowCode }: ProfileScreenProps) {
   const profile = account?.data.profile ?? null
   const played = profile ? profile.wins + profile.losses : 0
   const cleanName = name.trim().slice(0, MAX_NAME_LENGTH)
+  const problem = cleanName === '' ? null : nameProblem(cleanName)
 
   const saveName = async () => {
-    if (!account || !cleanName || cleanName === account.data.profile.name) return
+    if (!account || !cleanName || cleanName === account.data.profile.name || problem) return
     setBusy('name')
     const data = await renamePlayer(account.endpoint, account.token, cleanName)
     setBusy(null)
-    if (data) {
+    if (data === 'refused') {
+      setNotice('That name is not allowed here. Try another.')
+    } else if (data) {
       account.update(data)
       setNotice(`You are now ${data.profile.name}.`)
     } else {
@@ -126,10 +130,16 @@ export function ProfileScreen({ onBack, onShowCode }: ProfileScreenProps) {
             <button
               type="submit"
               className="button"
-              disabled={busy !== null || !cleanName || cleanName === account.data.profile.name}
+              disabled={
+                busy !== null ||
+                !cleanName ||
+                problem !== null ||
+                cleanName === account.data.profile.name
+              }
             >
               {busy === 'name' ? 'Saving…' : 'Save name'}
             </button>
+            {problem && <span className="online__error">{problem}</span>}
           </form>
           <div className="profile__row">
             <button
