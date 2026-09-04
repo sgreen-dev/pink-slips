@@ -309,3 +309,37 @@ describe('undo in a room', () => {
     ])
   })
 })
+
+describe('concede in a room', () => {
+  it('ends the match for both seats with the other seat as winner, and reports it', () => {
+    const room = new Room('CONCED', 3)
+    room.setup([
+      { ticket: 'tk-a', identity: { accountId: 'acct-a', name: 'Ann' } },
+      { ticket: 'tk-b', identity: { accountId: 'acct-b', name: 'Bo' } },
+    ])
+    const a = new FakeClient(room)
+    const b = new FakeClient(room)
+    expect(a.send(JSON.stringify({ type: 'concede' }), [b])).toEqual([
+      { type: 'error', reason: REASONS.notSeated },
+    ])
+    a.send(JSON.stringify({ type: 'join', name: 'Ann', garage: garage(0), ticket: 'tk-a' }), [b])
+    expect(a.send(JSON.stringify({ type: 'concede' }), [b])).toEqual([
+      { type: 'error', reason: REASONS.notStarted },
+    ])
+    b.send(JSON.stringify({ type: 'join', name: 'Bo', garage: garage(1), ticket: 'tk-b' }), [a])
+    const replies = b.send(JSON.stringify({ type: 'concede' }), [a])
+    expect(replies.every((m) => m.type === 'state')).toBe(true)
+    expect(isOver(a.view as MatchState)).toBe(0)
+    expect(isOver(b.view as MatchState)).toBe(0)
+    expect((a.view as MatchState).log.at(-1)).toEqual({ kind: 'concede', player: 1 })
+    const result = room.takeResult()
+    expect(result?.winner).toEqual({ accountId: 'acct-a', name: 'Ann' })
+    expect(result?.loser).toEqual({ accountId: 'acct-b', name: 'Bo' })
+    expect(result?.ranked).toBe(true)
+    expect(result?.conceded).toBe(true)
+    expect(result?.racesPlayed).toBe(0)
+    expect(a.send(JSON.stringify({ type: 'concede' }), [b])).toEqual([
+      { type: 'error', reason: REASONS.over },
+    ])
+  })
+})

@@ -31,7 +31,7 @@ export function soundsBetween(
     }
     events.push(intensity === undefined ? { name } : { name, intensity })
   }
-  const over = added.some((entry) => entry.kind === 'matchEnd')
+  const over = added.some((entry) => entry.kind === 'matchEnd' || entry.kind === 'concede')
   for (const entry of added) {
     if (entry.kind === 'stage') push('stage')
     else if (entry.kind === 'fuel') push('fuel')
@@ -45,7 +45,7 @@ export function soundsBetween(
     else if (entry.kind === 'coinFlip') push('coin')
     else if (entry.kind === 'raceEnd') {
       if (!over) push('raceEnd')
-    } else if (entry.kind === 'matchEnd') push('matchEnd')
+    } else if (entry.kind === 'matchEnd' || entry.kind === 'concede') push('matchEnd')
     else if (entry.kind === 'draw' || entry.kind === 'reshuffle') push('shuffle')
     else if (entry.kind === 'turnStart' && viewer !== null && entry.player === viewer) {
       push('yourTurn')

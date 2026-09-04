@@ -48,7 +48,11 @@ export function ResultScreen({
     <>
       <main className="result" inert={showPacks}>
         <h1 className="result__title">{title}</h1>
-        <p className="result__sub">Three pink slips in {Math.ceil(state.turn.number / 2)} turns.</p>
+        <p className="result__sub">
+          {state.log.some((entry) => entry.kind === 'concede')
+            ? `${names[loser]} conceded in turn ${Math.ceil(state.turn.number / 2)}.`
+            : `Three pink slips in ${Math.ceil(state.turn.number / 2)} turns.`}
+        </p>
         {note && <p className="result__note">{note}</p>}
         {packsEarned > 0 && (
           <p className="result__packs">

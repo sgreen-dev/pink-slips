@@ -385,6 +385,18 @@ export function isOver(state: MatchState): PlayerIndex | null {
   return state.phase.kind === 'over' ? state.phase.winner : null
 }
 
+/**
+ * Ends the match with the other player as winner (DESIGN.md 3.5). Not a legal action: the
+ * screens and the room call it, so the CPU and random play-outs never do. An over match is
+ * returned unchanged.
+ */
+export function concede(state: MatchState, player: PlayerIndex): MatchState {
+  if (state.phase.kind === 'over') return state
+  const winner = otherPlayer(player)
+  const next: MatchState = { ...state, phase: { kind: 'over', winner } }
+  return withLog(next, { kind: 'concede', player })
+}
+
 /** Draws up to `count` cards, reshuffling the discard pile into the deck when it runs out. */
 function drawCards(
   player: PlayerState,

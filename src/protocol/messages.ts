@@ -29,7 +29,12 @@ export interface UndoMessage {
   type: 'undo'
 }
 
-export type ClientMessage = JoinMessage | ResumeMessage | ActMessage | UndoMessage
+/** Gives the match up; the other seat wins it. */
+export interface ConcedeMessage {
+  type: 'concede'
+}
+
+export type ClientMessage = JoinMessage | ResumeMessage | ActMessage | UndoMessage | ConcedeMessage
 
 export interface WelcomeMessage {
   type: 'welcome'
@@ -144,6 +149,8 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
       return isAction(value['action']) ? { type: 'act', action: value['action'] } : null
     case 'undo':
       return { type: 'undo' }
+    case 'concede':
+      return { type: 'concede' }
     default:
       return null
   }

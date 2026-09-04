@@ -4,6 +4,7 @@ import { computeAdvance } from './advance.ts'
 import { STARTERS } from '../data/starters.ts'
 import {
   apply,
+  concede,
   createMatch,
   currentPlayer,
   fuelCost,
@@ -449,5 +450,37 @@ describe('legality', () => {
       /Illegal/,
     )
     expect(() => apply(state, { type: 'advance', player: first })).toThrow(/Illegal/)
+  })
+})
+
+describe('3.5 concede', () => {
+  const config = () => {
+    const [a, b] = STARTERS
+    if (!a || !b) throw new Error('No starters')
+    return {
+      players: [
+        { garage: a.cars, deck: a.deck },
+        { garage: b.cars, deck: b.deck },
+      ] as const,
+    }
+  }
+
+  it('ends the match with the other player as winner, from either seat, on or off turn', () => {
+    const state = createMatch({ players: [...config().players] }, 5)
+    const acting = currentPlayer(state)
+    expect(acting).not.toBeNull()
+    for (const player of [0, 1] as const) {
+      const after = concede(state, player)
+      expect(isOver(after)).toBe(otherPlayer(player))
+      expect(after.phase).toEqual({ kind: 'over', winner: otherPlayer(player) })
+      expect(after.log.at(-1)).toEqual({ kind: 'concede', player })
+      expect(legalActions(after, player)).toEqual([])
+    }
+  })
+
+  it('changes nothing once the match is over', () => {
+    const over = concede(createMatch({ players: [...config().players] }, 6), 1)
+    expect(concede(over, 0)).toBe(over)
+    expect(isOver(over)).toBe(0)
   })
 })

@@ -50,6 +50,8 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
   const [earned, setEarned] = useState(0)
   const [note, setNote] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  // Leave during a started match concedes, behind a confirm.
+  const [conceding, setConceding] = useState(false)
   // Mod plays sent this step and not yet taken back; the room is the judge, this only shows the button.
   const [undoable, setUndoable] = useState(0)
   const onContinue = useCallback(() => dispatch({ type: 'continue' }), [])
@@ -237,11 +239,33 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
           {entry.ticket ? 'Ranked · ' : ''}Room {session.code}
         </span>
         <span className={warn ? 'online__bar--warn' : ''} role="status">
-          {line}
+          {conceding ? 'Concede this match? Your opponent wins it.' : line}
         </span>
-        <button type="button" className="button button--small" onClick={onLeave}>
-          Leave
-        </button>
+        {conceding ? (
+          <>
+            <button
+              type="button"
+              className="button button--small button--primary"
+              onClick={() => {
+                setConceding(false)
+                client.current?.concede()
+              }}
+            >
+              Concede
+            </button>
+            <button
+              type="button"
+              className="button button--small button--ghost"
+              onClick={() => setConceding(false)}
+            >
+              Stay
+            </button>
+          </>
+        ) : (
+          <button type="button" className="button button--small" onClick={() => setConceding(true)}>
+            Leave
+          </button>
+        )}
       </div>
       <Board
         state={view}

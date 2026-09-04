@@ -254,6 +254,7 @@ export class AccountDirectory extends DurableObject<Env> {
         typeof winnerId === 'string' ? winnerId : null,
         typeof loserId === 'string' ? loserId : null,
         body?.['ranked'] === true,
+        body?.['earnsPacks'] !== false,
       )
       return json(outcome)
     }
@@ -468,6 +469,7 @@ export class MatchRoom extends DurableObject<Env> {
           winnerId: result.winner?.accountId ?? null,
           loserId: result.loser?.accountId ?? null,
           ranked: result.ranked,
+          earnsPacks: !result.conceded || result.racesPlayed > 0,
         }),
       })
       if (response.ok) outcome = (await response.json()) as typeof outcome

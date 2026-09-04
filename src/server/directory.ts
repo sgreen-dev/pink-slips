@@ -378,12 +378,14 @@ export class Directory {
 
   /**
    * A finished online match, reported by the room. Each signed-in side earns packs by the
-   * online rule; a ranked match between two accounts also moves their ratings and records.
+   * online rule, unless the room says the match earns none, as for one conceded before any
+   * race; a ranked match between two accounts also moves their ratings and records.
    */
   async recordResult(
     winnerId: string | null,
     loserId: string | null,
     ranked: boolean,
+    earnsPacks = true,
   ): Promise<MatchOutcome> {
     const winner = winnerId ? await this.load(winnerId) : null
     const loser = loserId ? await this.load(loserId) : null
@@ -393,7 +395,7 @@ export class Directory {
     let newlyRated = 0
     const settle = async (account: Account | null, won: boolean): Promise<SideOutcome | null> => {
       if (!account) return null
-      const packs = packsEarned('online', won, this.t)
+      const packs = earnsPacks ? packsEarned('online', won, this.t) : 0
       const change = ratings ? (won ? ratings.winner : ratings.loser) : null
       if (rated && account.wins + account.losses === 0) newlyRated += 1
       const next: Account = {

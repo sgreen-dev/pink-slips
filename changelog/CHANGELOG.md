@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-04
 
+- Phase 18, concede online: Leave during a started match asks once, then gives the match to the opponent, who sees the result at once with packs and ratings as usual. (the commit that added this line)
 - Undo during the mod step: a mod played this turn can be taken back until the step ends or the player advances, in CPU, hotseat, and online play. (the commit that added this line)
 - Phase 17, the player name filter: blocked words are refused in any dressing, a few names are reserved for the game, the reason shows before the button, and names stored before the filter are masked. (the commit that added this line)
 - The phone music start is confirmed fixed and its backlog entry closed. (the commit that added this line)

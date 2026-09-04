@@ -1,5 +1,6 @@
 import {
   apply,
+  concede,
   createMatch,
   currentPlayer,
   isLegal,
@@ -64,6 +65,10 @@ export interface RoomResult {
   winner: SeatIdentity | null
   loser: SeatIdentity | null
   winnerSeat: PlayerIndex
+  /** True when the match ended by a concede rather than three pink slips. */
+  conceded: boolean
+  /** Races that reached the line, so a match given up before any race earns nothing. */
+  racesPlayed: number
 }
 
 export const REASONS = {
@@ -184,6 +189,8 @@ export class Room {
         return this.act(from, message.action)
       case 'undo':
         return this.undo(from)
+      case 'concede':
+        return this.concede(from)
     }
   }
 
@@ -263,6 +270,17 @@ export class Room {
     return this.views()
   }
 
+  /** The seat gives the match up: the other seat wins, and both see the finished state. */
+  private concede(from: PlayerIndex | null): Outbound[] {
+    if (from === null) return [fail(REASONS.notSeated)]
+    const state = this.state
+    if (!state) return [fail(REASONS.notStarted)]
+    if (state.phase.kind === 'over') return [fail(REASONS.over)]
+    this.state = concede(state, from)
+    this.history = []
+    return this.views()
+  }
+
   /** Takes back the seat's last mod play of this step and shows both seats the result. */
   private undo(from: PlayerIndex | null): Outbound[] {
     if (from === null) return [fail(REASONS.notSeated)]
@@ -300,6 +318,8 @@ export class Room {
       winner: this.seats[winner]?.identity ?? null,
       loser: this.seats[otherSeat(winner)]?.identity ?? null,
       winnerSeat: winner,
+      conceded: this.state.log.at(-1)?.kind === 'concede',
+      racesPlayed: this.state.players[0].pinkSlips.length + this.state.players[1].pinkSlips.length,
     }
   }
 }

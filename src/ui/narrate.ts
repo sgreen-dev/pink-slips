@@ -45,6 +45,8 @@ export function describeLogEntry(entry: LogEntry, names: readonly [string, strin
       return `Race ${entry.race}: ${names[entry.winner]} wins and takes the ${getCar(entry.capturedCarId).name} as a pink slip.`
     case 'matchEnd':
       return `${names[entry.winner]} wins the match with three pink slips.`
+    case 'concede':
+      return `${names[entry.player]} concedes. ${names[entry.player === 0 ? 1 : 0]} wins the match.`
   }
   return null
 }

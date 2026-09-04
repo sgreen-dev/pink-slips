@@ -227,6 +227,11 @@ describe('directory', () => {
     expect(friendly.winner).toEqual({ packs: packsPerCpuWin, rating: null })
     expect((await directory.load(a))?.rating).toBe(before)
     expect((await directory.load(a))?.wins).toBe(1)
+    // A match given up before any race moves ratings but pays no packs.
+    const empty = await directory.recordResult(a, b, true, false)
+    expect(empty.winner?.packs).toBe(0)
+    expect(empty.loser?.packs).toBe(0)
+    expect(empty.winner?.rating).not.toBeNull()
     // A guest on one side earns nothing here; the account still does.
     const solo = await directory.recordResult(null, a, true)
     expect(solo.winner).toBeNull()

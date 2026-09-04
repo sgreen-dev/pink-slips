@@ -2,6 +2,7 @@ export { computeAdvance, typeIdentityBonusFt, windowApplies } from './advance.ts
 export type { AdvanceBreakdown, AdvanceInput } from './advance.ts'
 export {
   apply,
+  concede,
   createMatch,
   currentPlayer,
   fuelCost,

@@ -34,6 +34,7 @@
 | 15 | Online play, part 2: accounts and matchmaking | done | 7f08ebe, 1bad706 |
 | 16 | Sound | done | 8847fb6 |
 | 17 | Player name filter | done | c8d7c96 |
+| 18 | Concede online | done | HASH |
 
 ---
 
@@ -474,6 +475,29 @@
 
 ---
 
+## Phase 18 — Concede online
+
+**Goal**: leaving a started online match is a proper forfeit, so the opponent is never left in a room that cannot end.
+
+**Design to record first** (`DESIGN.md` 3.5 and 13): a player may concede at any point of a started match and the other player wins; online, Leave during a match asks once, then concedes, and the room reports the result as usual.
+
+**Deliverables**
+
+- `concede(state, player)` in the engine, a log entry, and the narration line
+- A `concede` client message and room handling that ends the match, clears the take-back stack, and lets the existing report send packs and ratings
+- The online bar's Leave as a two-step confirm during a started match; the result screen's line for a conceded match
+
+**Tests**
+
+- The engine: a concede ends the match for either seat, on or off turn, and an over match is unchanged
+- The room: both seats see the finished state, the result names the right winner and loser, and a concede before the start or after the end is refused
+
+**Done when**: two tabs in a friend room end at once when one concedes, and the tests pass.
+
+**Prompt**: Do phase 18 of BUILD_PLAN.md.
+
+---
+
 ## Backlog
 
 Anything new goes here first and becomes a phase when picked up. Items sit in value order within their tier, judged by how many players feel them and how often; a new item goes to the tier that fits, at the end. Numbers never change, since the design and past commits refer to them.
@@ -487,7 +511,7 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 1. Trading duplicates, or converting them, once the collection has been live long enough to show how many duplicates players hold
    *Why here:* A full collection takes about 600 packs, so duplicates pile up early, and every pack after the first few dozen feels worse without it.
 10. Turn timer with forfeit, online. A ranked player who stops acting gets a visible countdown, and when it runs out the match is forfeited and reported as a normal result, so an opponent who walks away or never returns cannot hold a match open forever. The room keeps the deadline in its snapshot and a Durable Object alarm fires it; the timer pauses while a seat is disconnected only for a fixed grace, then counts down anyway. Needs a tunable for the turn length and the grace, a room test that a timed-out seat loses, a `DESIGN.md` section 13 line, and the countdown in the online bar
-11. Concede, online. Leave becomes a forfeit in a started match: the room ends it with the other seat as winner, reports the result, and both sides see the result screen at once, with packs and rating handled as usual. A two-step confirm on the Leave button. Needs a `concede` client message in `src/protocol/messages.ts`, room handling with a test, and a section 13 line
+11. Concede, online. Leave becomes a forfeit in a started match: the room ends it with the other seat as winner, reports the result, and both sides see the result screen at once, with packs and rating handled as usual. A two-step confirm on the Leave button. Needs a `concede` client message in `src/protocol/messages.ts`, room handling with a test, and a section 13 line *Taken into phase 18 on 2026-09-04.*
 12. Guided first match. The first CPU match a browser plays gets a short overlay that points at one thing at a time: stage a car, drop fuel, advance, watch the finish, continue. Dismissable at any step, never shown again once finished or skipped, and remembered in `localStorage`. Written to the same reading level as the rules dialog and tested for the same word limits. A section 9 addendum on how the overlay reads the board state
 13. Race animation. On each advance the car slides along its lane over a short time instead of jumping, a played mod card flies from the hand to the table, and a sabotage lands on the opponent's car with a shake. All CSS transitions keyed off the log entries the race-end moment already reads, off under reduced motion, and never delaying an action. A section 8 addendum
 

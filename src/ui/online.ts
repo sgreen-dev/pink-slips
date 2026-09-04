@@ -185,6 +185,11 @@ export class RoomClient {
     if (this.open && this.socket) this.socket.send(JSON.stringify({ type: 'act', action }))
   }
 
+  /** Gives the match up; the room ends it with the other seat as winner. */
+  concede(): void {
+    if (this.open && this.socket) this.socket.send(JSON.stringify({ type: 'concede' }))
+  }
+
   /** Asks the room to take back this seat's last mod play of the current step. */
   undo(): void {
     if (this.open && this.socket) this.socket.send(JSON.stringify({ type: 'undo' }))

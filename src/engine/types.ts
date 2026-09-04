@@ -154,6 +154,8 @@ export type LogEntry =
   | { kind: 'advanceSkipped'; player: PlayerIndex; reason: 'firstTurn' | 'notFueled' | 'redLight' }
   | { kind: 'raceEnd'; race: number; winner: PlayerIndex; capturedCarId: string }
   | { kind: 'matchEnd'; winner: PlayerIndex }
+  /** A player gave the match up; the other player won it. */
+  | { kind: 'concede'; player: PlayerIndex }
 
 export interface MatchState {
   players: readonly [PlayerState, PlayerState]

@@ -337,6 +337,8 @@ Worked example at K = 3000, no mods, using the verified figures in `src/data/car
 
 A player holding **3 pink slips** wins immediately. Garages of 5 and a win at 3 mean a garage can never empty first.
 
+A player may concede at any point of a started match, on or off turn, and the other player wins it. A concede is a match result like any other: the log records it, and online it is reported for packs and, in a ranked match, ratings. Conceding is not an action the engine offers, so the CPU never does it; the screens and the room call it.
+
 ### 3.6 Coin flips
 
 A coin flip is a 50/50 result from the engine's seeded random number generator. The Sports type identity forces the first flip a Sports car makes each race to heads.
@@ -601,5 +603,7 @@ Packs earned online are awarded by the server. A room learns the account behind 
 Ratings are Elo with K of 32 from a start of 1000, whole numbers, applied only to ranked matches: 1000 beating 1000 gives 1016 and 984, and 1000 beating 1200 gives 1024 and 1176. Matchmaking is a queue of sockets on the directory object, one per waiting account: `GET /queue` with the session upgrades to a socket, and the object pairs the two longest-waiting players. Once more than 50 accounts hold a rating, two players who have both waited under 30 seconds are paired only when their ratings are within 200 points; anyone who has waited longer takes the next player. The pair gets a fresh room set up with one ticket per seat, a `matched` message with the code and ticket, and the room seats only the ticket holders, naming them from their accounts. A queue tick runs every five seconds while anyone waits. The numbers live under `online` in `src/engine/tunables.ts`.
 
 The profile screen shows the name, rating, record, cards owned, and packs waiting, with the leaderboard below: the top 50 accounts with at least one ranked match, by rating. A socket upgrade with no `Origin` header at all comes from a script rather than a page, and is allowed; any other site's origin is refused. That admits `scripts/online-smoke.ts`, which makes two players, queues them, plays the match, and checks that both ratings moved, against any deployment.
+
+**Concede** (phase 18). Online, Leave during a started match asks once, then concedes: the room applies the engine's concede for that seat, clears the take-back stack, sends both seats the finished state, and reports the result as usual, so the opponent's screen ends at once and ratings follow. Packs follow only when at least one race reached the line, so two friends cannot farm packs by conceding back and forth. In the lobby, before the match starts, Leave just leaves.
 
 **Not yet**: spectators, a rematch inside the same room, trading, a filter on player names, and linking an outside sign-in as a second way to recover a player.
