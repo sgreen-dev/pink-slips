@@ -1662,3 +1662,13 @@ h2 {
     animation: none;
   }
 }
+
+/* Leaving a local match from the header: the question and its two answers. */
+.board__confirm {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--pink);
+  font-size: 0.9rem;
+}

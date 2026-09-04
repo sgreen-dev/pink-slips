@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { getMod } from '../data/mods.ts'
 import {
   otherPlayer,
@@ -42,6 +42,8 @@ interface BoardProps {
   /** The viewer can take back the last mod they played this step. */
   canUndo?: boolean
   onUndo?: () => void
+  /** Leaves a local match from the header, behind a confirm; absent online. */
+  onExit?: () => void
   /** Draw the opponent's cards without finishes, as for the CPU. */
   plainOpponent?: boolean
 }
@@ -73,6 +75,7 @@ export function Board({
   plainOpponent,
   canUndo = false,
   onUndo,
+  onExit,
 }: BoardProps) {
   const opponent = otherPlayer(viewer)
   const me = state.players[viewer]
@@ -80,6 +83,7 @@ export function Board({
   const buttons = buttonActions(state, viewer)
   const handIds = [...new Set(me.hand)]
   const busy = selection.kind !== 'none' || options !== null
+  const [confirmExit, setConfirmExit] = useState(false)
   // The viewer's own turn: the prompt and the next-step button breathe so the next step is obvious.
   const live = !inert && currentPlayer(state) === viewer
   const rules = useRef<HTMLDialogElement>(null)
@@ -136,6 +140,34 @@ export function Board({
         <span className="board__status">{turnSummary(state, names)}</span>
         <RulesButton dialogRef={rules} label="Rules" small />
         <SoundButton />
+        {onExit &&
+          (confirmExit ? (
+            <span className="board__confirm">
+              Leave this match? It will not count.
+              <button
+                type="button"
+                className="button button--small button--primary"
+                onClick={onExit}
+              >
+                Leave
+              </button>
+              <button
+                type="button"
+                className="button button--small button--ghost"
+                onClick={() => setConfirmExit(false)}
+              >
+                Stay
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              className="button button--ghost button--small"
+              onClick={() => setConfirmExit(true)}
+            >
+              Exit match
+            </button>
+          ))}
       </header>
 
       <VariantContext value={plainOpponent ? BASE_ONLY : variantOf}>

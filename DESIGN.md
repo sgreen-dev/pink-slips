@@ -484,6 +484,8 @@ Fonts load from Google Fonts. The card is a portrait 5:7 with a thick type-color
 
 **Next-step cue**: on the player's own turn the prompt line turns gold and breathes, and the button that moves the turn on (End mod step, Advance, a Parts Thief pick, a Sponsor fetch, and Continue at the line) breathes a gold ring in the same rhythm as the target cards, so the next step is obvious at a glance; while the other player acts, nothing breathes. Under reduced motion the gold stays and the motion stops.
 
+**Leaving a local match**: the board header of a CPU or hotseat match has Exit match, which asks once and then returns to the start screen; a match left this way counts for nothing, no packs and no tally. Online matches leave through the online bar, where Leave concedes (section 13).
+
 **Board order**: each garage row shows its staged car first, so the two cars in the race lead their rows and stay in view on a phone, where the row scrolls; the other cars keep the order the engine holds them in.
 
 **Sound** (phase 16). Music and effects, on by default, with one control. Browsers refuse to play anything before the page is clicked or tapped, so nothing sounds until the first gesture; that gesture unlocks audio and starts the music.

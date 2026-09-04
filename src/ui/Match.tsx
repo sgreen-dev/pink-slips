@@ -39,13 +39,24 @@ interface MatchProps {
   level: Level
   onRematch: () => void
   onNewMatch: () => void
+  /** Leaves the match without finishing it; nothing is counted. */
+  onExit: () => void
 }
 
 /**
  * Owns one match: the engine state, the CPU's turns, the moment after each finish line, the
  * hotseat hand-over, and the selection.
  */
-export function Match({ mode, config, seed, names, level, onRematch, onNewMatch }: MatchProps) {
+export function Match({
+  mode,
+  config,
+  seed,
+  names,
+  level,
+  onRematch,
+  onNewMatch,
+  onExit,
+}: MatchProps) {
   const [session, dispatch] = useReducer(reduceSession, { config, seed }, startSession)
   const { match: state, raceEnd } = session
   const [revealedFor, setRevealedFor] = useState<PlayerIndex | null>(null)
@@ -169,6 +180,7 @@ export function Match({ mode, config, seed, names, level, onRematch, onNewMatch 
         plainOpponent={cpu}
         canUndo={canUndo(session, viewer)}
         onUndo={onUndo}
+        onExit={onExit}
       />
       {raceEnd !== null && (
         <RaceEndBanner

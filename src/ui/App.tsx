@@ -181,6 +181,7 @@ export function App() {
         level={screen.level}
         onRematch={() => setScreen({ ...screen, seed: newSeed() })}
         onNewMatch={toStart}
+        onExit={toStart}
       />
     )
   }

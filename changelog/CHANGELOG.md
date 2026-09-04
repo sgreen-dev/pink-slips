@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-04
 
+- A CPU or hotseat match can be left from the board header, behind a confirm; a match left this way counts for nothing. (the commit that added this line)
 - On a player's turn the instruction line glows gold and the button that moves the turn on breathes, in step with the target cards, so the next step is obvious. (the commit that added this line)
 - Phase 18, concede online: Leave during a started match asks once, then gives the match to the opponent, who sees the result at once with packs and ratings as usual. (the commit that added this line)
 - Undo during the mod step: a mod played this turn can be taken back until the step ends or the player advances, in CPU, hotseat, and online play. (the commit that added this line)
