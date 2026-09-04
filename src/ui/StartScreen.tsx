@@ -3,7 +3,7 @@ import { loadCollection } from '../collection/persist.ts'
 import { LEVELS, LEVEL_BLURB, LEVEL_LABEL, type Level } from '../cpu/index.ts'
 import type { MatchConfig } from '../engine/index.ts'
 import { garageOptions, type GarageOption } from './builder.ts'
-import { CarCard } from './CarCard.tsx'
+import { GaragePicker } from './GaragePicker.tsx'
 import type { Mode } from './Match.tsx'
 import { MatchCounter } from './MatchCounter.tsx'
 import { RulesButton, RulesDialog } from './RulesDialog.tsx'
@@ -13,47 +13,11 @@ interface StartScreenProps {
   onStart: (mode: Mode, config: MatchConfig, names: [string, string], level: Level) => void
   onBuilder: () => void
   onCollection: () => void
+  /** Absent when no room service is configured, which hides the online button. */
+  onOnline?: () => void
 }
 
-function GaragePicker({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string
-  options: readonly GarageOption[]
-  value: number
-  onChange: (index: number) => void
-}) {
-  return (
-    <fieldset className="picker">
-      <legend className="picker__legend">{label}</legend>
-      {options.map((option, index) => (
-        <label
-          key={option.id}
-          className={`picker__option ${index === value ? 'picker__option--selected' : ''}`}
-        >
-          <input
-            type="radio"
-            name={label}
-            checked={index === value}
-            onChange={() => onChange(index)}
-          />
-          <span className="picker__title">{option.name}</span>
-          <span className="picker__style">{option.style}</span>
-          <span className="picker__cars">
-            {option.cars.map((carId) => (
-              <CarCard key={carId} carId={carId} size="sm" />
-            ))}
-          </span>
-        </label>
-      ))}
-    </fieldset>
-  )
-}
-
-export function StartScreen({ onStart, onBuilder, onCollection }: StartScreenProps) {
+export function StartScreen({ onStart, onBuilder, onCollection, onOnline }: StartScreenProps) {
   const [options] = useState<GarageOption[]>(() => garageOptions(loadGarages()))
   const [packs] = useState(() => loadCollection().packs)
   const rules = useRef<HTMLDialogElement>(null)
@@ -103,6 +67,11 @@ export function StartScreen({ onStart, onBuilder, onCollection }: StartScreenPro
         >
           Hotseat: two players, one screen
         </button>
+        {onOnline && (
+          <button type="button" className="button" onClick={onOnline}>
+            Play online
+          </button>
+        )}
         <button type="button" className="button button--ghost" onClick={onBuilder}>
           Deck builder
         </button>

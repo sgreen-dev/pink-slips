@@ -18,7 +18,7 @@ export const ALL_CARD_IDS: readonly string[] = [
   ...MODS.map((mod) => mod.id),
 ]
 
-export type Mode = 'cpu' | 'hotseat'
+export type Mode = 'cpu' | 'hotseat' | 'online'
 
 /** Cosmetic finish of one copy. Holo is rarer than foil; base is the plain card. */
 export type Variant = 'base' | 'foil' | 'holo'
@@ -192,5 +192,6 @@ export function openPack(state: RngState, t: typeof TUNABLES = TUNABLES): [Pack,
 
 /** Packs a finished match earns. Beating the CPU pays more; hotseat pays the base. */
 export function packsEarned(mode: Mode, humanWon: boolean, t: typeof TUNABLES = TUNABLES): number {
-  return mode === 'cpu' && humanWon ? t.collection.packsPerCpuWin : t.collection.packsPerMatch
+  const earned = mode === 'cpu' || mode === 'online'
+  return earned && humanWon ? t.collection.packsPerCpuWin : t.collection.packsPerMatch
 }

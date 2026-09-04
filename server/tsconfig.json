@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["ES2023"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": ["@cloudflare/workers-types/experimental"],
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "erasableSyntaxOnly": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "worker.ts",
+    "../src/server/room.ts",
+    "../src/protocol/messages.ts",
+    "../src/engine/*.ts",
+    "../src/data/*.ts"
+  ],
+  "exclude": ["../src/**/*.test.ts", "../src/engine/test-helpers.ts"]
+}

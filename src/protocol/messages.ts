@@ -1,0 +1,151 @@
+import type { Action, MatchState, PlayerConfig, PlayerIndex } from '../engine/index.ts'
+
+/**
+ * The online protocol (DESIGN.md 13), shared by the room service and the client. Every message
+ * is plain JSON. The server checks each client message with the guards below before acting.
+ */
+
+export interface JoinMessage {
+  type: 'join'
+  name: string
+  garage: PlayerConfig
+}
+
+export interface ResumeMessage {
+  type: 'resume'
+  token: string
+}
+
+export interface ActMessage {
+  type: 'act'
+  action: Action
+}
+
+export type ClientMessage = JoinMessage | ResumeMessage | ActMessage
+
+export interface WelcomeMessage {
+  type: 'welcome'
+  code: string
+  seat: PlayerIndex
+  /** Presented with `resume` to take the seat back after a refresh or a dropped connection. */
+  token: string
+}
+
+export interface WaitingMessage {
+  type: 'waiting'
+}
+
+export interface StateMessage {
+  type: 'state'
+  /** The match as this seat may see it. */
+  view: MatchState
+  names: readonly [string, string]
+}
+
+export interface PresenceMessage {
+  type: 'presence'
+  opponentConnected: boolean
+}
+
+export interface ErrorMessage {
+  type: 'error'
+  reason: string
+}
+
+export type ServerMessage =
+  WelcomeMessage | WaitingMessage | StateMessage | PresenceMessage | ErrorMessage
+
+export const MAX_NAME_LENGTH = 24
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string')
+}
+
+function isPlayerConfig(value: unknown): value is PlayerConfig {
+  return isRecord(value) && isStringArray(value['garage']) && isStringArray(value['deck'])
+}
+
+/** Shape check only; the room checks legality against the match. */
+function isAction(value: unknown): value is Action {
+  if (!isRecord(value)) return false
+  const player = value['player']
+  return typeof value['type'] === 'string' && (player === 0 || player === 1)
+}
+
+/** Returns the message when it is well formed, otherwise null. */
+export function parseClientMessage(raw: unknown): ClientMessage | null {
+  let value = raw
+  if (typeof raw === 'string') {
+    try {
+      value = JSON.parse(raw)
+    } catch {
+      return null
+    }
+  }
+  if (!isRecord(value)) return null
+  switch (value['type']) {
+    case 'join': {
+      const name = value['name']
+      if (typeof name !== 'string' || !isPlayerConfig(value['garage'])) return null
+      const trimmed = name.trim().slice(0, MAX_NAME_LENGTH)
+      return { type: 'join', name: trimmed || 'Player', garage: value['garage'] }
+    }
+    case 'resume':
+      return typeof value['token'] === 'string' ? { type: 'resume', token: value['token'] } : null
+    case 'act':
+      return isAction(value['action']) ? { type: 'act', action: value['action'] } : null
+    default:
+      return null
+  }
+}
+
+/** The client's mirror of parseClientMessage, so a bad frame never reaches the board. */
+export function parseServerMessage(raw: unknown): ServerMessage | null {
+  let value = raw
+  if (typeof raw === 'string') {
+    try {
+      value = JSON.parse(raw)
+    } catch {
+      return null
+    }
+  }
+  if (!isRecord(value)) return null
+  switch (value['type']) {
+    case 'welcome':
+      return typeof value['code'] === 'string' &&
+        (value['seat'] === 0 || value['seat'] === 1) &&
+        typeof value['token'] === 'string'
+        ? { type: 'welcome', code: value['code'], seat: value['seat'], token: value['token'] }
+        : null
+    case 'waiting':
+      return { type: 'waiting' }
+    case 'state':
+      return isRecord(value['view']) && isStringArray(value['names']) && value['names'].length === 2
+        ? {
+            type: 'state',
+            view: value['view'] as unknown as MatchState,
+            names: [value['names'][0] ?? 'Player 1', value['names'][1] ?? 'Player 2'],
+          }
+        : null
+    case 'presence':
+      return typeof value['opponentConnected'] === 'boolean'
+        ? { type: 'presence', opponentConnected: value['opponentConnected'] }
+        : null
+    case 'error':
+      return typeof value['reason'] === 'string' ? { type: 'error', reason: value['reason'] } : null
+    default:
+      return null
+  }
+}
+
+/** Room codes: six characters from an alphabet without look-alikes. */
+export const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+export const CODE_LENGTH = 6
+
+export function isRoomCode(value: string): boolean {
+  return value.length === CODE_LENGTH && [...value].every((c) => CODE_ALPHABET.includes(c))
+}

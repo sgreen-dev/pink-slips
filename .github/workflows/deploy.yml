@@ -30,6 +30,7 @@ jobs:
       - run: npm run build
         env:
           VITE_COUNTER_URL: ${{ vars.VITE_COUNTER_URL }}
+          VITE_ROOM_URL: ${{ vars.VITE_ROOM_URL }}
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

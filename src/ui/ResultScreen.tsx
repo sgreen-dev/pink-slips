@@ -11,6 +11,8 @@ interface ResultScreenProps {
   title: string
   /** Packs this match added to the collection. */
   packsEarned: number
+  /** Text on the first button; online play offers a new room instead of a rematch. */
+  rematchLabel?: string
   onRematch: () => void
   onNewMatch: () => void
 }
@@ -25,6 +27,7 @@ export function ResultScreen({
   names,
   title,
   packsEarned,
+  rematchLabel = 'Rematch',
   onRematch,
   onNewMatch,
 }: ResultScreenProps) {
@@ -86,7 +89,7 @@ export function ResultScreen({
             onClick={onRematch}
             autoFocus
           >
-            Rematch
+            {rematchLabel}
           </button>
           <button type="button" className="button button--big" onClick={onNewMatch}>
             New match

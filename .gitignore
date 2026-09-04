@@ -27,3 +27,6 @@ npm-debug.log*
 # Card art pipeline working files
 scripts/art/.venv/
 scripts/art/cache/
+
+# Local state of wrangler dev
+.wrangler/

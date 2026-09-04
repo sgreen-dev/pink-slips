@@ -44,6 +44,8 @@ Pushes to `main` build and deploy to GitHub Pages automatically.
 
 The matches-played counter on the start screen is optional. It reads a small Cloudflare Worker in `counter/`; deploy it with `npx wrangler deploy` from that directory after creating a KV namespace, then set the worker URL as the repository variable `VITE_COUNTER_URL`. Without the variable the counter is simply absent.
 
+Online play is optional in the same way. The room service is a Cloudflare Worker with Durable Objects in `server/`; deploy it with `npx wrangler deploy` from that directory, then set the worker URL as the repository variable `VITE_ROOM_URL`. Without the variable the start screen has no online button, and CPU and hotseat play work as before. Room codes are six characters, rooms live a day after their last move, and the worker only accepts connections from the site and the local dev server.
+
 ## Project layout
 
 `DESIGN.md` is the source of truth for the game. `BUILD_PLAN.md` tracks what was built and in what order. `docs/balance-log.md` records every change to the tunable numbers and the evidence behind it.

@@ -1353,3 +1353,99 @@ h2 {
   font-size: 0.85rem;
   text-align: center;
 }
+
+/* Online play: the lobby, the room code, and the status bar above the board. */
+.online__title {
+  font-size: 2.2rem;
+}
+.online__code {
+  font-family: var(--font-display);
+  font-size: 3.5rem;
+  letter-spacing: 0.3em;
+  color: var(--pink);
+  margin: 0.5rem 0;
+}
+.online__link {
+  word-break: break-all;
+  color: var(--muted);
+}
+.online__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.online__join {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+.online__field {
+  display: inline-grid;
+  gap: 0.3rem;
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.online__field input {
+  font: inherit;
+  font-size: 1.1rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.5rem;
+  border: 2px solid var(--line);
+  background: var(--asphalt-2);
+  color: inherit;
+  min-width: 12rem;
+}
+.online__field input:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 2px;
+}
+.online__field--code input {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-family: var(--font-display);
+}
+.online__rejoin {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.8rem;
+  max-width: 34rem;
+  margin: 1rem auto;
+  padding: 0.8rem 1rem;
+  border: 2px solid var(--pink);
+  border-radius: 0.6rem;
+}
+.online__rejoin p {
+  margin: 0;
+}
+.online__status {
+  color: var(--muted);
+}
+.online__error {
+  color: var(--pink);
+}
+.online__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  max-width: 70rem;
+  margin: 0 auto;
+  padding: 0.5rem 1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.online__bar--warn {
+  color: var(--pink);
+}
+.start__pickers--one {
+  grid-template-columns: 1fr;
+  max-width: 34rem;
+  margin-inline: auto;
+}

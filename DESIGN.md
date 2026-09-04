@@ -354,7 +354,7 @@ Every value here is a starting point. Phase 5 runs the simulator and adjusts the
 | Wear rate | 10% per win | three wins cost a car nearly a third of its speed |
 | Part slots | 2, JDM 3 | |
 | Garage size | 5 | |
-| Packs per match | 1, or 2 for beating the CPU | phase 11; a pack every match or two keeps packs frequent, and a full collection is a long goal (section 12) |
+| Packs per match | 1, or 2 for beating the CPU or an online opponent | phase 11; a pack every match or two keeps packs frequent, and a full collection is a long goal (section 12) |
 | Pack contents | 2 cars, 3 mods | phase 11 |
 | Car tier odds in a pack | 55 / 30 / 12 / 3 (Common, Uncommon, Rare, Ultra Rare) | phase 11; rarity labels mean something |
 | Foil and holo odds per pack card | 10% foil, 2% holo | phase 12; a foil most packs, a holo now and then |
@@ -478,7 +478,7 @@ Fonts load from Google Fonts. The card is a portrait 5:7 with a thick type-color
 
 ## 9. Architecture
 
-Single web app, no backend.
+A static web app, plus two small Cloudflare Workers: the matches-played counter, and the room service that holds online matches (section 13).
 
 ```
 src/
@@ -487,6 +487,10 @@ src/
   cpu/         pure TypeScript                      the opponent, drives the engine API
   sim/         node script                          runs cpu vs cpu, prints reports
   ui/          React                                screens, card component, race view
+  protocol/    pure TypeScript                     the online messages, shared with the server
+  server/      pure TypeScript                     the room: validates and applies actions
+server/        Cloudflare Worker                   one Durable Object per room, WebSockets
+counter/       Cloudflare Worker                   the matches-played count
 ```
 
 **Engine API shape**
@@ -496,7 +500,7 @@ src/
 - `apply(state, action) → MatchState`, immutable, returns a new state
 - `isOver(state) → winner | null`
 
-The engine is deterministic given a seed. Every rule in section 3 is a unit test. The UI and the CPU only ever call this API, so online play later means moving the engine behind a server, not rewriting it.
+The engine is deterministic given a seed. Every rule in section 3 is a unit test. The UI and the CPU only ever call this API, and so does the room service: online play moved the engine behind a server without rewriting it (section 13).
 
 **Race-end moment**: derived from the log, not from the engine's phase. When a newly applied state adds a `raceEnd` entry, the match screen keeps a record of the finishing positions and the captured car, freezes the track on it, and holds the CPU and the hand-over until Continue clears it. The engine moves to staging in the same step as before; only the screen waits.
 
@@ -515,7 +519,7 @@ The engine is deterministic given a seed. Every rule in section 3 is a unit test
 **v1**
 
 - 52 cars at v1, 102 after the roster expansion; 32 mods; 3 starter garages
-- CPU and hotseat play
+- CPU, hotseat, and online play
 - Every card unlocked (until phase 11 added packs and a collection; see section 12)
 - Deck builder with saved garages
 - Simulator and tuned numbers
@@ -526,7 +530,7 @@ The engine is deterministic given a seed. Every rule in section 3 is a unit test
 1. Illustrated card art in one consistent style (phase 10)
 2. Packs and a collection, with holo and foil variants (phases 11 and 12)
 3. CPU difficulty levels (phase 13)
-4. Online play (phases 14 and 15)
+4. Online play: rooms by link or code (phase 14, done), then accounts and matchmaking (phase 15)
 
 ---
 
@@ -542,7 +546,7 @@ Added in phase 11. Before it, every card was unlocked.
 
 - The collection is per browser, in `localStorage` next to the garages, through the same try/catch wrapper. It holds a count per card id, cars and mods alike.
 - A fresh browser owns every card in the three starter garages, with as many copies of a mod as the starter deck that uses it most, so the starters always rebuild. Everything else has to be opened: 46 of the 84 cards are owned at the start.
-- Finishing a match against the CPU earns 1 pack; winning it earns 2. A hotseat match earns 1. Packs wait in a stack until opened, either from the pop-up that follows the winner banner and the result screen right after a match, or from the Collection screen, which shows every card, owned ones in color with their counts, unowned ones dimmed.
+- Finishing a match against the CPU or an online opponent earns 1 pack; winning it earns 2. A hotseat match earns 1. Packs wait in a stack until opened, either from the pop-up that follows the winner banner and the result screen right after a match, or from the Collection screen, which shows every card, owned ones in color with their counts, unowned ones dimmed.
 - A pack holds 2 cars and 3 mods. Car odds follow the tier's rarity label: Common 55%, Uncommon 30%, Rare 12%, Ultra Rare 3%. Mods are uniform across all 32. Duplicates count.
 - The deck builder adds only owned cards: a car needs one copy, and a mod can go in up to the smaller of 3 and the copies owned. Its messages say what is missing. Racing is untouched: the engine's match config is card ids only, and a saved garage stays raceable.
 - Migration: the first load after phase 11 grants every card in an already saved garage, once. The grant is written back at once, so it never repeats.
@@ -552,3 +556,19 @@ Added in phase 11. Before it, every card was unlocked.
 **Measured** (`npm run sim -- --packs 10000`, seed 1): from the starter set, owning every card takes a mean of 395 packs (median 355) with the 52-car roster, and a mean of 611 packs (median 561) after the roster grew to 102 cars and 134 cards. The first pack holding an Ultra Rare car arrives after a mean of 16.7 packs (median 12). At one or two packs a match, new cards arrive from the first match on and a full collection is a long-term goal, with the last Ultra Rare cars as the chase. The Ultra Rare odds and the pack size are the levers if that proves too slow.
 
 **Finishes** (phase 12). Every card pulled from a pack rolls a finish: 2% holo, 10% foil, the rest base. Both are cosmetic only. Foil is a shimmer on the frame; holo is a shimmer across the image area and is the rarer of the two. The collection counts foil and holo copies separately from the total, so a foil copy still counts toward ownership and deck limits. The best finish a player owns is the one that shows: in the collection, the builder, the player's own cards on the board, and the result screen; the CPU's cards stay plain. The treatment is CSS only, moves on hover, stays still under reduced-motion settings, and never touches the engine: match configs and match state carry card ids only. The pack reveal marks a foil or holo when one appears, and every card with a finish carries a small Foil or Holo tag.
+
+---
+
+## 13. Online play
+
+**Shape** (phase 14). The room service is the only holder of a match. A client never runs the engine forward: it sends an `Action` and draws whatever view comes back. `redact(state, viewer)` in `src/engine/` makes the view. The viewer's own hand and garage stay as they are; the opponent's hand and both decks are replaced by `?` placeholders of the right length; the viewer's own deck is sorted so draw order never leaks; the random state is zeroed so the future cannot be simulated; the log stays, since it never carried hidden card ids. A view has the shape of a `MatchState`, so the board and the legality helpers run on it unchanged, and the legal actions from a view equal the legal actions from the full state.
+
+**Protocol** (`src/protocol/messages.ts`, shared by the service and the client). Plain JSON over one WebSocket per client. Client to server: `join {name, garage}`, `resume {token}`, `act {action}`. Server to client: `welcome {code, seat, token}`, `waiting`, `state {view, names}`, `presence {opponentConnected}`, `error {reason}`. Every inbound message is shape-checked before the room sees it, and the room checks the seat, the turn, and `isLegal` before `apply`. A rejected message changes nothing and answers with a reason.
+
+**Rooms** (`src/server/room.ts`). One room per match, reached by a six-character code from an alphabet without look-alikes (no 0, O, 1, or I). The first joiner takes seat 0, the second seat 1, and the match starts with the room's seed the moment both are seated. Each seat gets a reconnect token; a socket that presents it takes the seat back and gets the current view, so a refresh or a dropped connection costs nothing. The room is a plain class with no platform code, rebuilt from its snapshot at any time; the adapter persists the snapshot and owns the sockets.
+
+**Hosting**. A Cloudflare Worker in `server/` with one Durable Object per room, SQLite-backed, on the free plan. The worker answers `GET /new` with a fresh code and upgrades `GET /room/:code` to a WebSocket, which the object accepts with the hibernation API, so an idle room costs nothing between moves. The object writes the room snapshot to its storage after every message and forgets the room a day after the last one. Only the site's origin and the local dev server may connect. The service lives at `https://pink-slips-rooms.pink-slips-counter.workers.dev`; the site reads it from `VITE_ROOM_URL` at build time, and without it the online button does not appear.
+
+**Client** (`src/ui/online.ts`, `OnlineScreen.tsx`, `OnlineMatch.tsx`). The online screen makes a room or joins by code, and a shared `?room=` link opens it with the code filled in. The seat's code and token are kept in `localStorage` under `pink-slips.online.v1` until the match ends, and the online screen offers to rejoin while they are there. The client reconnects on its own with a doubling wait from one to ten seconds and resumes with its token. The race-end moment works as in section 9, with one difference: views that arrive while the banner is up are held and applied on Continue. An online match earns packs by the CPU rule, one for playing and two for a win, and counts once on the matches-played counter, reported by seat 0. CPU and hotseat play are unchanged and work offline.
+
+**Not in this phase**: accounts, matchmaking, spectators, and a rematch inside the same room (phase 15).

@@ -29,7 +29,7 @@ export default defineConfig([
   },
   {
     // The engine, CPU, and simulator are pure TypeScript and never import from the UI.
-    files: ['src/engine/**', 'src/cpu/**', 'src/sim/**'],
+    files: ['src/engine/**', 'src/cpu/**', 'src/sim/**', 'src/server/**', 'src/protocol/**'],
     rules: {
       'no-restricted-imports': [
         'error',
