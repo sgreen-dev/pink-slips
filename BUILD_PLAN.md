@@ -32,7 +32,7 @@
 | 13 | CPU difficulty levels | done | ffc297b |
 | 14 | Online play, part 1: the engine behind a server | done | 0c7176d |
 | 15 | Online play, part 2: accounts and matchmaking | done | 7f08ebe, 1bad706 |
-| 16 | Sound | done | HASH |
+| 16 | Sound | done | 8847fb6 |
 
 ---
 
