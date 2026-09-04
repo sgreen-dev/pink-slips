@@ -54,6 +54,8 @@ The music is six original tracks by the owner, shipped as MP3 in `public/audio/`
 
 `DESIGN.md` is the source of truth for the game. `BUILD_PLAN.md` tracks what was built and in what order. `docs/balance-log.md` records every change to the tunable numbers and the evidence behind it.
 
+Every change, by the day it landed, is in `changelog/CHANGELOG.md`.
+
 - `src/data` holds cars, mods, and starter garages as validated data
 - `src/engine` holds the rules: pure TypeScript, deterministic given a seed
 - `src/cpu` is the computer opponent, driving the engine through its public API
