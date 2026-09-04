@@ -173,11 +173,12 @@ async function auth(
   headers: Record<string, string>,
 ): Promise<Response> {
   const path = url.pathname
-  if (path === '/auth/status') return json({ signIn: Boolean(env.GITHUB_CLIENT_ID) }, 200, headers)
+  const configured = Boolean(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET)
+  if (path === '/auth/status') return json({ signIn: configured }, 200, headers)
   if (path === '/auth/login') {
     const returnTo = allowedReturn(url.searchParams.get('return'))
     if (!returnTo) return text('Bad return address', 400, headers)
-    if (!env.GITHUB_CLIENT_ID) return text('Sign-in is not set up on this service.', 503, headers)
+    if (!configured) return text('Sign-in is not set up on this service.', 503, headers)
     const nonce = randomToken()
     const state = `${nonce}.${btoa(returnTo)}`
     const target = new URL('https://github.com/login/oauth/authorize')
