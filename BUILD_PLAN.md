@@ -427,14 +427,41 @@
 
 ## Backlog
 
-Anything new goes here first and becomes a phase when picked up.
+Anything new goes here first and becomes a phase when picked up. Items sit in value order within their tier, judged by how many players feel them and how often; a new item goes to the tier that fits, at the end. Numbers never change, since the design and past commits refer to them.
 
-1. Trading duplicates, or converting them, once the collection has been live long enough to show how many duplicates players hold
-2. Spectating a friend's online match
-3. Seasonal starter garages built from the collection's most-opened cards
-4. Optional stakes mode, off by default and hotseat only: a start-screen toggle under which a captured car changes hands for real, the winner's collection gaining it and the loser's losing one copy, with starter cards exempt so a garage can always be rebuilt. Today pink slips are match prizes only and the collection never shrinks; that stays the default. Needs a DESIGN.md section 12 addendum and a test that starter cards are never taken
-5. Card art for the Ford Mustang Mach 1 (2021) and the Ford Shelby GT500 (2020), the two roster-expansion cars still on the silhouette placeholder: no photograph under an accepted license was on Commons when the other 48 were sourced. Add a row to `scripts/art/sources.csv` and run `scripts/art/make_art.py <id>` when one appears
-6. A filter on player names, once there are enough players for one to matter
-7. Linking an outside sign-in (GitHub, Google) to a player as a second way to recover it, if lost recovery codes turn out to be common
-8. Deleting a player from the profile page: a two-step confirm, then the service removes the account, its sessions, its recovery code, and its leaderboard row, and the browser goes back to guest play with its local collection. Needs a `DELETE /me` route on the directory, a test that a deleted player cannot be recovered, and a `DESIGN.md` section 13 line
+### High value: felt in every session by most players
+
 9. Sound: identify the moments where a sound effect or music would add to the game, such as the launch on an advance, a car crossing the line, the race-end banner, the coin flip, a pack opening, and the match result, then decide on a style, a source with a licence the repo can carry, and a mute control that is remembered. Design first, in a `DESIGN.md` section 8 addendum, before any audio is added
+   *Why here:* Every race, every pack, every finish; the largest change in feel still open.
+6. A filter on player names, once there are enough players for one to matter
+   *Why here:* A public leaderboard for an audience that includes kids; one bad name is seen by everyone.
+1. Trading duplicates, or converting them, once the collection has been live long enough to show how many duplicates players hold
+   *Why here:* A full collection takes about 600 packs, so duplicates pile up early, and every pack after the first few dozen feels worse without it.
+10. Turn timer with forfeit, online. A ranked player who stops acting gets a visible countdown, and when it runs out the match is forfeited and reported as a normal result, so an opponent who walks away or never returns cannot hold a match open forever. The room keeps the deadline in its snapshot and a Durable Object alarm fires it; the timer pauses while a seat is disconnected only for a fixed grace, then counts down anyway. Needs a tunable for the turn length and the grace, a room test that a timed-out seat loses, a `DESIGN.md` section 13 line, and the countdown in the online bar
+11. Concede, online. Leave becomes a forfeit in a started match: the room ends it with the other seat as winner, reports the result, and both sides see the result screen at once, with packs and rating handled as usual. A two-step confirm on the Leave button. Needs a `concede` client message in `src/protocol/messages.ts`, room handling with a test, and a section 13 line
+12. Guided first match. The first CPU match a browser plays gets a short overlay that points at one thing at a time: stage a car, drop fuel, advance, watch the finish, continue. Dismissable at any step, never shown again once finished or skipped, and remembered in `localStorage`. Written to the same reading level as the rules dialog and tested for the same word limits. A section 9 addendum on how the overlay reads the board state
+13. Race animation. On each advance the car slides along its lane over a short time instead of jumping, a played mod card flies from the hand to the table, and a sabotage lands on the opponent's car with a shake. All CSS transitions keyed off the log entries the race-end moment already reads, off under reduced motion, and never delaying an action. A section 8 addendum
+
+### Medium value: felt often by some players
+
+4. Optional stakes mode, off by default and hotseat only: a start-screen toggle under which a captured car changes hands for real, the winner's collection gaining it and the loser's losing one copy, with starter cards exempt so a garage can always be rebuilt. Today pink slips are match prizes only and the collection never shrinks; that stays the default. Needs a DESIGN.md section 12 addendum and a test that starter cards are never taken
+   *Why here:* Real tension for hotseat groups who want it; opt-in, so it costs nobody else.
+8. Deleting a player from the profile page: a two-step confirm, then the service removes the account, its sessions, its recovery code, and its leaderboard row, and the browser goes back to guest play with its local collection. Needs a `DELETE /me` route on the directory, a test that a deleted player cannot be recovered, and a `DESIGN.md` section 13 line
+   *Why here:* Rare, but the one time it is wanted it matters, and a player should own their data.
+3. Seasonal starter garages built from the collection's most-opened cards
+   *Why here:* Freshness for returning players; nothing for a first visit.
+7. Linking an outside sign-in (GitHub, Google) to a player as a second way to recover it, if lost recovery codes turn out to be common
+   *Why here:* Insurance against lost recovery codes; only worth it if losses turn out to be common.
+14. Rematch in the same room, online. After a friend match the result screen offers Play again to both seats; when both accept, the room starts a new match with the same garages, the seed advanced, and the seats' first-move order swapped. Needs a `rematch` message, a room state for one side having accepted, a test that a rematch swaps the first player, and a section 13 line
+15. Match history and car records. The profile lists the last twenty matches with opponent, result, and rating change, and each car's wins and losses across the player's matches, so a player sees which cars work for them. The directory records a summary at result time; the room passes the winner's staged cars and the pink slips. Needs a bounded history per account, a test that the list is capped, and a section 13 line
+16. Daily first-win pack. The first win of each calendar day, against the CPU or online, earns one extra pack, with the day boundary taken from the browser's clock for guests and the service's for players. A small badge set for milestones (first Ultra Rare, ten ranked wins, a full type) shown on the profile. A tunable for the bonus, a test that the second win of a day earns nothing extra, and a section 12 addendum
+17. Challenge a friend by name, online. From the online screen, type a player's name to send an invite; the invited player sees it on their start screen while signed in and accepts into a private room. The seed of a friends list, which would follow. Needs an invite store on the directory with expiry, two protocol messages, and a section 13 line
+18. Installable app. A web app manifest and a service worker that caches the built site and the card art, so the game installs to a phone's home screen and CPU and hotseat play work with no connection. Online play still needs one and says so. Needs the manifest, icons at the standard sizes drawn from the pink-slip mark, a cache that updates on deploy, and a section 9 line
+
+### Low value: nice to have
+
+2. Spectating a friend's online match
+   *Why here:* A friend's match to watch; a small audience.
+5. Card art for the Ford Mustang Mach 1 (2021) and the Ford Shelby GT500 (2020), the two roster-expansion cars still on the silhouette placeholder: no photograph under an accepted license was on Commons when the other 48 were sourced. Add a row to `scripts/art/sources.csv` and run `scripts/art/make_art.py <id>` when one appears
+   *Why here:* Two cards out of 102, visible only when drawn.
+19. Card detail view. Tapping a card anywhere opens a panel with the real car's full spec, its years, and the source each figure came from, and for a mod the full rules text. Turns the roster into something to read. Needs the `source` field already on every car surfaced in the UI and a section 8 line

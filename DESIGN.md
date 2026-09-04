@@ -532,6 +532,8 @@ The engine is deterministic given a seed. Every rule in section 3 is a unit test
 3. CPU difficulty levels (phase 13)
 4. Online play: rooms by link or code (phase 14), then accounts, ranked matchmaking, and a leaderboard (phase 15); both done
 
+What comes after is the backlog in `BUILD_PLAN.md`, ordered by value to the player in three tiers; the next phase is picked from the top of it.
+
 ---
 
 ## 11. Legal
