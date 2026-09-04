@@ -436,3 +436,4 @@ Anything new goes here first and becomes a phase when picked up.
 5. Card art for the Ford Mustang Mach 1 (2021) and the Ford Shelby GT500 (2020), the two roster-expansion cars still on the silhouette placeholder: no photograph under an accepted license was on Commons when the other 48 were sourced. Add a row to `scripts/art/sources.csv` and run `scripts/art/make_art.py <id>` when one appears
 6. A filter on player names, once there are enough players for one to matter
 7. Linking an outside sign-in (GitHub, Google) to a player as a second way to recover it, if lost recovery codes turn out to be common
+8. Deleting a player from the profile page: a two-step confirm, then the service removes the account, its sessions, its recovery code, and its leaderboard row, and the browser goes back to guest play with its local collection. Needs a `DELETE /me` route on the directory, a test that a deleted player cannot be recovered, and a `DESIGN.md` section 13 line
