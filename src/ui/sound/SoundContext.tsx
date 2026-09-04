@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { MusicPlayer } from './music.ts'
 import { loadSoundSettings, saveSoundSettings, type SoundSettings } from './settings.ts'
-import { playEffect, unlockEffects, type SoundName } from './sfx.ts'
+import { playEffect, type SoundName } from './sfx.ts'
+import { GESTURE_EVENTS, unlockOnGesture } from './unlock.ts'
 import { SoundContext, type SoundHandle } from './useSound.ts'
 
 const AUDIO_BASE = `${import.meta.env.BASE_URL}audio/`
@@ -19,18 +20,16 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     player.setEnabled(settings.music)
   }, [player, settings.music])
 
+  // Every gesture nudges the engine until it runs; phones can need more than one try.
   useEffect(() => {
     const unlock = () => {
-      unlockEffects()
+      unlockOnGesture()
+      // A source scheduled on a suspended engine plays the moment the engine runs.
       player.unlock()
-      window.removeEventListener('pointerdown', unlock)
-      window.removeEventListener('keydown', unlock)
     }
-    window.addEventListener('pointerdown', unlock)
-    window.addEventListener('keydown', unlock)
+    for (const type of GESTURE_EVENTS) window.addEventListener(type, unlock)
     return () => {
-      window.removeEventListener('pointerdown', unlock)
-      window.removeEventListener('keydown', unlock)
+      for (const type of GESTURE_EVENTS) window.removeEventListener(type, unlock)
     }
   }, [player])
 

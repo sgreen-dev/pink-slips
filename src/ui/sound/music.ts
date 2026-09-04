@@ -61,7 +61,7 @@ export class MusicPlayer {
   unlock(): void {
     if (this.unlocked) return
     this.unlocked = true
-    if (this.enabled && this.track) void this.start(this.track, FIRST_FADE_MS)
+    if (this.enabled && this.track && !this.playing) void this.start(this.track, FIRST_FADE_MS)
   }
 
   setEnabled(enabled: boolean): void {
