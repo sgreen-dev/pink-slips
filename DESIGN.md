@@ -85,7 +85,7 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 
 ### 2.4 Roster (v1)
 
-102 cars. The 30 marked ★ were requested by name and are fixed. The other 22 of the first 52 were fillers chosen to give every cell at least one car where a real car exists for it, and 50 more were added afterwards to bring every type to 17, with tiers split 5, 5, 4, 3 where real cars exist and spread across each band; JDM and Off-road have no Ultra Rare car. Specs below are the approximate figures the roster was chosen with. The verified figures, with a source per car, live in `src/data/cars.ts`; where a manufacturer publishes only a dry weight, that is what is used and the source says so.
+126 cars. The 30 marked ★ were requested by name and are fixed. The other 22 of the first 52 were fillers chosen to give every cell at least one car where a real car exists for it, and 50 more were added afterwards to bring every type to 17, with tiers split 5, 5, 4, 3 where real cars exist and spread across each band; JDM and Off-road have no Ultra Rare car. The last 24, four per type, were chosen for recognition rather than to fill cells: the cars most people know on sight, from the DeLorean and the DB5 to the Cybertruck. Specs below are the approximate figures the roster was chosen with. The verified figures, with a source per car, live in `src/data/cars.ts`; where a manufacturer publishes only a dry weight, that is what is used and the source says so.
 
 **Sports**
 
@@ -108,6 +108,10 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 | Performance | BMW Z4 M40i | 382 | 3,443 |
 | Performance | Porsche 718 Cayman GTS 4.0 | 394 | 3,031 |
 | Super | Porsche 911 Turbo S (992) | 640 | 3,615 |
+| Daily | DeLorean DMC-12 (1981) | 130 | 2,712 |
+| Super | Porsche 911 GT3 (992.1) | 502 | 3,164 |
+| Super | Ferrari F40 | 471 | 2,765 |
+| Hyper | Bugatti Chiron | 1,479 | 4,398 |
 
 **Luxury**
 
@@ -130,6 +134,10 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 | Performance | Mercedes-AMG C 63 S (W205) | 503 | 3,957 |
 | Super | BMW M8 Competition | 617 | 4,156 |
 | Hyper | Ferrari 812 Competizione | 819 | 3,278 |
+| Daily | Cadillac Escalade (2021) | 420 | 5,635 |
+| Performance | BMW M3 Competition (G80) | 503 | 3,890 |
+| Performance | Rolls-Royce Phantom (VIII) | 563 | 5,644 |
+| Performance | Aston Martin DB5 | 282 | 3,236 |
 
 **Muscle**
 
@@ -152,6 +160,10 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 | Super | Dodge Challenger SRT Hellcat | 717 | 4,449 |
 | Super | Ford Shelby GT500 (2020) | 760 | 4,171 |
 | Hyper | Chevrolet Corvette ZR1 (C7) | 755 | 3,560 |
+| Daily | Pontiac Firebird Trans Am (1977) | 200 | 3,650 |
+| Performance | Dodge Charger R/T (1969) | 375 | 3,900 |
+| Performance | Chevrolet Corvette Stingray (C8) | 490 | 3,535 |
+| Super | Dodge Charger SRT Hellcat | 707 | 4,575 |
 
 **JDM**
 
@@ -174,6 +186,10 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 | Performance | Toyota GR Supra 3.0 | 382 | 3,400 |
 | Super | Acura NSX Type S | 600 | 3,891 |
 | Super | Lexus LFA | 552 | 3,263 |
+| Daily | Toyota Corolla GT-S (AE86) | 112 | 2,200 |
+| Performance | Toyota Supra Turbo (A80) | 320 | 3,415 |
+| Performance | Nissan Skyline GT-R (R34) | 276 | 3,439 |
+| Performance | Nissan 350Z (Z33) | 287 | 3,188 |
 
 **EV**
 
@@ -196,6 +212,10 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 | Super | Lotus Eletre R | 905 | 5,930 |
 | Super | Tesla Model X Plaid | 1020 | 5,248 |
 | Hyper | Lucid Air Sapphire | 1234 | 5,336 |
+| Performance | Tesla Model Y | 384 | 4,363 |
+| Performance | Tesla Cybertruck Cyberbeast | 845 | 6,843 |
+| Performance | GMC Hummer EV Pickup | 1,000 | 9,063 |
+| Performance | Ford Mustang Mach-E GT | 480 | 4,997 |
 
 **Off-road**
 
@@ -218,6 +238,10 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 | Super | Aston Martin DBX707 | 697 | 4,949 |
 | Super | Lamborghini Urus SE | 789 | 5,522 |
 | Super | Ferrari Purosangue | 715 | 4,784 |
+| Daily | Ford Bronco Wildtrak (2021) | 330 | 4,850 |
+| Daily | Land Rover Defender 110 (L663) | 395 | 5,165 |
+| Performance | Ford F-150 XLT (2021) | 400 | 4,705 |
+| Performance | Range Rover (L460) | 523 | 5,699 |
 
 ### 2.5 Mod cards
 
@@ -474,7 +498,7 @@ A headless command, `npm run sim`, that plays CPU against CPU for thousands of m
 
 **Card art** (phase 10)
 
-Every car card carries an illustration in one style, derived from a photograph on Wikimedia Commons by the pipeline in `scripts/art/`. The spec: an 800 by 600 image for the 4:3 art box; a front three-quarter view with the car facing right, the direction the track runs, mirrored when the source faces left; the car cut out of its background, posterized to eight tones with a printed line layer, and set on the card cream `#f3e7c9` with a soft shadow; WebP under 60 KB each and under 3 MB in total. Source photographs must be CC0, public domain, CC BY, or CC BY-SA, and each is credited in `public/art/CREDITS.md`. The illustrations are published under CC BY-SA 4.0. The tinted silhouette stays as the fallback while an image loads or if it fails.
+Every car card carries an illustration in one style, derived from a photograph on Wikimedia Commons by the pipeline in `scripts/art/`. The spec: an 800 by 600 image for the 4:3 art box; a front three-quarter view with the car facing right, the direction the track runs, mirrored when the source faces left; the car cut out of its background, posterized to eight tones with a printed line layer, and set on the card cream `#f3e7c9` with a soft shadow; WebP under 60 KB each and under 4 MB in total. Source photographs must be CC0, public domain, CC BY, or CC BY-SA, and each is credited in `public/art/CREDITS.md`. The illustrations are published under CC BY-SA 4.0. The tinted silhouette stays as the fallback while an image loads or if it fails.
 
 Fonts load from Google Fonts. The card is a portrait 5:7 with a thick type-colored frame, a cream body, the name across the top in the display face, a boxed image area holding a tinted silhouette, a striped stat block in the mono face, and tier and fuel cost along the bottom. Fuel, wear, parts, and Launch Control show as tokens on the frame below the body. The engine defines every interaction: a card lights up pink only when `legalActions` lists a play for it.
 

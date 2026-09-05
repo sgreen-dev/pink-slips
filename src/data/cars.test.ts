@@ -54,8 +54,8 @@ const EMPTY_CELLS: ReadonlyArray<readonly [CarType, Tier]> = [
 ]
 
 describe('cars', () => {
-  it('has 102 cars', () => {
-    expect(CARS).toHaveLength(102)
+  it('has 126 cars', () => {
+    expect(CARS).toHaveLength(126)
   })
 
   it('includes every starred car from the design doc', () => {
@@ -121,7 +121,7 @@ describe('cars', () => {
       ).toBe(true)
       expect(credits, `${file} has no credit line`).toContain(`| ${carId} |`)
     }
-    expect(total, 'art over 3 MB in total').toBeLessThanOrEqual(3_000_000)
+    expect(total, 'art over 4 MB in total').toBeLessThanOrEqual(4_000_000)
   })
 
   it('has a unique display name per car', () => {
