@@ -1,4 +1,5 @@
 import { useContext, useEffect, useState } from 'react'
+import { iconUrl } from './artwork.ts'
 import { copiesOwned, packCards, type Pack } from '../collection/collection.ts'
 import { loadCollection, type CollectionState } from '../collection/persist.ts'
 import { AccountContext, openNext } from './account.ts'
@@ -57,7 +58,12 @@ export function PackDialog({ earned, onClose }: PackDialogProps) {
         {opened ? (
           <PackReveal pack={opened.pack} fresh={opened.fresh} />
         ) : (
-          <p className="raceend__line">Open them now, or find them later in the Collection.</p>
+          <>
+            {iconUrl('pack') && (
+              <img className="packs__emblem" src={iconUrl('pack') ?? ''} alt="" />
+            )}
+            <p className="raceend__line">Open them now, or find them later in the Collection.</p>
+          </>
         )}
         <p className="raceend__tally">
           {remaining === 0 ? 'All packs opened' : `${remaining} ${noun(remaining)} waiting`}

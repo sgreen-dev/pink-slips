@@ -1,4 +1,6 @@
 import { useContext, useEffect, useRef, useState } from 'react'
+import { backdropUrl } from './artwork.ts'
+import { Backdrop } from './Backdrop.tsx'
 import { AccountContext, pushGarages } from './account.ts'
 import { copiesOwned } from '../collection/collection.ts'
 import { loadCollection } from '../collection/persist.ts'
@@ -143,6 +145,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
   return (
     <VariantContext value={variantOf}>
       <main className="builder">
+        <Backdrop image={backdropUrl('builder')} />
         <header className="builder__header">
           <span className="board__brand">Pink Slips</span>
           <h1 className="builder__title">Deck builder</h1>

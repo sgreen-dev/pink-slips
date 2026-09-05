@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { PlayerState } from '../engine/index.ts'
+import { cardBackUrl } from './artwork.ts'
+import { CardBack } from './CardBack.tsx'
 import { CarCard, type CardSize } from './CarCard.tsx'
 import { stagedFirst, type CarIntent, type Selection } from './interaction.ts'
 
@@ -44,6 +46,13 @@ export function Garage({
         <span className="garage__meta">
           Pink slips {player.pinkSlips.length}/3 · Hand {handCount ?? player.hand.length} · Deck{' '}
           {player.deck.length}
+          {handCount !== undefined && cardBackUrl() && (
+            <span className="garage__fan" aria-hidden="true">
+              {Array.from({ length: Math.min(5, handCount) }, (_, i) => (
+                <CardBack key={i} size="xs" />
+              ))}
+            </span>
+          )}
         </span>
       </header>
       <div className="garage__cars" ref={row}>

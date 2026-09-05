@@ -36,6 +36,8 @@
 | 17 | Player name filter | done | c8d7c96 |
 | 18 | Concede online | done | 7387ec2 |
 | 19 | Card detail view | done | 847ddad |
+| 21 | Owner artwork, part 1: mod illustrations, frames, card back | todo | |
+| 22 | Owner artwork, part 2: backdrops, track, icons and tokens | todo | |
 | 20 | Stakes | done | 9bf7488 |
 
 ---
@@ -545,6 +547,45 @@
 **Done when**: a CPU stakes match ends on a result screen with its Stakes block, the live smoke check pairs two stakes players and prints their transfers, and the tests pass.
 
 **Prompt**: Do phase 20 of BUILD_PLAN.md.
+
+---
+
+## Phase 21 — Owner artwork, part 1: mod illustrations, frames, card back
+
+**Goal**: the owner's artwork dresses the cards: an illustration strip on each mod card, textured frames on car and mod cards, and a card back that fans the opponent's hand, each switching on only when its file exists.
+
+**Design to record first** (`DESIGN.md` 8, Owner artwork): folders, sizes, budgets, and the whole-set rule for frames.
+
+**Deliverables**
+
+- `scripts/art/import_assets.py` with the mods, frames, backgrounds, and icons kinds, the credits note per folder, and the generated `src/ui/assets.ts`
+- `src/ui/artwork.ts` and the mod card's strip, the car and mod frames, `CardBack`, and the opponent's fan
+
+**Tests**
+
+- The generated list matches the files present by kind; every file is under budget and named in the spec; matched sets ship whole or not at all; every folder with files is credited
+
+**Done when**: the game renders as before with no files, a check run of the import produces a strip and a tile in the scratchpad, and the tests pass. The owner's files land afterwards, batch by batch.
+
+**Prompt**: Do phase 21 of BUILD_PLAN.md.
+
+---
+
+## Phase 22 — Owner artwork, part 2: backdrops, track, icons and tokens
+
+**Goal**: the owner's artwork dresses the screens: backdrops for the collection, builder, online, profile, and result screens, a strip along the track lanes, and icons on the type badge, the family line, the fuel and wear tokens, the pink slip badge, and the pack pop-up, each falling back to today's drawing when absent.
+
+**Deliverables**
+
+- `Backdrop` shared by every screen, the track strip, and the icon and token hooks in the cards and the pack pop-up
+
+**Tests**
+
+- The artwork test covers the backgrounds and icons kinds, with the track's own budget and the whole-set rule for type and family icons
+
+**Done when**: the game renders as before with no files and the tests pass; the owner's files land afterwards.
+
+**Prompt**: Do phase 22 of BUILD_PLAN.md.
 
 ---
 

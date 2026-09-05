@@ -1,9 +1,10 @@
-import { useContext, useRef, useState, type CSSProperties } from 'react'
+import { useContext, useRef, useState } from 'react'
 import { loadCollection } from '../collection/persist.ts'
 import { LEVELS, LEVEL_BLURB, LEVEL_LABEL, type Level } from '../cpu/index.ts'
 import type { MatchConfig } from '../engine/index.ts'
 import { AccountContext } from './account.ts'
 import { garageOptions, type GarageOption } from './builder.ts'
+import { Backdrop } from './Backdrop.tsx'
 import { GaragePicker } from './GaragePicker.tsx'
 import type { Mode } from './Match.tsx'
 import { MatchCounter } from './MatchCounter.tsx'
@@ -75,11 +76,7 @@ export function StartScreen({
   }
   return (
     <main className="start">
-      <div
-        className="backdrop"
-        aria-hidden="true"
-        style={{ '--backdrop': `url(${BACKDROP})` } as CSSProperties}
-      />
+      <Backdrop image={BACKDROP} />
       <h1 className="start__title">Pink Slips</h1>
       <p className="start__tagline">
         Real cars drag race a quarter mile. Win the race, take the car. First to three pink slips

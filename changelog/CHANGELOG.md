@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-05
 
+- Phases 21 and 22, owner artwork: mod illustrations, card frames and a card back, screen backdrops and the track strip, and icons and tokens each switch on when the owner's file lands, imported by kind with a credits note and a generated list of what is present. (the commit that added this line)
 - Owner-made car illustrations can be imported into the card art from game-images/cars, given the print look, and credited as the owner's own. (the commit that added this line)
 
 ## 2026-09-04

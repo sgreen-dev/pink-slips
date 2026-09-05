@@ -1,4 +1,6 @@
 import { useContext, useState } from 'react'
+import { backdropUrl } from './artwork.ts'
+import { Backdrop } from './Backdrop.tsx'
 import {
   ALL_CARD_IDS,
   bestVariant,
@@ -68,6 +70,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
 
   return (
     <main className="collection">
+      <Backdrop image={backdropUrl('collection')} />
       <header className="builder__header">
         <span className="board__brand">Pink Slips</span>
         <h1 className="builder__title">Collection</h1>

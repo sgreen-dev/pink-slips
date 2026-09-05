@@ -1,4 +1,6 @@
 import { useContext, useEffect, useRef, useState } from 'react'
+import { backdropUrl } from './artwork.ts'
+import { Backdrop } from './Backdrop.tsx'
 import type { PlayerConfig } from '../engine/index.ts'
 import { MAX_NAME_LENGTH } from '../protocol/messages.ts'
 import { AccountContext, QueueClient, queueUrl, type QueueStatus } from './account.ts'
@@ -122,6 +124,7 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
   const waiting = queue === 'waiting' || queue === 'connecting'
   return (
     <main className="start online">
+      <Backdrop image={backdropUrl('online')} />
       <header className="builder__header">
         <h1 className="builder__title">Play online</h1>
         <button type="button" className="button" onClick={onBack}>

@@ -1,5 +1,7 @@
 import { VARIANT_LABEL, type Variant } from '../collection/collection.ts'
+import type { CSSProperties } from 'react'
 import { getMod } from '../data/mods.ts'
+import { familyFrameUrl, iconUrl, modArtUrl } from './artwork.ts'
 import { useDetail } from './useDetail.ts'
 import { useVariant } from './variants.ts'
 
@@ -32,6 +34,10 @@ export function ModCard({
   const mod = getMod(modId)
   const variant = useVariant(modId, variantProp)
   const openDetail = useDetail()
+  const art = modArtUrl(modId)
+  const frame = familyFrameUrl(mod.family)
+  const frameStyle = frame ? ({ '--mod-frame': `url(${frame})` } as CSSProperties) : undefined
+  const familyIcon = iconUrl(`family-${mod.family}`)
   const family =
     mod.family === 'sabotage'
       ? `${FAMILY_LABEL.sabotage} · ${mod.kind === 'traction' ? 'Traction' : 'Pit'}`
@@ -50,7 +56,11 @@ export function ModCard({
     .join(' ')
   const body = (
     <>
-      <div className="mod__family">{family}</div>
+      <div className="mod__family">
+        {familyIcon && <img className="mod__icon" src={familyIcon} alt="" />}
+        {family}
+      </div>
+      {art && <img className="mod__art" src={art} alt="" loading="lazy" decoding="async" />}
       <div className="mod__name">{mod.name}</div>
       <div className="mod__text">{mod.text}</div>
       {mod.family === 'boost' && mod.fuelCost ? (
@@ -75,6 +85,7 @@ export function ModCard({
       <button
         type="button"
         className={className}
+        style={frameStyle}
         onClick={onClick}
         disabled={!playable}
         aria-pressed={selected}
@@ -102,6 +113,7 @@ export function ModCard({
       <button
         type="button"
         className={`${className} mod--detail`}
+        style={frameStyle}
         aria-label={`Details for ${mod.name}`}
         onClick={() => openDetail({ kind: 'mod', id: modId })}
       >
@@ -109,5 +121,9 @@ export function ModCard({
       </button>
     )
   }
-  return <div className={className}>{body}</div>
+  return (
+    <div className={className} style={frameStyle}>
+      {body}
+    </div>
+  )
 }

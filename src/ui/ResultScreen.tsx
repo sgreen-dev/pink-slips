@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { backdropUrl } from './artwork.ts'
+import { Backdrop } from './Backdrop.tsx'
 import { carNames, isEmptyTransfer, type Transfer } from '../collection/stakes.ts'
 import type { MatchState, PlayerIndex } from '../engine/index.ts'
 import { CarCard } from './CarCard.tsx'
@@ -51,6 +53,7 @@ export function ResultScreen({
   return (
     <>
       <main className="result" inert={showPacks}>
+        <Backdrop image={backdropUrl('result')} />
         <h1 className="result__title">{title}</h1>
         <p className="result__sub">
           {state.log.some((entry) => entry.kind === 'concede')

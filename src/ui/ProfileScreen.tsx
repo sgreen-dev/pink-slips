@@ -1,4 +1,6 @@
 import { useContext, useEffect, useState } from 'react'
+import { backdropUrl } from './artwork.ts'
+import { Backdrop } from './Backdrop.tsx'
 import { MAX_NAME_LENGTH } from '../protocol/messages.ts'
 import { nameProblem } from '../protocol/names.ts'
 import type { LeaderboardRow } from '../server/directory.ts'
@@ -78,6 +80,7 @@ export function ProfileScreen({ onBack, onShowCode }: ProfileScreenProps) {
 
   return (
     <main className="start profile">
+      <Backdrop image={backdropUrl('profile')} />
       <header className="builder__header">
         <h1 className="builder__title">{profile ? profile.name : 'Profile'}</h1>
         <button type="button" className="button" onClick={onBack}>

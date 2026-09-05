@@ -92,7 +92,9 @@ h2 {
   padding: 0.5em;
   border: 0;
   border-radius: 0.6em;
-  background: var(--type-color);
+  background:
+    var(--frame, none) center / cover,
+    var(--type-color);
   color: var(--ink);
   text-align: left;
   box-shadow: 0 2px 6px rgb(0 0 0 / 50%);
@@ -318,6 +320,7 @@ h2 {
   background: var(--cream);
   color: var(--ink);
   border: 0.3rem solid var(--family);
+  border-image: var(--mod-frame, none) 96 / 0.3rem round;
   text-align: left;
   display: flex;
   flex-direction: column;
@@ -1868,4 +1871,67 @@ h2 {
 }
 .result__stakes p {
   margin: 0.15rem 0;
+}
+
+/* Owner artwork: mod illustrations, icons, card backs, and the pack emblem. */
+.mod__art {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 0.3rem;
+}
+.card__icon,
+.mod__icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.15em;
+  margin-right: 0.25em;
+}
+.pip--art {
+  background-size: cover;
+  border-color: transparent;
+}
+.card__wear-icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: middle;
+  margin-right: 0.1em;
+}
+.card-back {
+  --w: 8rem;
+  width: var(--w);
+  aspect-ratio: 5 / 7;
+  border-radius: 0.5rem;
+  border: 0.25rem solid var(--cream-2);
+  background: var(--back, linear-gradient(135deg, #2a2a30, #17171a)) center / cover;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 50%);
+  flex: 0 0 auto;
+}
+.card-back--xs {
+  --w: 1.6rem;
+  border-width: 2px;
+  border-radius: 0.2rem;
+}
+.card-back--md {
+  --w: 11rem;
+}
+.garage__fan {
+  display: inline-flex;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+.garage__fan .card-back + .card-back {
+  margin-left: -1rem;
+}
+.packs__emblem {
+  display: block;
+  width: 6rem;
+  height: 6rem;
+  margin: 0.25rem auto 0.5rem;
+}
+.collection,
+.builder,
+.result {
+  position: relative;
 }

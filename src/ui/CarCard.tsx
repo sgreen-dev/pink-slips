@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { VARIANT_LABEL, type Variant } from '../collection/collection.ts'
 import { getCar } from '../data/cars.ts'
 import { getMod } from '../data/mods.ts'
@@ -6,6 +6,7 @@ import { TIER_LABEL } from '../data/tiers.ts'
 import { CAR_TYPE_LABEL } from '../data/types.ts'
 import { fuelCost, type CarState } from '../engine/index.ts'
 import { initialArtState, nextArtState, showsImage } from './artState.ts'
+import { iconUrl, typeFrameUrl } from './artwork.ts'
 import { useDetail } from './useDetail.ts'
 import { useVariant } from './variants.ts'
 
@@ -50,19 +51,26 @@ function Silhouette() {
 function Tokens({ state }: { state: CarState }) {
   const cost = fuelCost(state)
   const pips = Math.max(cost, state.fuel)
+  const fuelIcon = iconUrl('fuel')
+  const wearIcon = iconUrl('wear')
   return (
     <div className="card__tokens">
       <span className="card__fuel" title={`Fuel ${state.fuel} of ${cost}`}>
         {Array.from({ length: pips }, (_, i) => (
           <span
             key={i}
-            className={`pip ${i < state.fuel ? 'pip--fuel' : 'pip--empty'} ${i >= cost ? 'pip--extra' : ''}`}
+            className={`pip ${i < state.fuel ? 'pip--fuel' : 'pip--empty'} ${i >= cost ? 'pip--extra' : ''} ${i < state.fuel && fuelIcon ? 'pip--art' : ''}`}
+            style={i < state.fuel && fuelIcon ? { backgroundImage: `url(${fuelIcon})` } : undefined}
           />
         ))}
       </span>
       {state.wear > 0 && (
         <span className="card__wear" title={`Wear ${state.wear}`}>
-          {'✕'.repeat(state.wear)}
+          {wearIcon
+            ? Array.from({ length: state.wear }, (_, i) => (
+                <img key={i} className="card__wear-icon" src={wearIcon} alt="" />
+              ))
+            : '✕'.repeat(state.wear)}
         </span>
       )}
       {state.parts.length > 0 && (
@@ -99,6 +107,10 @@ export function CarCard({
   const variant = useVariant(carId, variantProp)
   const openDetail = useDetail()
   const [art, setArt] = useState(() => initialArtState(car.imageUrl))
+  const frame = typeFrameUrl(car.type)
+  const frameStyle = frame ? ({ '--frame': `url(${frame})` } as CSSProperties) : undefined
+  const typeIcon = iconUrl(`type-${car.type}`)
+  const badgeIcon = badge === 'Pink slip' ? iconUrl('pink-slip') : null
   const cost = state ? fuelCost(state) : undefined
   const className = [
     'card',
@@ -132,7 +144,10 @@ export function CarCard({
               onError={() => setArt((s) => nextArtState(s, 'error'))}
             />
           )}
-          <span className="card__type">{CAR_TYPE_LABEL[car.type]}</span>
+          <span className="card__type">
+            {typeIcon && <img className="card__icon" src={typeIcon} alt="" />}
+            {CAR_TYPE_LABEL[car.type]}
+          </span>
         </div>
         <dl className="card__stats">
           <dt>HP</dt>
@@ -153,7 +168,12 @@ export function CarCard({
       </div>
       {state && <Tokens state={state} />}
       {staged && <span className="card__badge card__badge--staged">Staged</span>}
-      {badge && <span className="card__badge">{badge}</span>}
+      {badge && (
+        <span className="card__badge">
+          {badgeIcon && <img className="card__icon" src={badgeIcon} alt="" />}
+          {badge}
+        </span>
+      )}
       {variant !== 'base' && (
         <span className={`card__variant card__variant--${variant}`}>{VARIANT_LABEL[variant]}</span>
       )}
@@ -161,7 +181,13 @@ export function CarCard({
   )
   if (onClick) {
     const card = (
-      <button type="button" className={className} onClick={onClick} aria-pressed={selected}>
+      <button
+        type="button"
+        className={className}
+        style={frameStyle}
+        onClick={onClick}
+        aria-pressed={selected}
+      >
         {body}
       </button>
     )
@@ -185,6 +211,7 @@ export function CarCard({
       <button
         type="button"
         className={`${className} card--detail`}
+        style={frameStyle}
         aria-label={`Details for ${car.name}`}
         onClick={() => openDetail({ kind: 'car', id: carId })}
       >
@@ -192,5 +219,9 @@ export function CarCard({
       </button>
     )
   }
-  return <div className={className}>{body}</div>
+  return (
+    <div className={className} style={frameStyle}>
+      {body}
+    </div>
+  )
 }

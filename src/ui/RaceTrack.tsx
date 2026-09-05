@@ -1,5 +1,6 @@
 import { getCar } from '../data/cars.ts'
 import { TUNABLES, type MatchState, type PlayerIndex } from '../engine/index.ts'
+import { backdropUrl } from './artwork.ts'
 import type { RaceEnd } from './celebration.ts'
 import { laneNotes } from './explain.ts'
 
@@ -17,6 +18,14 @@ const MARKS = [0, 330, 660, 990, 1320]
 /** Two lanes seen from above. Markers slide toward the finish line at 1320 ft. */
 export function RaceTrack({ state, names, lanes, frozen }: RaceTrackProps) {
   const track = TUNABLES.trackLengthFt
+  const strip = backdropUrl('track')
+  const roadStyle = strip
+    ? {
+        backgroundImage: `url(${strip})`,
+        backgroundSize: 'auto 100%',
+        backgroundRepeat: 'repeat-x',
+      }
+    : undefined
   return (
     <div className="track" aria-label="Race track">
       <div className="track__marks">
@@ -55,7 +64,7 @@ export function RaceTrack({ state, names, lanes, frozen }: RaceTrackProps) {
                 </span>
               ))}
             </div>
-            <div className="lane__road">
+            <div className="lane__road" style={roadStyle}>
               <div className="lane__finish" />
               {car && (
                 <div className="lane__marker" style={{ left: `${(ft / track) * 100}%` }}>
