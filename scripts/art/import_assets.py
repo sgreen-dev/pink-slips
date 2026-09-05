@@ -136,10 +136,17 @@ def edge_colour(picture: Image.Image) -> tuple[int, int, int]:
     return tuple(sum(s[i] for s in samples) // len(samples) for i in range(3))  # type: ignore[return-value]
 
 
-def fit(picture: Image.Image, spec: dict) -> Image.Image:
+TRACK_SIZE = (1024, 128)
+
+
+def fit(picture: Image.Image, spec: dict, name: str = "") -> Image.Image:
     size = spec["size"]
     if spec["fit"] == "keep":
-        return flatten(picture)
+        flat = flatten(picture)
+        if name == "track":
+            # The lane strip: a band across the middle of the picture, at the strip's size.
+            return ImageOps.fit(flat, TRACK_SIZE, Image.Resampling.LANCZOS, centering=(0.5, 0.42))
+        return flat
     if spec["fit"] == "contain-pad":
         # The whole picture, centred with breathing room; the space around it continues the
         # picture's own edges, stretched and softened, top and bottom first and then the sides
@@ -284,7 +291,7 @@ def main(argv: list[str]) -> None:
     for path in files:
         budget = 40_000 if (args.kind == "backgrounds" and path.stem == "track") else spec["budget"]
         with Image.open(path) as picture:
-            image = fit(picture, spec)
+            image = fit(picture, spec, path.stem)
         size = save_webp(image, out / f"{path.stem}.webp", budget)
         flag = "" if size <= budget else " (over budget even at the lowest quality)"
         print(f"{path.stem}: {size:,} bytes{flag}")

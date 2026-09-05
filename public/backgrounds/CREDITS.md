@@ -6,4 +6,10 @@ repository under its terms. The sources are the PNG files in `game-images/game-b
 
 | File | Where it shows |
 | --- | --- |
+| builder.webp | The builder screen |
+| collection.webp | The collection screen |
+| online.webp | The online screen |
+| profile.webp | The profile screen |
+| result.webp | The result screen |
 | start-screen2.webp | The start screen |
+| track.webp | The track lanes |

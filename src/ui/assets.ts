@@ -50,7 +50,15 @@ export const FRAMES: readonly string[] = [
   'offroad',
   'sports',
 ]
-export const BACKDROPS: readonly string[] = ['start-screen2']
+export const BACKDROPS: readonly string[] = [
+  'builder',
+  'collection',
+  'online',
+  'profile',
+  'result',
+  'start-screen2',
+  'track',
+]
 export const ICONS: readonly string[] = []
 /** Bumped by every import, so browsers fetch changed files under the same names. */
-export const ART_VERSION = '20260905055620'
+export const ART_VERSION = '20260905060801'
