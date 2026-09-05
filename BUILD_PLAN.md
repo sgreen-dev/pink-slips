@@ -525,25 +525,20 @@
 
 ## Backlog
 
-Anything new goes here first and becomes a phase when picked up. Items sit in value order within their tier, judged by how many players feel them and how often; a new item goes to the tier that fits, at the end. Numbers never change, since the design and past commits refer to them.
+Anything new goes here first and becomes a phase when picked up. Items sit in value order within their tier, judged by how many players feel them and how often; a new item goes to the tier that fits, at the end. Numbers never change, since the design and past commits refer to them. A finished item leaves its tier for the Done list at the end, with the phase and the commits that closed it.
 
 ### High value: felt in every session by most players
 
-9. Sound: identify the moments where a sound effect or music would add to the game, such as the launch on an advance, a car crossing the line, the race-end banner, the coin flip, a pack opening, and the match result, then decide on a style, a source with a licence the repo can carry, and a mute control that is remembered. Design first, in a `DESIGN.md` section 8 addendum, before any audio is added *Taken into phase 16 on 2026-09-04.*
    *Why here:* Every race, every pack, every finish; the largest change in feel still open.
-6. A filter on player names, once there are enough players for one to matter *Taken into phase 17 on 2026-09-04.*
    *Why here:* A public leaderboard for an audience that includes kids; one bad name is seen by everyone.
 1. Trading duplicates, or converting them, once the collection has been live long enough to show how many duplicates players hold
    *Why here:* A full collection takes about 600 packs, so duplicates pile up early, and every pack after the first few dozen feels worse without it.
 10. Turn timer with forfeit, online. A ranked player who stops acting gets a visible countdown, and when it runs out the match is forfeited and reported as a normal result, so an opponent who walks away or never returns cannot hold a match open forever. The room keeps the deadline in its snapshot and a Durable Object alarm fires it; the timer pauses while a seat is disconnected only for a fixed grace, then counts down anyway. Needs a tunable for the turn length and the grace, a room test that a timed-out seat loses, a `DESIGN.md` section 13 line, and the countdown in the online bar
-11. Concede, online. Leave becomes a forfeit in a started match: the room ends it with the other seat as winner, reports the result, and both sides see the result screen at once, with packs and rating handled as usual. A two-step confirm on the Leave button. Needs a `concede` client message in `src/protocol/messages.ts`, room handling with a test, and a section 13 line *Taken into phase 18 on 2026-09-04.*
 12. Guided first match. The first CPU match a browser plays gets a short overlay that points at one thing at a time: stage a car, drop fuel, advance, watch the finish, continue. Dismissable at any step, never shown again once finished or skipped, and remembered in `localStorage`. Written to the same reading level as the rules dialog and tested for the same word limits. A section 9 addendum on how the overlay reads the board state
 13. Race animation. On each advance the car slides along its lane over a short time instead of jumping, a played mod card flies from the hand to the table, and a sabotage lands on the opponent's car with a shake. All CSS transitions keyed off the log entries the race-end moment already reads, off under reduced motion, and never delaying an action. A section 8 addendum
 
 21. A use for surplus fuel. Fuel is never spent by advancing, one token must be placed every turn, and fuel stays on a car between races, so once every car in the garage sits at its cost each further token has nowhere to go; only Nitrous Shot and Fuel Dump spend it. Shapes considered: a pit stop action in the mod step, once per turn, spending 2 fuel above a car's cost to remove 1 wear (the recommendation: it uses the wear system that exists, makes a repair-or-fuel-the-bench choice, and sits behind a tunable cost); a burnout before advancing, up to 2 surplus fuel for +50 ft each (direct, but it shortens races and competes with Fuel Dump); a pit crew action, 2 surplus fuel to draw a card (quiet, least effect on pace); or new Boosts that convert fuel with no core rule. Whichever is chosen needs an engine action with a section 3 rule and test, a CPU rule, a tunable for its cost, and the sim's targets re-run. Tabled on 2026-09-04 for more thought
    *Why here:* Surplus fuel shows up in most matches, and a sink turns dead turns into decisions.
-
-20. Music on phones started on the first tap most of the time, but not every time (reported 2026-09-04). *Resolved the same day*: the music now streams through media elements with the play call inside the tap, and the owner measured an immediate start on the phone with the track already buffered. The `?sound=debug` readout stays for any repeat: it shows the engine state, the buffered seconds, and the time from tap to sound
 
 ### Medium value: felt often by some players
 
@@ -567,4 +562,15 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
    *Why here:* A friend's match to watch; a small audience.
 5. Card art for the Ford Mustang Mach 1 (2021) and the Ford Shelby GT500 (2020), the two roster-expansion cars still on the silhouette placeholder: no photograph under an accepted license was on Commons when the other 48 were sourced. Add a row to `scripts/art/sources.csv` and run `scripts/art/make_art.py <id>` when one appears
    *Why here:* Two cards out of 102, visible only when drawn.
-19. Card detail view. Tapping a card anywhere opens a panel with the real car's full spec, its years, and the source each figure came from, and for a mod the full rules text. Turns the roster into something to read. Needs the `source` field already on every car surfaced in the UI and a section 8 line *Taken into phase 19 on 2026-09-04.*
+
+### Done
+
+9. Sound: original music, synthesized effects, and one control. Phase 16, 2026-09-04 (8847fb6, 3902484); the music start on phones fixed the same day (0db037d).
+
+6. A filter on player names. Phase 17, 2026-09-04 (c8d7c96, 30c63b8).
+
+11. Concede online. Phase 18, 2026-09-04 (7387ec2, 66f82c0).
+
+19. Card detail view. Phase 19, 2026-09-04 (847ddad, edd5958).
+
+20. Music on phones started on the first tap most of the time but not every time. Resolved 2026-09-04: the tracks stream and start on the tap (0db037d, a7b193b).
