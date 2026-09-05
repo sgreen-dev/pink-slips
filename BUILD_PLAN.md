@@ -36,8 +36,8 @@
 | 17 | Player name filter | done | c8d7c96 |
 | 18 | Concede online | done | 7387ec2 |
 | 19 | Card detail view | done | 847ddad |
-| 21 | Owner artwork, part 1: mod illustrations, frames, card back | todo | |
-| 22 | Owner artwork, part 2: backdrops, track, icons and tokens | todo | |
+| 21 | Owner artwork, part 1: mod illustrations, frames, card back | done | 893ac4a |
+| 22 | Owner artwork, part 2: backdrops, track, icons and tokens | done | 893ac4a |
 | 20 | Stakes | done | 9bf7488 |
 
 ---
