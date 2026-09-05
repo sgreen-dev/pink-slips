@@ -22,6 +22,7 @@ import argparse
 import io
 import re
 import sys
+import time
 from pathlib import Path
 
 from PIL import Image, ImageFilter, ImageOps
@@ -143,7 +144,8 @@ def fit(picture: Image.Image, spec: dict) -> Image.Image:
         # softened, so a gradient or a scene runs on instead of stopping at a flat band.
         flat = flatten(picture)
         canvas = Image.new("RGB", size, edge_colour(flat))
-        flat.thumbnail(size, Image.Resampling.LANCZOS)
+        inset = round(size[1] * 0.07)  # breathing room, so a subject never touches the strip's edge
+        flat.thumbnail((size[0] - 2 * inset, size[1] - 2 * inset), Image.Resampling.LANCZOS)
         x = (size[0] - flat.width) // 2
         y = (size[1] - flat.height) // 2
         sliver = max(4, flat.width // 32)
@@ -224,6 +226,8 @@ def write_assets_ts() -> None:
         + const("FRAMES", names(KINDS["frames"]["out"]))
         + const("BACKDROPS", names(KINDS["backgrounds"]["out"]))
         + const("ICONS", names(KINDS["icons"]["out"]))
+        + "/** Bumped by every import, so browsers fetch changed files under the same names. */\n"
+        + f"export const ART_VERSION = '{time.strftime('%Y%m%d%H%M%S', time.gmtime())}'\n"
     )
     ASSETS_TS.write_text(text, encoding="utf-8", newline="\n")
 

@@ -1,5 +1,5 @@
 import { CAR_TYPES, type CarType, type ModFamily } from '../data/types.ts'
-import { ART_MODS, BACKDROPS, FRAMES, ICONS } from './assets.ts'
+import { ART_MODS, ART_VERSION, BACKDROPS, FRAMES, ICONS } from './assets.ts'
 
 /**
  * Where each piece of owner artwork lives, or null when the game draws the piece itself
@@ -9,7 +9,8 @@ import { ART_MODS, BACKDROPS, FRAMES, ICONS } from './assets.ts'
 
 const base = import.meta.env.BASE_URL
 
-const url = (folder: string, name: string): string => `${base}${folder}/${name}.webp`
+const url = (folder: string, name: string): string =>
+  `${base}${folder}/${name}.webp?v=${ART_VERSION}`
 
 export function modArtUrl(modId: string): string | null {
   return ART_MODS.includes(modId) ? url('art/mods', modId) : null
