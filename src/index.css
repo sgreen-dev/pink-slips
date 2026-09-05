@@ -563,7 +563,7 @@ h2 {
 .hand__count {
   position: absolute;
   top: -0.4rem;
-  right: -0.4rem;
+  left: -0.4rem;
   background: var(--gold);
   color: var(--ink);
   border-radius: 1rem;
@@ -1720,16 +1720,16 @@ h2 {
 .card__info,
 .mod__info {
   position: absolute;
+  top: 0.35rem;
   right: 0.35rem;
-  bottom: 0.35rem;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.35rem;
+  height: 1.35rem;
   padding: 0;
   border: 0;
   border-radius: 50%;
   background: rgb(0 0 0 / 65%);
   color: #fff;
-  font: 700 0.85rem/1.5rem var(--font-mono);
+  font: 700 0.8rem/1.35rem var(--font-mono);
   text-align: center;
   cursor: pointer;
   opacity: 0.55;
@@ -1821,4 +1821,8 @@ h2 {
   .detail__rows {
     width: 100%;
   }
+}
+.card-slot .card__variant,
+.card-slot .mod__variant {
+  right: 2rem;
 }

@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-04
 
+- The card info button moves to the upper right corner, out of the way of the stats during a race; the hand's copy count moves to the upper left. (the commit that added this line)
 - The changelog lines from today carry their commits, and the build plan lists finished backlog items under Done instead of inside the tiers. (the commit that added this line)
 - Phase 19 marked done in the build plan. (edd5958)
 - Phase 19, the card detail view: any card opens a panel with the real car's full spec and its source, or a mod's full rules text; where a tap already acts, a small info button on the card opens it instead. (847ddad)
