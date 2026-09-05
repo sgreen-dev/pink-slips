@@ -1935,3 +1935,23 @@ h2 {
 .result {
   position: relative;
 }
+
+/* Desktop scale: everything is sized in rem, so a larger root size zooms the whole game. */
+@media (min-width: 1100px) {
+  html {
+    font-size: 18px;
+  }
+  /* Room for the medium card in each garage row and a fuller mod card in the hand. */
+  .garage__cars .card--sm {
+    --w: 10.5rem;
+  }
+  .hand .mod {
+    width: 11rem;
+    font-size: 0.9rem;
+  }
+}
+@media (min-width: 1500px) {
+  html {
+    font-size: 20px;
+  }
+}

@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-05
 
+- On wide screens the whole game scales up, 18px root from 1100px wide and 20px from 1500px, so the cards read on a desktop. (the commit that added this line)
 - Owner-made frames land: textured car frames for all six types, textured mod borders for the three families, and a card back that fans the opponent's hand. (the commit that added this line)
 - The commit references in this file and the build plan follow the rewritten history. (the commit that added this line)
 - The source pictures under game-images are kept as pixels only, with embedded metadata stripped on every import; the mod strips pad with smooth corners. (the commit that added this line)
