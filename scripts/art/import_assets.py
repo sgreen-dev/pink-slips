@@ -10,7 +10,7 @@ its file exists. Run from the repo root with the art venv:
     scripts/art/.venv/Scripts/python scripts/art/import_assets.py --kind backgrounds collection track
     scripts/art/.venv/Scripts/python scripts/art/import_assets.py --kind icons
 
-Kinds: mods (640 by 360 on the card cream, one per mod id), frames (512 square tiles: the six
+Kinds: mods (fitted whole into 640 by 360, padded with the picture's own edge colour, one per mod id), frames (512 square tiles: the six
 car types, mod-part, mod-boost, mod-sabotage, back), backgrounds (screens as drawn, track as a
 strip), icons (128 square with transparency). --dir and --out point elsewhere for a check that
 leaves the repo alone.
@@ -24,7 +24,7 @@ import re
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageFilter, ImageOps
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKDROP = (0xF3, 0xE7, 0xC9)
@@ -51,7 +51,7 @@ KINDS = {
         "out": ROOT / "public" / "art" / "mods",
         "size": (640, 360),
         "budget": 30_000,
-        "fit": "cover",
+        "fit": "contain-pad",
         "alpha": False,
         "names": lambda: set(mod_ids()),
         "title": "Mod card illustration credits",
@@ -125,10 +125,44 @@ def flatten(picture: Image.Image) -> Image.Image:
     return picture.convert("RGB")
 
 
+def edge_colour(picture: Image.Image) -> tuple[int, int, int]:
+    """The mean colour around the picture's outer edge, so padding vanishes into it."""
+    w, h = picture.size
+    step = max(1, min(w, h) // 40)
+    samples = [picture.getpixel((x, y)) for x in range(0, w, step) for y in (0, h - 1)]
+    samples += [picture.getpixel((x, y)) for y in range(0, h, step) for x in (0, w - 1)]
+    return tuple(sum(s[i] for s in samples) // len(samples) for i in range(3))  # type: ignore[return-value]
+
+
 def fit(picture: Image.Image, spec: dict) -> Image.Image:
     size = spec["size"]
     if spec["fit"] == "keep":
         return flatten(picture)
+    if spec["fit"] == "contain-pad":
+        # The whole picture, centred; the bars beside it continue its own edges, stretched and
+        # softened, so a gradient or a scene runs on instead of stopping at a flat band.
+        flat = flatten(picture)
+        canvas = Image.new("RGB", size, edge_colour(flat))
+        flat.thumbnail(size, Image.Resampling.LANCZOS)
+        x = (size[0] - flat.width) // 2
+        y = (size[1] - flat.height) // 2
+        sliver = max(4, flat.width // 32)
+        if x > 0:
+            left = flat.crop((0, 0, sliver, flat.height)).resize((x, flat.height))
+            right = flat.crop((flat.width - sliver, 0, flat.width, flat.height)).resize(
+                (size[0] - x - flat.width, flat.height)
+            )
+            canvas.paste(left.filter(ImageFilter.GaussianBlur(6)), (0, y))
+            canvas.paste(right.filter(ImageFilter.GaussianBlur(6)), (x + flat.width, y))
+        if y > 0:
+            top = flat.crop((0, 0, flat.width, sliver)).resize((flat.width, y))
+            bottom = flat.crop((0, flat.height - sliver, flat.width, flat.height)).resize(
+                (flat.width, size[1] - y - flat.height)
+            )
+            canvas.paste(top.filter(ImageFilter.GaussianBlur(6)), (x, 0))
+            canvas.paste(bottom.filter(ImageFilter.GaussianBlur(6)), (x, y + flat.height))
+        canvas.paste(flat, (x, y))
+        return canvas
     if spec["fit"] == "contain":
         rgba = ImageOps.exif_transpose(picture).convert("RGBA")
         rgba.thumbnail(size, Image.Resampling.LANCZOS)

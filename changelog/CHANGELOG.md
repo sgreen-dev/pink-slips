@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-05
 
+- Mod illustrations fit whole in their strip, padded with their own edge colour, instead of being cropped to it. (the commit that added this line)
 - All 33 mod cards carry an owner-made illustration strip. (the commit that added this line)
 - Phases 21 and 22 marked done in the build plan. (the commit that added this line)
 - Phases 21 and 22, owner artwork: mod illustrations, card frames and a card back, screen backdrops and the track strip, and icons and tokens each switch on when the owner's file lands, imported by kind with a credits note and a generated list of what is present. (the commit that added this line)
