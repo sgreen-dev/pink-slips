@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-05
 
+- Owner-made frames land: textured car frames for all six types, textured mod borders for the three families, and a card back that fans the opponent's hand. (the commit that added this line)
 - The commit references in this file and the build plan follow the rewritten history. (the commit that added this line)
 - The source pictures under game-images are kept as pixels only, with embedded metadata stripped on every import; the mod strips pad with smooth corners. (the commit that added this line)
 - Mod pictures sit inset in their strip, and artwork addresses carry a version the import bumps, so a changed picture reaches browsers that cached the old one. (the commit that added this line)
