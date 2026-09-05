@@ -33,12 +33,12 @@
 | 14 | Online play, part 1: the engine behind a server | done | 0c7176d |
 | 15 | Online play, part 2: accounts and matchmaking | done | 7f08ebe, 1bad706 |
 | 16 | Sound | done | 8847fb6 |
-| 17 | Player name filter | done | c8d7c96 |
-| 18 | Concede online | done | 7387ec2 |
-| 19 | Card detail view | done | 847ddad |
-| 21 | Owner artwork, part 1: mod illustrations, frames, card back | done | 893ac4a |
-| 22 | Owner artwork, part 2: backdrops, track, icons and tokens | done | 893ac4a |
-| 20 | Stakes | done | 9bf7488 |
+| 17 | Player name filter | done | fc4ab82 |
+| 18 | Concede online | done | b260d88 |
+| 19 | Card detail view | done | 83f5775 |
+| 21 | Owner artwork, part 1: mod illustrations, frames, card back | done | 30e467d |
+| 22 | Owner artwork, part 2: backdrops, track, icons and tokens | done | 30e467d |
+| 20 | Stakes | done | 312f4d8 |
 
 ---
 
@@ -629,14 +629,14 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 
 ### Done
 
-9. Sound: original music, synthesized effects, and one control. Phase 16, 2026-09-04 (8847fb6, 3902484); the music start on phones fixed the same day (0db037d).
+9. Sound: original music, synthesized effects, and one control. Phase 16, 2026-09-04 (8847fb6, 3902484); the music start on phones fixed the same day (5c1aa6a).
 
-6. A filter on player names. Phase 17, 2026-09-04 (c8d7c96, 30c63b8).
+6. A filter on player names. Phase 17, 2026-09-04 (fc4ab82, 12cd7a4).
 
-11. Concede online. Phase 18, 2026-09-04 (7387ec2, 66f82c0).
+11. Concede online. Phase 18, 2026-09-04 (b260d88, 0f45f13).
 
-19. Card detail view. Phase 19, 2026-09-04 (847ddad, edd5958).
+19. Card detail view. Phase 19, 2026-09-04 (83f5775, 20aec61).
 
-20. Music on phones started on the first tap most of the time but not every time. Resolved 2026-09-04: the tracks stream and start on the tap (0db037d, a7b193b).
+20. Music on phones started on the first tap most of the time but not every time. Resolved 2026-09-04: the tracks stream and start on the tap (5c1aa6a, 9c888b8).
 
-4. Stakes mode, in every mode but hotseat, with starter cars exempt. Phase 20, 2026-09-04 (9bf7488, the commit that marks it done).
+4. Stakes mode, in every mode but hotseat, with starter cars exempt. Phase 20, 2026-09-04 (312f4d8, the commit that marks it done).
