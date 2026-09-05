@@ -6,6 +6,7 @@ import { TIER_LABEL } from '../data/tiers.ts'
 import { CAR_TYPE_LABEL } from '../data/types.ts'
 import { fuelCost, type CarState } from '../engine/index.ts'
 import { initialArtState, nextArtState, showsImage } from './artState.ts'
+import { useDetail } from './useDetail.ts'
 import { useVariant } from './variants.ts'
 
 export type CardSize = 'sm' | 'md' | 'lg'
@@ -96,6 +97,7 @@ export function CarCard({
 }: CarCardProps) {
   const car = getCar(carId)
   const variant = useVariant(carId, variantProp)
+  const openDetail = useDetail()
   const [art, setArt] = useState(() => initialArtState(car.imageUrl))
   const cost = state ? fuelCost(state) : undefined
   const className = [
@@ -158,8 +160,34 @@ export function CarCard({
     </>
   )
   if (onClick) {
-    return (
+    const card = (
       <button type="button" className={className} onClick={onClick} aria-pressed={selected}>
+        {body}
+      </button>
+    )
+    if (!openDetail) return card
+    return (
+      <div className="card-slot">
+        {card}
+        <button
+          type="button"
+          className="card__info"
+          aria-label={`Details for ${car.name}`}
+          onClick={() => openDetail({ kind: 'car', id: carId })}
+        >
+          i
+        </button>
+      </div>
+    )
+  }
+  if (openDetail) {
+    return (
+      <button
+        type="button"
+        className={`${className} card--detail`}
+        aria-label={`Details for ${car.name}`}
+        onClick={() => openDetail({ kind: 'car', id: carId })}
+      >
         {body}
       </button>
     )

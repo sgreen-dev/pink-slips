@@ -20,6 +20,7 @@ import { Match, type Mode } from './Match.tsx'
 import { roomEndpoint, roomFromSearch } from './online.ts'
 import { OnlineMatch } from './OnlineMatch.tsx'
 import { OnlineScreen, type OnlineEntry } from './OnlineScreen.tsx'
+import { DetailProvider } from './CardDetail.tsx'
 import { PlayerDialog, type PlayerView } from './PlayerDialog.tsx'
 import { ProfileScreen } from './ProfileScreen.tsx'
 import { newSeed } from './seed.ts'
@@ -187,8 +188,10 @@ export function App() {
   }
   return (
     <AccountContext value={account}>
-      <Soundtrack kind={screen.kind} />
-      {page}
+      <DetailProvider>
+        <Soundtrack kind={screen.kind} />
+        {page}
+      </DetailProvider>
       {dialog && ENDPOINT && (
         <PlayerDialog
           endpoint={ENDPOINT}

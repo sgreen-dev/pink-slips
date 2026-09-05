@@ -1,5 +1,6 @@
 import { VARIANT_LABEL, type Variant } from '../collection/collection.ts'
 import { getMod } from '../data/mods.ts'
+import { useDetail } from './useDetail.ts'
 import { useVariant } from './variants.ts'
 
 interface ModCardProps {
@@ -30,6 +31,7 @@ export function ModCard({
 }: ModCardProps) {
   const mod = getMod(modId)
   const variant = useVariant(modId, variantProp)
+  const openDetail = useDetail()
   const family =
     mod.family === 'sabotage'
       ? `${FAMILY_LABEL.sabotage} · ${mod.kind === 'traction' ? 'Traction' : 'Pit'}`
@@ -69,13 +71,39 @@ export function ModCard({
     </>
   )
   if (onClick) {
-    return (
+    const card = (
       <button
         type="button"
         className={className}
         onClick={onClick}
         disabled={!playable}
         aria-pressed={selected}
+      >
+        {body}
+      </button>
+    )
+    if (!openDetail) return card
+    return (
+      <div className="card-slot">
+        {card}
+        <button
+          type="button"
+          className="mod__info"
+          aria-label={`Details for ${mod.name}`}
+          onClick={() => openDetail({ kind: 'mod', id: modId })}
+        >
+          i
+        </button>
+      </div>
+    )
+  }
+  if (openDetail) {
+    return (
+      <button
+        type="button"
+        className={`${className} mod--detail`}
+        aria-label={`Details for ${mod.name}`}
+        onClick={() => openDetail({ kind: 'mod', id: modId })}
       >
         {body}
       </button>

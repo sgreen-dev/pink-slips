@@ -35,6 +35,7 @@
 | 16 | Sound | done | 8847fb6 |
 | 17 | Player name filter | done | c8d7c96 |
 | 18 | Concede online | done | 7387ec2 |
+| 19 | Card detail view | todo | |
 
 ---
 
@@ -498,6 +499,30 @@
 
 ---
 
+## Phase 19 — Card detail view
+
+**Goal**: any card opens a panel with the real car's full spec, its years, and the source each figure came from, or a mod's full rules text, without stealing a tap from a card that already acts.
+
+**Design to record first** (`DESIGN.md` 8, Card detail): where a tap is free the whole card opens the panel; where a tap already acts a small info button beside the card does; one native dialog for the whole app; the rows a car and a mod show, including the stock advance the engine computes.
+
+**Deliverables**
+
+- `src/ui/detail.ts`: pure row builders for a car and a mod
+- `src/ui/CardDetail.tsx` and `src/ui/useDetail.ts`: the dialog, its provider, and the hook the card components read
+- `CarCard` and `ModCard` opening the panel by the rule above, with the info button as a sibling inside a wrapper so the HTML stays valid
+- The panel's styles, two columns on wide screens and stacked on phones
+
+**Tests**
+
+- Car rows carry the published figures, the hp per lb, the engine, the years, and the source verbatim, and the stock advance equals the engine's
+- A tier note shows only when the car has one; mod rows carry the family sentence, the rules text, and rarity, level, lock, and cost where they apply
+
+**Done when**: a card opens from the collection, the board, and the builder without acting, and the tests pass.
+
+**Prompt**: Do phase 19 of BUILD_PLAN.md.
+
+---
+
 ## Backlog
 
 Anything new goes here first and becomes a phase when picked up. Items sit in value order within their tier, judged by how many players feel them and how often; a new item goes to the tier that fits, at the end. Numbers never change, since the design and past commits refer to them.
@@ -542,4 +567,4 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
    *Why here:* A friend's match to watch; a small audience.
 5. Card art for the Ford Mustang Mach 1 (2021) and the Ford Shelby GT500 (2020), the two roster-expansion cars still on the silhouette placeholder: no photograph under an accepted license was on Commons when the other 48 were sourced. Add a row to `scripts/art/sources.csv` and run `scripts/art/make_art.py <id>` when one appears
    *Why here:* Two cards out of 102, visible only when drawn.
-19. Card detail view. Tapping a card anywhere opens a panel with the real car's full spec, its years, and the source each figure came from, and for a mod the full rules text. Turns the roster into something to read. Needs the `source` field already on every car surfaced in the UI and a section 8 line
+19. Card detail view. Tapping a card anywhere opens a panel with the real car's full spec, its years, and the source each figure came from, and for a mod the full rules text. Turns the roster into something to read. Needs the `source` field already on every car surfaced in the UI and a section 8 line *Taken into phase 19 on 2026-09-04.*

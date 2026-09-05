@@ -1,5 +1,5 @@
 import { TIER_LABEL } from '../data/tiers.ts'
-import { TIERS } from '../data/types.ts'
+import { CAR_TYPE_LABEL, TIERS, type CarType } from '../data/types.ts'
 import { TUNABLES } from '../engine/index.ts'
 
 /**
@@ -20,8 +20,25 @@ export interface RulesSection {
   note?: string
 }
 
-export function rulesSections(t: typeof TUNABLES = TUNABLES): RulesSection[] {
+/** Each type's identity in one sentence, shared by the rules and the card detail panel. */
+export function typeIdentityLines(
+  t: typeof TUNABLES = TUNABLES,
+): Readonly<Record<CarType, string>> {
   const identity = t.typeIdentity
+  return {
+    ev: `moves ${identity.evFirstAdvanceFt} feet extra on its first move of each race.`,
+    muscle: `moves ${identity.muscleTopEndFt} feet extra on any move that starts at ${identity.muscleTopEndFromFt} feet or farther.`,
+    jdm: `room for ${t.partSlotsJdm} Parts instead of ${t.partSlots}.`,
+    sports: 'its first coin flip each race is always heads.',
+    luxury: 'wear slows it down only half as much.',
+    offroad: 'Traction cards do not work on it.',
+  }
+}
+
+const TYPE_ORDER: readonly CarType[] = ['ev', 'muscle', 'jdm', 'sports', 'luxury', 'offroad']
+
+export function rulesSections(t: typeof TUNABLES = TUNABLES): RulesSection[] {
+  const identityLines = typeIdentityLines(t)
   const track = t.trackLengthFt.toLocaleString()
   const fuelByTier = TIERS.map((tier) => `${TIER_LABEL[tier]} ${t.fuelCostByTier[tier]}`).join(', ')
   return [
@@ -78,14 +95,7 @@ export function rulesSections(t: typeof TUNABLES = TUNABLES): RulesSection[] {
     {
       title: 'Car types',
       kind: 'bullets',
-      lines: [
-        `EV: moves ${identity.evFirstAdvanceFt} feet extra on its first move of each race.`,
-        `Muscle: moves ${identity.muscleTopEndFt} feet extra on any move that starts at ${identity.muscleTopEndFromFt} feet or farther.`,
-        `JDM: room for ${t.partSlotsJdm} Parts instead of ${t.partSlots}.`,
-        'Sports: its first coin flip each race is always heads.',
-        'Luxury: wear slows it down only half as much.',
-        'Off-road: Traction cards do not work on it.',
-      ],
+      lines: TYPE_ORDER.map((type) => `${CAR_TYPE_LABEL[type]}: ${identityLines[type]}`),
     },
     {
       title: 'Fuel each car needs',

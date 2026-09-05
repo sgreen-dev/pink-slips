@@ -1710,3 +1710,115 @@ h2 {
   opacity: 0.8;
   margin-top: 0.3em;
 }
+
+/* Card detail: the info button beside an acting card, and the panel itself. */
+.card-slot {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+.card__info,
+.mod__info {
+  position: absolute;
+  right: 0.35rem;
+  bottom: 0.35rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 65%);
+  color: #fff;
+  font: 700 0.85rem/1.5rem var(--font-mono);
+  text-align: center;
+  cursor: pointer;
+  opacity: 0.55;
+}
+.card__info:hover,
+.card__info:focus-visible,
+.mod__info:hover,
+.mod__info:focus-visible {
+  opacity: 1;
+}
+@media (hover: none) {
+  .card__info,
+  .mod__info {
+    opacity: 0.85;
+  }
+}
+.card--detail,
+.mod--detail {
+  cursor: pointer;
+}
+.detail {
+  border: 0;
+  padding: 0;
+  border-radius: 0.75rem;
+  background: var(--asphalt-2);
+  color: inherit;
+  width: min(52rem, 94vw);
+}
+.detail::backdrop {
+  background: rgb(0 0 0 / 60%);
+}
+.detail__body {
+  box-sizing: border-box;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 1rem 1.25rem 1.25rem;
+}
+.detail__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.detail__header h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  color: var(--pink);
+}
+.detail__layout {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1.25rem;
+  align-items: start;
+  margin-top: 0.75rem;
+}
+.detail__card {
+  padding-top: 0.6rem;
+}
+.detail__rows {
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.4rem 0.9rem;
+  font-size: 0.95rem;
+}
+.detail__row {
+  display: contents;
+}
+.detail__rows dt {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  padding-top: 0.15rem;
+}
+.detail__rows dd {
+  margin: 0;
+}
+.detail__rows .detail__source {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+@media (max-width: 40rem) {
+  .detail__layout {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+  .detail__rows {
+    width: 100%;
+  }
+}

@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-04
 
+- Phase 19, the card detail view: any card opens a panel with the real car's full spec and its source, or a mod's full rules text; where a tap already acts, a small info button on the card opens it instead. (the commit that added this line)
 - Backlog: a use for surplus fuel, with the shapes considered, tabled for more thought. (the commit that added this line)
 - Fuel Drain, the first rare, level-2 mod: a Pit sabotage that removes 2 fuel, upgrading Fuel Siphon; rare mods are one per deck and 5% of pack mod slots. (the commit that added this line)
 - The roster grows from 102 to 126 cars with 24 icons everyone knows, four per type, each with a sourced spec and a card illustration. (the commit that added this line)
