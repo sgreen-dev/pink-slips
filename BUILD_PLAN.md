@@ -36,7 +36,7 @@
 | 17 | Player name filter | done | c8d7c96 |
 | 18 | Concede online | done | 7387ec2 |
 | 19 | Card detail view | done | 847ddad |
-| 20 | Stakes | todo | |
+| 20 | Stakes | done | 9bf7488 |
 
 ---
 
@@ -598,4 +598,4 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 
 20. Music on phones started on the first tap most of the time but not every time. Resolved 2026-09-04: the tracks stream and start on the tap (0db037d, a7b193b).
 
-4. Stakes mode, in every mode but hotseat, with starter cars exempt. Phase 20, 2026-09-04 (HASH20).
+4. Stakes mode, in every mode but hotseat, with starter cars exempt. Phase 20, 2026-09-04 (9bf7488, the commit that marks it done).

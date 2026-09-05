@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-04
 
+- Phase 20 marked done in the build plan. (the commit that added this line)
 - Phase 20, stakes: with the toggle on, every pink slip taken during a match changes hands for real, against the Street or Pro CPU and online where both seats opt in; starter cars never move. (the commit that added this line)
 - On a phone, a garage row scrolls back to its staged car after staging and after each race, so the player no longer swipes back to find it. (the commit that added this line)
 - The card info button hangs on the upper right corner itself, clear of the name strip. (the commit that added this line)
