@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import type { PlayerState } from '../engine/index.ts'
 import { CarCard, type CardSize } from './CarCard.tsx'
 import { stagedFirst, type CarIntent, type Selection } from './interaction.ts'
@@ -12,6 +13,8 @@ interface GarageProps {
   size?: CardSize
   /** Show the hand as a count only, for the opponent. */
   handCount?: number
+  /** The race in progress; a new race scrolls the row back to its staged car. */
+  raceNumber?: number
 }
 
 export function Garage({
@@ -22,7 +25,18 @@ export function Garage({
   onCar,
   size = 'sm',
   handCount,
+  raceNumber,
 }: GarageProps) {
+  const row = useRef<HTMLDivElement | null>(null)
+  // The staged car leads the row; when it changes, or a new race begins, bring it back into
+  // view on a phone, where the row scrolls (DESIGN.md 8, Board order).
+  useEffect(() => {
+    const el = row.current
+    if (!el || typeof el.scrollTo !== 'function') return
+    const reduced =
+      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+    el.scrollTo({ left: 0, behavior: reduced ? 'auto' : 'smooth' })
+  }, [player.stagedCarId, raceNumber])
   return (
     <section className="garage">
       <header className="garage__header">
@@ -32,7 +46,7 @@ export function Garage({
           {player.deck.length}
         </span>
       </header>
-      <div className="garage__cars">
+      <div className="garage__cars" ref={row}>
         {stagedFirst(player.garage, player.stagedCarId).map((car) => {
           const intent = intents?.get(car.carId)
           const selected =

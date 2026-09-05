@@ -178,6 +178,7 @@ export function Board({
           name={names[opponent]}
           handCount={state.players[opponent].hand.length}
           size="sm"
+          raceNumber={state.race.number}
         />
       </VariantContext>
 
@@ -190,6 +191,7 @@ export function Board({
         selection={selection}
         onCar={onCar}
         size="sm"
+        raceNumber={state.race.number}
       />
 
       <section className="controls">

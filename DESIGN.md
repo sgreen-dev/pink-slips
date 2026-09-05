@@ -519,7 +519,7 @@ Fonts load from Google Fonts. The card is a portrait 5:7 with a thick type-color
 
 **Leaving a local match**: the board header of a CPU or hotseat match has Exit match, which asks once and then returns to the start screen; a match left this way counts for nothing, no packs and no tally. Online matches leave through the online bar, where Leave concedes (section 13).
 
-**Board order**: each garage row shows its staged car first, so the two cars in the race lead their rows and stay in view on a phone, where the row scrolls; the other cars keep the order the engine holds them in.
+**Board order**: each garage row shows its staged car first, so the two cars in the race lead their rows and stay in view on a phone, where the row scrolls; the other cars keep the order the engine holds them in. When the staged car changes or a new race begins, the row scrolls back to its start so the staged car is in view without a swipe, smoothly unless reduced motion is set.
 
 **Sound** (phase 16). Music and effects, on by default, with one control. Browsers refuse to play anything before the page is clicked or tapped, so nothing sounds until the first gesture; that gesture unlocks audio and starts the music.
 

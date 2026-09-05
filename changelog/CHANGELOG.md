@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-04
 
+- On a phone, a garage row scrolls back to its staged car after staging and after each race, so the player no longer swipes back to find it. (the commit that added this line)
 - The card info button hangs on the upper right corner itself, clear of the name strip. (the commit that added this line)
 - The card info button moves to the upper right corner, out of the way of the stats during a race; the hand's copy count moves to the upper left. (the commit that added this line)
 - The changelog lines from today carry their commits, and the build plan lists finished backlog items under Done instead of inside the tiers. (the commit that added this line)
