@@ -42,4 +42,4 @@ export const FRAMES: readonly string[] = []
 export const BACKDROPS: readonly string[] = ['start-screen2']
 export const ICONS: readonly string[] = []
 /** Bumped by every import, so browsers fetch changed files under the same names. */
-export const ART_VERSION = '20260905054111'
+export const ART_VERSION = '20260905054439'

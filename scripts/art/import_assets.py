@@ -13,7 +13,8 @@ its file exists. Run from the repo root with the art venv:
 Kinds: mods (fitted whole into 640 by 360, padded with the picture's own edge colour, one per mod id), frames (512 square tiles: the six
 car types, mod-part, mod-boost, mod-sabotage, back), backgrounds (screens as drawn, track as a
 strip), icons (128 square with transparency). --dir and --out point elsewhere for a check that
-leaves the repo alone.
+leaves the repo alone. Every run first strips embedded metadata from the source PNGs, so the
+repository holds pixels only.
 """
 
 from __future__ import annotations
@@ -140,37 +141,44 @@ def fit(picture: Image.Image, spec: dict) -> Image.Image:
     if spec["fit"] == "keep":
         return flatten(picture)
     if spec["fit"] == "contain-pad":
-        # The whole picture, centred; the bars beside it continue its own edges, stretched and
-        # softened, so a gradient or a scene runs on instead of stopping at a flat band.
+        # The whole picture, centred with breathing room; the space around it continues the
+        # picture's own edges, stretched and softened, top and bottom first and then the sides
+        # from the already padded column, so gradients run on and the corners stay smooth.
         flat = flatten(picture)
-        canvas = Image.new("RGB", size, edge_colour(flat))
-        inset = round(size[1] * 0.07)  # breathing room, so a subject never touches the strip's edge
+        inset = round(size[1] * 0.07)
         flat.thumbnail((size[0] - 2 * inset, size[1] - 2 * inset), Image.Resampling.LANCZOS)
-        x = (size[0] - flat.width) // 2
-        y = (size[1] - flat.height) // 2
-        sliver = max(4, flat.width // 32)
-        if x > 0:
-            left = flat.crop((0, 0, sliver, flat.height)).resize((x, flat.height))
-            right = flat.crop((flat.width - sliver, 0, flat.width, flat.height)).resize(
-                (size[0] - x - flat.width, flat.height)
-            )
-            canvas.paste(left.filter(ImageFilter.GaussianBlur(6)), (0, y))
-            canvas.paste(right.filter(ImageFilter.GaussianBlur(6)), (x + flat.width, y))
-        if y > 0:
-            top = flat.crop((0, 0, flat.width, sliver)).resize((flat.width, y))
-            bottom = flat.crop((0, flat.height - sliver, flat.width, flat.height)).resize(
-                (flat.width, size[1] - y - flat.height)
-            )
-            canvas.paste(top.filter(ImageFilter.GaussianBlur(6)), (x, 0))
-            canvas.paste(bottom.filter(ImageFilter.GaussianBlur(6)), (x, y + flat.height))
-        canvas.paste(flat, (x, y))
-        return canvas
-    if spec["fit"] == "contain":
-        rgba = ImageOps.exif_transpose(picture).convert("RGBA")
-        rgba.thumbnail(size, Image.Resampling.LANCZOS)
-        canvas = Image.new("RGBA", size, (0, 0, 0, 0))
-        canvas.alpha_composite(rgba, ((size[0] - rgba.width) // 2, (size[1] - rgba.height) // 2))
-        return canvas
+        sliver = max(4, min(flat.size) // 32)
+        blur = ImageFilter.GaussianBlur(6)
+
+        def pad_vertical(image: Image.Image, height: int) -> Image.Image:
+            top = (height - image.height) // 2
+            bottom = height - image.height - top
+            out = Image.new("RGB", (image.width, height), edge_colour(image))
+            if top > 0:
+                out.paste(image.crop((0, 0, image.width, sliver)).resize((image.width, top)).filter(blur), (0, 0))
+            if bottom > 0:
+                out.paste(
+                    image.crop((0, image.height - sliver, image.width, image.height)).resize((image.width, bottom)).filter(blur),
+                    (0, top + image.height),
+                )
+            out.paste(image, (0, top))
+            return out
+
+        def pad_horizontal(image: Image.Image, width: int) -> Image.Image:
+            left = (width - image.width) // 2
+            right = width - image.width - left
+            out = Image.new("RGB", (width, image.height), edge_colour(image))
+            if left > 0:
+                out.paste(image.crop((0, 0, sliver, image.height)).resize((left, image.height)).filter(blur), (0, 0))
+            if right > 0:
+                out.paste(
+                    image.crop((image.width - sliver, 0, image.width, image.height)).resize((right, image.height)).filter(blur),
+                    (left + image.width, 0),
+                )
+            out.paste(image, (left, 0))
+            return out
+
+        return pad_horizontal(pad_vertical(flat, size[1]), size[0])
     return ImageOps.fit(flatten(picture), size, Image.Resampling.LANCZOS)
 
 
@@ -232,6 +240,21 @@ def write_assets_ts() -> None:
     ASSETS_TS.write_text(text, encoding="utf-8", newline="\n")
 
 
+def clean_sources() -> int:
+    """Re-saves any source PNG that carries embedded metadata, keeping only the pixels."""
+    cleaned = 0
+    markers = (b"XML:com", b"c2pa", b"caBX", b"iTXt", b"tEXt", b"zTXt", b"eXIf")
+    for path in sorted((ROOT / "game-images").rglob("*.png")):
+        raw = path.read_bytes()
+        with Image.open(path) as picture:
+            if not picture.info and not any(marker in raw for marker in markers):
+                continue
+            pixels = picture.copy()
+        pixels.save(path, "PNG")
+        cleaned += 1
+    return cleaned
+
+
 def main(argv: list[str]) -> None:
     parser = argparse.ArgumentParser(description="Import the owner's artwork.")
     parser.add_argument("--kind", required=True, choices=sorted(KINDS))
@@ -241,6 +264,9 @@ def main(argv: list[str]) -> None:
     args = parser.parse_args(argv)
 
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    cleaned = clean_sources()
+    if cleaned:
+        print(f"sources cleaned of embedded metadata: {cleaned}")
     spec = KINDS[args.kind]
     source = Path(args.dir) if args.dir else spec["source"]
     out = Path(args.out) if args.out else spec["out"]

@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-05
 
+- The source pictures under game-images are kept as pixels only, with embedded metadata stripped on every import; the mod strips pad with smooth corners. (the commit that added this line)
 - Mod pictures sit inset in their strip, and artwork addresses carry a version the import bumps, so a changed picture reaches browsers that cached the old one. (the commit that added this line)
 - Mod illustrations fit whole in their strip, padded with their own edge colour, instead of being cropped to it. (the commit that added this line)
 - All 33 mod cards carry an owner-made illustration strip. (the commit that added this line)
