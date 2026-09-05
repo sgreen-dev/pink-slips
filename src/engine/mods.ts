@@ -14,6 +14,11 @@ export function partSlots(car: Car): number {
   return car.type === 'jdm' ? TUNABLES.partSlotsJdm : TUNABLES.partSlots
 }
 
+/** Copies of a mod one deck may hold: rare mods are capped lower (DESIGN.md 2.5, 3.1). */
+export function copyLimit(modId: string): number {
+  return getMod(modId).rarity === 'rare' ? TUNABLES.maxCopiesPerRareMod : TUNABLES.maxCopiesPerMod
+}
+
 export function openSlots(state: CarState): number {
   return partSlots(getCar(state.carId)) - state.parts.length
 }

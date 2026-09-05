@@ -1690,3 +1690,23 @@ h2 {
 .lane__flag--boost {
   color: #5ccf86;
 }
+
+/* Rare mods: a gold tag and, for a level-2 card, the base it upgrades. */
+.mod__rare {
+  position: absolute;
+  top: -0.6em;
+  left: 0.5em;
+  padding: 0.1em 0.5em;
+  border-radius: 0.3em;
+  font-family: var(--font-display);
+  font-size: 0.9em;
+  letter-spacing: 0.05em;
+  color: #222;
+  background: linear-gradient(90deg, var(--gold), #fff2c2, var(--gold));
+}
+.mod__level {
+  font-family: var(--font-mono);
+  font-size: 0.75em;
+  opacity: 0.8;
+  margin-top: 0.3em;
+}

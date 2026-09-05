@@ -3,6 +3,7 @@ import { getMod, MOD_BY_ID } from '../data/mods.ts'
 import type { Mod, ModEffect } from '../data/types.ts'
 import { computeAdvance, windowApplies } from './advance.ts'
 import {
+  copyLimit,
   fuelCost,
   gainsWearFromWinning,
   isTractionImmune,
@@ -80,7 +81,7 @@ function hasPendingSabotage(pending: PendingSabotage): boolean {
 // Setup (DESIGN.md 3.1)
 
 function validatePlayerConfig(config: PlayerConfig, label: string): void {
-  const { garageSize, modDeckSize, maxCopiesPerMod } = TUNABLES
+  const { garageSize, modDeckSize } = TUNABLES
   if (config.garage.length !== garageSize) {
     throw new Error(`${label}: garage must have exactly ${garageSize} cars`)
   }
@@ -95,8 +96,9 @@ function validatePlayerConfig(config: PlayerConfig, label: string): void {
   for (const id of config.deck) {
     if (!MOD_BY_ID.has(id)) throw new Error(`${label}: unknown mod id ${id}`)
     const count = (copies.get(id) ?? 0) + 1
-    if (count > maxCopiesPerMod) {
-      throw new Error(`${label}: more than ${maxCopiesPerMod} copies of ${id}`)
+    const limit = copyLimit(id)
+    if (count > limit) {
+      throw new Error(`${label}: more than ${limit} copies of ${id}`)
     }
     copies.set(id, count)
   }

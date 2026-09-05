@@ -31,6 +31,17 @@ describe('garage generators', () => {
     expect(a.garage).not.toEqual(b.garage)
   })
 
+  it('random decks hold at most one copy of a rare mod', () => {
+    let rng = seedRng(3)
+    let most = 0
+    for (let i = 0; i < 40; i++) {
+      let garage
+      ;[garage, rng] = randomGarage(rng)
+      most = Math.max(most, garage.deck.filter((id) => id === 'fuel-drain').length)
+    }
+    expect(most).toBeLessThanOrEqual(TUNABLES.maxCopiesPerRareMod)
+  })
+
   it('single-type garages hold only that type', () => {
     for (const type of CAR_TYPES) {
       const [garage] = singleTypeGarage(type, seedRng(2))

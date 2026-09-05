@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-04
 
+- Fuel Drain, the first rare, level-2 mod: a Pit sabotage that removes 2 fuel, upgrading Fuel Siphon; rare mods are one per deck and 5% of pack mod slots. (the commit that added this line)
 - The roster grows from 102 to 126 cars with 24 icons everyone knows, four per type, each with a sourced spec and a card illustration. (the commit that added this line)
 - During the mod step a faded card says why it cannot be played, the track lane names what is waiting on a car and the Boosts in play, and an advance's log line shows what changed the distance. (the commit that added this line)
 - A CPU or hotseat match can be left from the board header, behind a confirm; a match left this way counts for nothing. (the commit that added this line)

@@ -1,5 +1,5 @@
 import { CARS } from '../data/cars.ts'
-import { MODS } from '../data/mods.ts'
+import { MODS, modRarity } from '../data/mods.ts'
 import { STARTERS } from '../data/starters.ts'
 import { TIERS, type Tier } from '../data/types.ts'
 import { nextFloat, nextInt, TUNABLES, type RngState } from '../engine/index.ts'
@@ -17,6 +17,13 @@ export const ALL_CARD_IDS: readonly string[] = [
   ...CARS.map((car) => car.id),
   ...MODS.map((mod) => mod.id),
 ]
+
+const COMMON_MOD_IDS: readonly string[] = MODS.filter((mod) => modRarity(mod) === 'common').map(
+  (mod) => mod.id,
+)
+const RARE_MOD_IDS: readonly string[] = MODS.filter((mod) => modRarity(mod) === 'rare').map(
+  (mod) => mod.id,
+)
 
 export type Mode = 'cpu' | 'hotseat' | 'online'
 
@@ -162,8 +169,8 @@ function pick(state: RngState, items: readonly string[]): [string, RngState] {
 }
 
 /**
- * Opens one pack: car slots roll a tier by the odds, then a car in it; mod slots are uniform.
- * Every card then rolls its finish.
+ * Opens one pack: car slots roll a tier by the odds, then a car in it; mod slots roll rare at
+ * the rare odds, then pick uniformly within that rarity. Every card then rolls its finish.
  */
 export function openPack(state: RngState, t: typeof TUNABLES = TUNABLES): [Pack, RngState] {
   const cars: PackCard[] = []
@@ -181,10 +188,12 @@ export function openPack(state: RngState, t: typeof TUNABLES = TUNABLES): [Pack,
     ;[car, rng] = pick(rng, CARS_BY_TIER.get(tier) ?? ALL_CARD_IDS)
     cars.push(finish(car))
   }
-  const modIds = MODS.map((mod) => mod.id)
   for (let i = 0; i < t.collection.packMods; i++) {
+    let roll: number
+    ;[roll, rng] = nextFloat(rng)
+    const rare = RARE_MOD_IDS.length > 0 && roll < t.collection.rareModOdds
     let mod: string
-    ;[mod, rng] = pick(rng, modIds)
+    ;[mod, rng] = pick(rng, rare ? RARE_MOD_IDS : COMMON_MOD_IDS)
     mods.push(finish(mod))
   }
   return [{ cars, mods }, rng]

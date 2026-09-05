@@ -256,6 +256,8 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 
 Boosts outnumber Sabotage roughly three to one. A few mods are type-locked and say so on the card. Some Boosts cost fuel to play, which is removed from the staged car when played, so fuel above the car's cost has a use.
 
+**Rarity and levels**: a mod is common unless the data marks it rare. A rare mod is capped where it matters: a deck holds at most one copy of it instead of three, and a mod slot in a pack holds a rare mod only 5% of the time, uniform among the rare mods, so it stays scarce even in a large collection. A level-2 mod is an upgraded version of a base mod, always rare, and its card names the base it upgrades. Fuel Drain, level 2 of Fuel Siphon, is the first; others can follow the same shape when a base effect deserves a stronger, scarcer copy. The card shows a gold Rare tag.
+
 **Starting mod set** (30 unique, all values tunable)
 
 Parts:
@@ -306,6 +308,7 @@ Sabotage, Pit:
 | Mod | Effect |
 |---|---|
 | Fuel Siphon | remove 1 fuel from the opponent's staged car |
+| Fuel Drain | remove 2 fuel from the opponent's staged car. Rare; level 2 of Fuel Siphon |
 | Parts Thief | discard one Part from the opponent's staged car, their choice |
 | Roadblock | opponent cannot play a Boost on their next turn |
 | Bad Tune | opponent's staged car gains 1 wear |
@@ -316,7 +319,7 @@ Sabotage, Pit:
 
 ### 3.1 Setup
 
-1. Each player brings a garage of exactly 5 cars and a mod deck of 30 cards. Max 3 copies of any mod.
+1. Each player brings a garage of exactly 5 cars and a mod deck of 30 cards. Max 3 copies of any mod, 1 of a rare mod.
 2. Garages are face up for the whole match, including fuel, parts, and wear on every car. Hands are hidden.
 3. Each player shuffles their mod deck and draws 5.
 4. Coin flip decides who goes first.
@@ -386,8 +389,10 @@ Every value here is a starting point. Phase 5 runs the simulator and adjusts the
 | Pack contents | 2 cars, 3 mods | phase 11 |
 | Car tier odds in a pack | 55 / 30 / 12 / 3 (Common, Uncommon, Rare, Ultra Rare) | phase 11; rarity labels mean something |
 | Foil and holo odds per pack card | 10% foil, 2% holo | phase 12; a foil most packs, a holo now and then |
+| Rare mod odds per pack mod slot | 5% | rare mods stay rare |
 | Pink slips to win | 3 | |
 | Mod deck size | 30 | |
+| Copies of a rare mod per deck | 1 | common mods stay at 3 |
 | Hand size at start | 5 | |
 | Draw per turn | 1 | |
 | Copies of one mod | 3 | |
@@ -599,7 +604,7 @@ Added in phase 11. Before it, every card was unlocked.
 - The collection is per browser, in `localStorage` next to the garages, through the same try/catch wrapper. It holds a count per card id, cars and mods alike.
 - A fresh browser owns every card in the three starter garages, with as many copies of a mod as the starter deck that uses it most, so the starters always rebuild. Everything else has to be opened: 46 of the 84 cards are owned at the start.
 - Finishing a match against the CPU or an online opponent earns 1 pack; winning it earns 2. A hotseat match earns 1. Packs wait in a stack until opened, either from the pop-up that follows the winner banner and the result screen right after a match, or from the Collection screen, which shows every card, owned ones in color with their counts, unowned ones dimmed.
-- A pack holds 2 cars and 3 mods. Car odds follow the tier's rarity label: Common 55%, Uncommon 30%, Rare 12%, Ultra Rare 3%. Mods are uniform across all 32. Duplicates count.
+- A pack holds 2 cars and 3 mods. Car odds follow the tier's rarity label: Common 55%, Uncommon 30%, Rare 12%, Ultra Rare 3%. Common mods are uniform across the 32; each mod slot has a 5% chance to hold a rare mod instead, uniform among the rare ones. Duplicates count.
 - The deck builder adds only owned cards: a car needs one copy, and a mod can go in up to the smaller of 3 and the copies owned. Its messages say what is missing. Racing is untouched: the engine's match config is card ids only, and a saved garage stays raceable.
 - Migration: the first load after phase 11 grants every card in an already saved garage, once. The grant is written back at once, so it never repeats.
 - Pack opening runs through the engine's seeded generator with a fresh seed per pack, so it is testable and the simulator can measure it.

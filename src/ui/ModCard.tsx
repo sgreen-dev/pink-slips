@@ -55,6 +55,13 @@ export function ModCard({
         <div className="mod__cost">Costs {mod.fuelCost} fuel</div>
       ) : null}
       {mod.typeLock && <div className="mod__lock">{mod.typeLock.toUpperCase()} only</div>}
+      {mod.level !== undefined && mod.level > 1 && (
+        <div className="mod__level">
+          Level {mod.level}
+          {mod.upgradeOf ? ` · upgrades ${getMod(mod.upgradeOf).name}` : ''}
+        </div>
+      )}
+      {mod.rarity === 'rare' && <span className="mod__rare">Rare</span>}
       {note && <div className="mod__why">{note}</div>}
       {variant !== 'base' && (
         <span className={`mod__variant mod__variant--${variant}`}>{VARIANT_LABEL[variant]}</span>

@@ -13,6 +13,7 @@ export {
   stagedCar,
 } from './match.ts'
 export {
+  copyLimit,
   gainsWearFromWinning,
   isTractionImmune,
   openSlots,

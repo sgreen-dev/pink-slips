@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { CARS } from '../data/cars.ts'
-import { MODS } from '../data/mods.ts'
+import { MODS, modRarity } from '../data/mods.ts'
 import { STARTERS } from '../data/starters.ts'
 import { TIERS, type Tier } from '../data/types.ts'
 import { createMatch, seedRng, TUNABLES } from '../engine/index.ts'
@@ -69,9 +69,13 @@ describe('packs', () => {
       expect(Math.abs(share - TUNABLES.collection.carTierOdds[tier]), tier).toBeLessThan(0.01)
     }
     const modDraws = 10_000 * TUNABLES.collection.packMods
+    const rare = MODS.filter((mod) => modRarity(mod) === 'rare')
+    const common = MODS.length - rare.length
+    const rareOdds = TUNABLES.collection.rareModOdds
     for (const mod of MODS) {
       const share = (modHits.get(mod.id) ?? 0) / modDraws
-      expect(Math.abs(share - 1 / MODS.length), mod.id).toBeLessThan(0.006)
+      const expected = modRarity(mod) === 'rare' ? rareOdds / rare.length : (1 - rareOdds) / common
+      expect(Math.abs(share - expected), mod.id).toBeLessThan(0.006)
     }
   })
 
@@ -87,6 +91,10 @@ describe('packs', () => {
 })
 
 describe('starter collection', () => {
+  it('does not own the rare Fuel Drain until a pack turns it up', () => {
+    expect(owns(starter, 'fuel-drain')).toBe(false)
+  })
+
   it('holds every starter card with enough copies to rebuild each starter', () => {
     for (const s of STARTERS) {
       for (const id of s.cars) expect(owns(starter, id), id).toBe(true)

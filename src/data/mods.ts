@@ -1,4 +1,4 @@
-import type { BoostMod, Mod, PartMod, SabotageMod } from './types.ts'
+import type { BoostMod, Mod, ModRarity, PartMod, SabotageMod } from './types.ts'
 
 /**
  * The starting mod set from DESIGN.md 2.5. All magnitudes are tunable and will be revisited
@@ -246,6 +246,17 @@ const SABOTAGE: readonly SabotageMod[] = [
     effects: [{ kind: 'removeFuel', target: 'opponent', count: 1 }],
   },
   {
+    id: 'fuel-drain',
+    name: 'Fuel Drain',
+    family: 'sabotage',
+    kind: 'pit',
+    text: "Remove 2 fuel from the opponent's staged car.",
+    effects: [{ kind: 'removeFuel', target: 'opponent', count: 2 }],
+    rarity: 'rare',
+    level: 2,
+    upgradeOf: 'fuel-siphon',
+  },
+  {
     id: 'parts-thief',
     name: 'Parts Thief',
     family: 'sabotage',
@@ -272,6 +283,10 @@ const SABOTAGE: readonly SabotageMod[] = [
 ]
 
 export const MODS: readonly Mod[] = [...PARTS, ...BOOSTS, ...SABOTAGE]
+
+export function modRarity(mod: Mod): ModRarity {
+  return mod.rarity ?? 'common'
+}
 
 export const MOD_BY_ID: ReadonlyMap<string, Mod> = new Map(MODS.map((mod) => [mod.id, mod]))
 

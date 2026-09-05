@@ -14,7 +14,7 @@ import {
   otherPlayer,
   stagedCar,
 } from './match.ts'
-import { playTurn, stage, stageBoth, starterConfig } from './test-helpers.ts'
+import { playTurn, scenario, stage, stageBoth, starterConfig } from './test-helpers.ts'
 import { TUNABLES } from './tunables.ts'
 import type { MatchState, PlayerIndex } from './types.ts'
 
@@ -482,5 +482,35 @@ describe('3.5 concede', () => {
     const over = concede(createMatch({ players: [...config().players] }, 6), 1)
     expect(concede(over, 0)).toBe(over)
     expect(isOver(over)).toBe(0)
+  })
+})
+
+describe('2.5 rare mods', () => {
+  it('3.1: a deck holds at most one copy of a rare mod', () => {
+    const base = starterConfig()
+    const [a, b] = base.players
+    const twoDrains = [...a.deck.slice(0, 28), 'fuel-drain', 'fuel-drain']
+    const oneDrain = [...a.deck.slice(0, 29), 'fuel-drain']
+    expect(() => createMatch({ players: [{ garage: a.garage, deck: twoDrains }, b] }, 1)).toThrow(
+      /more than 1 copies of fuel-drain/,
+    )
+    expect(() =>
+      createMatch({ players: [{ garage: a.garage, deck: oneDrain }, b] }, 1),
+    ).not.toThrow()
+  })
+
+  it('Fuel Drain removes 2 fuel and never goes below 0', () => {
+    const play = (fuel: number) => {
+      const state = scenario({
+        players: [
+          { cars: [{ id: 'ford-mustang-gt', fuel: 2 }], hand: ['fuel-drain'] },
+          { cars: [{ id: 'mazda-mx-5-miata', fuel }] },
+        ],
+      })
+      const next = apply(state, { type: 'playSabotage', player: 0, modId: 'fuel-drain' })
+      return stagedCar(next, 1)?.fuel
+    }
+    expect(play(3)).toBe(1)
+    expect(play(1)).toBe(0)
   })
 })

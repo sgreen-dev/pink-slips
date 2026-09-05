@@ -10,6 +10,7 @@ import {
   draftFrom,
   emptyDraft,
   garageOptions,
+  modCopyLimit,
   removeCar,
   removeMod,
   validateDraft,
@@ -59,6 +60,18 @@ describe('garage builder rules', () => {
     expect(errors).toContain(`Garage has 1 of ${TUNABLES.garageSize} cars.`)
     expect(errors).toContain(`Deck has 31 of ${TUNABLES.modDeckSize} cards.`)
     expect(errors.some((e) => e.startsWith('Turbo Kit has 31 copies'))).toBe(true)
+  })
+
+  it('caps a rare mod at one copy', () => {
+    expect(modCopyLimit('fuel-drain')).toBe(TUNABLES.maxCopiesPerRareMod)
+    expect(modCopyLimit('fuel-siphon')).toBe(TUNABLES.maxCopiesPerMod)
+    const two = {
+      ...draftFrom(streetKings, null),
+      deck: [...streetKings.deck.slice(0, 28), 'fuel-drain', 'fuel-drain'],
+    }
+    expect(validateDraft(two).errors).toContain('Fuel Drain has 2 copies; the limit is 1.')
+    const one = { ...two, deck: [...streetKings.deck.slice(0, 29), 'fuel-drain'] }
+    expect(validateDraft(one).errors).toEqual([])
   })
 
   it('warns about type-locked mods the garage cannot use', () => {

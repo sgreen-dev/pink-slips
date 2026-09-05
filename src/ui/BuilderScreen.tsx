@@ -193,7 +193,8 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
             </h2>
             {counts.size === 0 ? (
               <p className="builder__hint">
-                Add mods from the Mods tab. Up to {TUNABLES.maxCopiesPerMod} copies of each.
+                Add mods from the Mods tab. Up to {TUNABLES.maxCopiesPerMod} copies of each,{' '}
+                {TUNABLES.maxCopiesPerRareMod} of a rare mod.
               </p>
             ) : (
               <ul className="builder__deck">
@@ -344,7 +345,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
                 />
                 <p className="builder__hint">
                   Click a mod to add a copy to the deck, up to the copies you own and at most{' '}
-                  {TUNABLES.maxCopiesPerMod}.
+                  {TUNABLES.maxCopiesPerMod}, or {TUNABLES.maxCopiesPerRareMod} of a rare mod.
                 </p>
                 <div className="browse__grid">
                   {mods.map((mod) => {

@@ -2,7 +2,7 @@ import { CARS, getCar } from '../data/cars.ts'
 import { MODS } from '../data/mods.ts'
 import { STARTERS } from '../data/starters.ts'
 import type { Car, CarType, Tier } from '../data/types.ts'
-import { shuffle, TUNABLES, type PlayerConfig, type RngState } from '../engine/index.ts'
+import { copyLimit, shuffle, TUNABLES, type PlayerConfig, type RngState } from '../engine/index.ts'
 
 /** Garage generators for the simulator (DESIGN.md section 7). Every pick flows through the rng. */
 
@@ -19,15 +19,13 @@ function pick<T>(items: readonly T[], count: number, rng: RngState): [T[], RngSt
 }
 
 /**
- * A 30-card deck drawn at random from every mod the garage can use, at most 3 copies of each.
+ * A 30-card deck drawn at random from every mod the garage can use, up to each mod's copy limit.
  * Type-locked mods are in the pool only when the garage holds a car of that type.
  */
 export function randomDeck(garage: readonly string[], rng: RngState): [string[], RngState] {
   const types = new Set(garage.map((id) => getCar(id).type))
   const pool = MODS.filter((mod) => !mod.typeLock || types.has(mod.typeLock))
-  const copies = pool.flatMap((mod) =>
-    Array.from({ length: TUNABLES.maxCopiesPerMod }, () => mod.id),
-  )
+  const copies = pool.flatMap((mod) => Array.from({ length: copyLimit(mod.id) }, () => mod.id))
   return pick(copies, TUNABLES.modDeckSize, rng)
 }
 

@@ -3,7 +3,7 @@ import { CAR_BY_ID, getCar } from '../data/cars.ts'
 import { MOD_BY_ID, getMod } from '../data/mods.ts'
 import { STARTERS } from '../data/starters.ts'
 import type { ModFamily } from '../data/types.ts'
-import { TUNABLES } from '../engine/index.ts'
+import { copyLimit, TUNABLES } from '../engine/index.ts'
 import type { DraftRecord, SavedGarage } from './storage.ts'
 
 /**
@@ -50,12 +50,12 @@ export function deckCounts(deck: readonly string[]): Map<string, number> {
 
 /** Copies of a mod the deck may hold: the rule limit, or fewer if the player owns fewer. */
 export function modCopyLimit(modId: string, owned?: Collection): number {
-  const limit = TUNABLES.maxCopiesPerMod
+  const limit = copyLimit(modId)
   return owned ? Math.min(limit, copiesOwned(owned, modId)) : limit
 }
 
 export function validateDraft(draft: GarageDraft, owned?: Collection): Validation {
-  const { garageSize, modDeckSize, maxCopiesPerMod } = TUNABLES
+  const { garageSize, modDeckSize } = TUNABLES
   const errors: string[] = []
   const warnings: string[] = []
 
@@ -75,8 +75,10 @@ export function validateDraft(draft: GarageDraft, owned?: Collection): Validatio
     errors.push(`Deck has ${draft.deck.length} of ${modDeckSize} cards.`)
   }
   for (const [id, count] of deckCounts(draft.deck)) {
-    if (count > maxCopiesPerMod && MOD_BY_ID.has(id)) {
-      errors.push(`${getMod(id).name} has ${count} copies; the limit is ${maxCopiesPerMod}.`)
+    if (!MOD_BY_ID.has(id)) continue
+    const limit = copyLimit(id)
+    if (count > limit) {
+      errors.push(`${getMod(id).name} has ${count} copies; the limit is ${limit}.`)
     }
   }
 

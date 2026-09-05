@@ -38,6 +38,8 @@ export const TUNABLES = {
   startingHandSize: 5,
   drawPerTurn: 1,
   maxCopiesPerMod: 3,
+  /** Copies of a rare mod a deck may hold (DESIGN.md 2.5). */
+  maxCopiesPerRareMod: 1,
   boostsPerTurn: 1,
   sabotagePerTurn: 1,
   /** Type identity magnitudes from DESIGN.md 2.3. */
@@ -61,6 +63,8 @@ export const TUNABLES = {
     /** Chance that a pack card is foil, and that it is holo. Exclusive; the rest are base. */
     foilOdds: 0.1,
     holoOdds: 0.02,
+    /** Chance that each mod slot in a pack holds a rare mod instead of a common one. */
+    rareModOdds: 0.05,
     /** Odds that a car slot in a pack holds each tier. Must sum to 1. */
     carTierOdds: { daily: 0.55, performance: 0.3, super: 0.12, hyper: 0.03 } as Readonly<
       Record<Tier, number>

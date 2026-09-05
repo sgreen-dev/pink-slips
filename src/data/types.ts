@@ -129,6 +129,9 @@ export type ModEffect =
   // Randomness, through the engine's seeded generator (DESIGN.md 3.6)
   | { kind: 'coinFlip'; heads: readonly ModEffect[]; tails: readonly ModEffect[] }
 
+/** Common mods fill packs and decks freely; rare ones are capped in both (DESIGN.md 2.5). */
+export type ModRarity = 'common' | 'rare'
+
 interface ModBase {
   /** Unique kebab-case id, shared namespace with cars. */
   id: string
@@ -137,6 +140,12 @@ interface ModBase {
   text: string
   /** Playable only on or for cars of this type. */
   typeLock?: CarType
+  /** Absent means common. A rare mod is capped in packs and decks. */
+  rarity?: 'rare'
+  /** Absent means 1. A level-2 mod is an upgraded version of a base mod and is always rare. */
+  level?: number
+  /** The base mod a level-2 mod upgrades. */
+  upgradeOf?: string
   effects: readonly ModEffect[]
 }
 
