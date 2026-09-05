@@ -36,3 +36,6 @@ scripts/art/cache/
 
 # Music originals stay with the owner; the site ships the encoded copies in public/audio
 music/
+
+# Compiled Python from the art scripts
+__pycache__/

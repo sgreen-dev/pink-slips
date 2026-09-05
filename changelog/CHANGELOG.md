@@ -2,6 +2,10 @@
 
 Every change to Pink Slips, by the day it landed. Dates are commit dates, newest first. Each line ends with the commit that made the change, so anything here can be traced in the history. A phase entry names its phase from `BUILD_PLAN.md`; the commit that marks a phase done is listed with it. Every commit adds a line here under its day.
 
+## 2026-09-05
+
+- Owner-made car illustrations can be imported into the card art from game-images/cars, given the print look, and credited as the owner's own. (the commit that added this line)
+
 ## 2026-09-04
 
 - Phase 20 marked done in the build plan. (the commit that added this line)

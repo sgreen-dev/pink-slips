@@ -249,13 +249,14 @@ def credit_name(raw: str) -> str:
     return (first or raw.strip())[:60]
 
 
-def write_credits(credits: dict[str, dict[str, str]], names: dict[str, str]) -> None:
+def write_credits(credits: dict[str, dict], names: dict[str, str]) -> None:
     lines = [
         "# Card art credits",
         "",
-        "Each illustration is derived from a photograph on Wikimedia Commons, processed into the",
-        "card style. The illustrations are published under CC BY-SA 4.0; each source photograph's",
-        "own license is listed. Thank you to the photographers.",
+        "Each illustration is the owner's own or is derived from a photograph on Wikimedia Commons,",
+        "processed into the card style. The photograph-derived illustrations are published under",
+        "CC BY-SA 4.0, and each source photograph's own license is listed. Thank you to the",
+        "photographers.",
         "",
         "| Car id | Car | Photograph | Author | License |",
         "| --- | --- | --- | --- | --- |",
@@ -264,6 +265,9 @@ def write_credits(credits: dict[str, dict[str, str]], names: dict[str, str]) -> 
         if not (OUT / f"{car_id}.webp").exists():
             continue
         c = credits[car_id]
+        if c.get("owner"):
+            lines.append(f"| {car_id} | {names.get(car_id, car_id)} | Owner illustration | | |")
+            continue
         author = credit_name(c["author"])
         license_cell = f"[{c['license']}]({c['licenseUrl']})" if c["licenseUrl"] else c["license"]
         lines.append(
@@ -280,7 +284,7 @@ def main(only: list[str]) -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     CACHE.mkdir(exist_ok=True)
     names = car_names()
-    credits: dict[str, dict[str, str]] = (
+    credits: dict[str, dict] = (
         json.loads(CREDITS_DATA.read_text(encoding="utf-8")) if CREDITS_DATA.exists() else {}
     )
     with SOURCES.open(encoding="utf-8", newline="") as handle:
@@ -295,6 +299,9 @@ def main(only: list[str]) -> None:
         car_id = row["carId"].strip()
         if car_id not in names:
             raise SystemExit(f"{car_id}: not a car id in cars.ts")
+        if credits.get(car_id, {}).get("owner"):
+            print(f"{car_id}: owner illustration kept")
+            continue
         info = commons_info(row["commonsFile"].strip())
         suffix = Path(urllib.parse.urlparse(info["url"]).path).suffix or ".jpg"
         stamp = hashlib.sha1(info["title"].encode("utf-8")).hexdigest()[:8]
