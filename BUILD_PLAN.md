@@ -36,6 +36,7 @@
 | 17 | Player name filter | done | c8d7c96 |
 | 18 | Concede online | done | 7387ec2 |
 | 19 | Card detail view | done | 847ddad |
+| 20 | Stakes | todo | |
 
 ---
 
@@ -523,6 +524,30 @@
 
 ---
 
+## Phase 20 — Stakes
+
+**Goal**: an opt-in mode where every pink slip taken during a match changes hands for real, against the CPU and online, with starter cars exempt and both online seats consenting.
+
+**Design to record first** (`DESIGN.md` 12 Stakes, 13 Stakes online, 6 levels, 8 toggle): what moves and when; starters exempt; CPU at Street and Pro only; the browser applies it for a guest, the service for a signed-in player and for both online accounts; a friend room's first join sets stakes and later joins must match; hotseat left out.
+
+**Deliverables**
+
+- `src/collection/stakes.ts`: the transfer from a finished state, applying it to a collection, and the wire guard
+- The start screen and online screen toggles, the result screen's Stakes block, and the local match applying or reporting the transfer
+- The room's stakes flag set at first join or from the queue, the result's transfers, the queue pairing only equal flags, and the directory applying transfers for CPU and match results
+- The join and result messages carrying the flag and the transfer; the smoke script's `--stakes` flag
+
+**Tests**
+
+- Transfers both ways from a finished state, starters dropped, losses floored at zero, the guard rejecting bad shapes
+- The directory applying a CPU report once a minute and a match result to both accounts; the room refusing mismatched and guest joins and reporting transfers; the queue pairing stakes with stakes; the messages carrying the fields
+
+**Done when**: a CPU stakes match ends on a result screen with its Stakes block, the live smoke check pairs two stakes players and prints their transfers, and the tests pass.
+
+**Prompt**: Do phase 20 of BUILD_PLAN.md.
+
+---
+
 ## Backlog
 
 Anything new goes here first and becomes a phase when picked up. Items sit in value order within their tier, judged by how many players feel them and how often; a new item goes to the tier that fits, at the end. Numbers never change, since the design and past commits refer to them. A finished item leaves its tier for the Done list at the end, with the phase and the commits that closed it.
@@ -542,8 +567,6 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 
 ### Medium value: felt often by some players
 
-4. Optional stakes mode, off by default and hotseat only: a start-screen toggle under which a captured car changes hands for real, the winner's collection gaining it and the loser's losing one copy, with starter cards exempt so a garage can always be rebuilt. Today pink slips are match prizes only and the collection never shrinks; that stays the default. Needs a DESIGN.md section 12 addendum and a test that starter cards are never taken
-   *Why here:* Real tension for hotseat groups who want it; opt-in, so it costs nobody else.
 8. Deleting a player from the profile page: a two-step confirm, then the service removes the account, its sessions, its recovery code, and its leaderboard row, and the browser goes back to guest play with its local collection. Needs a `DELETE /me` route on the directory, a test that a deleted player cannot be recovered, and a `DESIGN.md` section 13 line
    *Why here:* Rare, but the one time it is wanted it matters, and a player should own their data.
 3. Seasonal starter garages built from the collection's most-opened cards
@@ -574,3 +597,5 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 19. Card detail view. Phase 19, 2026-09-04 (847ddad, edd5958).
 
 20. Music on phones started on the first tap most of the time but not every time. Resolved 2026-09-04: the tracks stream and start on the tap (0db037d, a7b193b).
+
+4. Stakes mode, in every mode but hotseat, with starter cars exempt. Phase 20, 2026-09-04 (HASH20).

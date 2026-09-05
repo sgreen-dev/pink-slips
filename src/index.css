@@ -1826,3 +1826,46 @@ h2 {
 .card-slot .mod__variant {
   right: 2rem;
 }
+
+/* Stakes: the toggle on the start and online screens, and the result screen's block. */
+.stakes {
+  display: grid;
+  gap: 0.2rem;
+  justify-items: center;
+  margin: 0.5rem 0;
+  text-align: center;
+}
+.stakes__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+.stakes__toggle input {
+  accent-color: var(--pink);
+  width: 1.1rem;
+  height: 1.1rem;
+}
+.stakes__toggle:has(input:disabled) {
+  opacity: 0.6;
+  cursor: default;
+}
+.stakes__note {
+  font-size: 0.85rem;
+  color: var(--muted);
+  max-width: 34rem;
+}
+.result__stakes {
+  margin: 0.75rem 0;
+}
+.result__stakes h2 {
+  color: var(--gold);
+  font-size: 1.1rem;
+  margin: 0 0 0.25rem;
+}
+.result__stakes p {
+  margin: 0.15rem 0;
+}

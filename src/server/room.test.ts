@@ -343,3 +343,75 @@ describe('concede in a room', () => {
     ])
   })
 })
+
+describe('stakes rooms', () => {
+  const ann = { accountId: 'acct-a', name: 'Ann' }
+  const bo = { accountId: 'acct-b', name: 'Bo' }
+  const joinAs = (
+    room: Room,
+    c: FakeClient,
+    index: number,
+    identity: { accountId: string; name: string } | null,
+    stakes: boolean,
+    others: FakeClient[],
+  ) => {
+    const raw = JSON.stringify({
+      type: 'join',
+      name: identity?.name ?? 'Guest',
+      garage: garage(index),
+      stakes,
+    })
+    const message = parseClientMessage(raw) as ClientMessage
+    const out = room.handle(c.seat, message, newToken, identity)
+    c.deliver(out, others)
+    return out.map((o) => o.message)
+  }
+
+  it('lets the first player set stakes, seats only matching signed-in players, and reports transfers', () => {
+    const room = new Room('STAKES', 5)
+    const a = new FakeClient(room)
+    const b = new FakeClient(room)
+    joinAs(room, a, 0, ann, true, [b])
+    expect(room.stakes).toBe(true)
+    const off = joinAs(room, b, 1, bo, false, [a])
+    expect(off[0]).toEqual({ type: 'error', reason: REASONS.stakesOn })
+    const guest = joinAs(room, b, 1, null, true, [a])
+    expect(guest[0]).toEqual({ type: 'error', reason: REASONS.stakesNeedsPlayer })
+    joinAs(room, b, 1, bo, true, [a])
+    expect(room.started).toBe(true)
+    playOut(a, b, 9)
+    const result = room.takeResult()
+    expect(result?.transfers).not.toBeNull()
+    expect(result?.transfers?.[0]).toEqual({ gained: [], lost: [] })
+    expect(new Room('R', 1, room.snapshot()).stakes).toBe(true)
+  })
+
+  it('refuses a guest who tries to open a stakes room, and a stakes player in a plain room', () => {
+    const room = new Room('PLAIN', 6)
+    const a = new FakeClient(room)
+    const b = new FakeClient(room)
+    expect(joinAs(room, a, 0, null, true, [b])[0]).toEqual({
+      type: 'error',
+      reason: REASONS.stakesNeedsPlayer,
+    })
+    joinAs(room, a, 0, null, false, [b])
+    expect(room.stakes).toBe(false)
+    expect(joinAs(room, b, 1, bo, true, [a])[0]).toEqual({
+      type: 'error',
+      reason: REASONS.stakesOff,
+    })
+    joinAs(room, b, 1, bo, false, [a])
+    playOut(a, b, 9)
+    expect(room.takeResult()?.transfers).toBeNull()
+  })
+
+  it("carries the queue's stakes flag through setup", () => {
+    const room = new Room('RANKED', 7)
+    const tickets: [Ticket, Ticket] = [
+      { ticket: 't1', identity: ann },
+      { ticket: 't2', identity: bo },
+    ]
+    expect(room.setup(tickets, true)).toBe(true)
+    expect(room.stakes).toBe(true)
+  })
+})

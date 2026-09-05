@@ -13,6 +13,8 @@ export interface Waiting {
   rating: number
   /** When the player joined the queue, in ms. */
   since: number
+  /** Stakes players pair only with each other. */
+  stakes?: boolean
 }
 
 /** One entry per account, the earliest kept, in waiting order. */
@@ -26,6 +28,7 @@ export function dedupe(entries: readonly Waiting[]): Waiting[] {
 }
 
 function compatible(a: Waiting, b: Waiting, now: number, strict: boolean, t: typeof TUNABLES) {
+  if ((a.stakes ?? false) !== (b.stakes ?? false)) return false
   if (!strict) return true
   const { pairWaitMs, pairWindow } = t.online
   const bothFresh = now - a.since < pairWaitMs && now - b.since < pairWaitMs

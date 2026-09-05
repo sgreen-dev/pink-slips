@@ -14,6 +14,8 @@ import { parseServerMessage, type ServerMessage } from '../src/protocol/messages
  */
 
 const endpoint = (process.argv[2] ?? 'http://localhost:8787').replace(/\/+$/, '')
+/** With --stakes both players queue for stakes and each side's transfer is printed. */
+const stakes = process.argv.includes('--stakes')
 const socketBase = endpoint.replace(/^http/, 'ws')
 
 interface Player {
@@ -43,7 +45,9 @@ function listen(ws: WebSocket, onMessage: (message: ServerMessage) => void): voi
 /** Waits in the queue until the service names a room and a ticket. */
 function queue(player: Player): Promise<{ code: string; ticket: string; opponent: string }> {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(`${socketBase}/queue?session=${encodeURIComponent(player.token)}`)
+    const ws = new WebSocket(
+      `${socketBase}/queue?session=${encodeURIComponent(player.token)}${stakes ? '&stakes=1' : ''}`,
+    )
     const timer = setTimeout(() => reject(new Error(`${player.name} waited too long`)), 60_000)
     listen(ws, (message) => {
       if (message.type === 'error') reject(new Error(message.reason))
@@ -79,7 +83,7 @@ function play(player: Player, code: string, ticket: string, seed: number): Promi
     )
     ws.addEventListener('open', () => {
       const garage = { garage: starter.cars, deck: starter.deck }
-      ws.send(JSON.stringify({ type: 'join', name: player.name, garage, ticket }))
+      ws.send(JSON.stringify({ type: 'join', stakes, name: player.name, garage, ticket }))
     })
     listen(ws, (message) => {
       if (message.type === 'error') reject(new Error(`${player.name}: ${message.reason}`))
@@ -93,6 +97,7 @@ function play(player: Player, code: string, ticket: string, seed: number): Promi
         ws.send(JSON.stringify({ type: 'act', action }))
       }
       if (message.type === 'result' && seat !== null) {
+        if (stakes) console.log(`${player.name}: stakes ${JSON.stringify(message.stakes)}`)
         clearTimeout(timer)
         ws.close()
         resolve({ seat, packs: message.packsEarned, rating: message.rating, winner })

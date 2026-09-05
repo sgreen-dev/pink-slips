@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useReducer, useRef, useState } from
 import { packsEarned } from '../collection/collection.ts'
 import { addPacks, loadCollection } from '../collection/persist.ts'
 import { currentPlayer, isOver, type Action, type PlayerIndex } from '../engine/index.ts'
+import { EMPTY_TRANSFER, type Transfer } from '../collection/stakes.ts'
 import { AccountContext, fetchMe } from './account.ts'
 import { Board } from './Board.tsx'
 import { isModPlay } from './celebration.ts'
@@ -49,6 +50,7 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
   const recorded = useRef(false)
   const [earned, setEarned] = useState(0)
   const [note, setNote] = useState<string | null>(null)
+  const [settled, setSettled] = useState<Transfer | null>(null)
   const [copied, setCopied] = useState(false)
   // Leave during a started match concedes, behind a confirm.
   const [conceding, setConceding] = useState(false)
@@ -64,7 +66,8 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
     })
     client.current = room
     if (entry.token) room.resume(entry.token)
-    else if (entry.garage) room.join(entry.name, entry.garage, entry.ticket ?? undefined)
+    else if (entry.garage)
+      room.join(entry.name, entry.garage, entry.ticket ?? undefined, entry.stakes)
     room.connect()
     return () => {
       client.current = null
@@ -91,8 +94,13 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
   const result = session.result
   useEffect(() => {
     if (winner === null || seat === null || recorded.current) return
-    const settle = (packs: number | null, rating: { before: number; after: number } | null) => {
+    const settle = (
+      packs: number | null,
+      rating: { before: number; after: number } | null,
+      stakes: Transfer | null = null,
+    ) => {
       recorded.current = true
+      setSettled(stakes)
       clearOnlineSeat()
       // One count per match: the first seat reports it.
       if (seat === 0) void recordMatch()
@@ -111,7 +119,7 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
       setNote(rating ? `Rating ${rating.before} → ${rating.after}` : null)
     }
     if (result) {
-      settle(result.packsEarned, result.rating)
+      settle(result.packsEarned, result.rating, result.stakes)
       return
     }
     const timer = setTimeout(() => settle(null, null), RESULT_GRACE_MS)
@@ -199,6 +207,7 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
           title={headline(winner)}
           note={note}
           packsEarned={earned}
+          stakes={entry.stakes ? (settled ?? EMPTY_TRANSFER) : null}
           rematchLabel={entry.ticket ? 'Play again' : 'New room'}
           onRematch={onAgain}
           onNewMatch={onLeave}

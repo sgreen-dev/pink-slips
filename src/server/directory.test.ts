@@ -1,3 +1,4 @@
+import { STARTERS } from '../data/starters.ts'
 import { describe, expect, it } from 'vitest'
 import { NO_VARIANTS, ownedCount, starterCollection } from '../collection/collection.ts'
 import { TUNABLES } from '../engine/index.ts'
@@ -213,8 +214,8 @@ describe('directory', () => {
     const expected = updateRatings(TUNABLES.online.ratingStart, TUNABLES.online.ratingStart)
     const outcome = await directory.recordResult(a, b, true)
     expect(outcome).toEqual({
-      winner: { packs: packsPerCpuWin, rating: expected.winner },
-      loser: { packs: packsPerMatch, rating: expected.loser },
+      winner: { packs: packsPerCpuWin, rating: expected.winner, stakes: null },
+      loser: { packs: packsPerMatch, rating: expected.loser, stakes: null },
     })
     expect((await directory.load(a))?.wins).toBe(1)
     expect((await directory.load(b))?.losses).toBe(1)
@@ -224,7 +225,7 @@ describe('directory', () => {
     // An unranked room between friends: packs, no rating.
     const before = (await directory.load(a))?.rating
     const friendly = await directory.recordResult(a, b, false)
-    expect(friendly.winner).toEqual({ packs: packsPerCpuWin, rating: null })
+    expect(friendly.winner).toEqual({ packs: packsPerCpuWin, rating: null, stakes: null })
     expect((await directory.load(a))?.rating).toBe(before)
     expect((await directory.load(a))?.wins).toBe(1)
     // A match given up before any race moves ratings but pays no packs.
@@ -235,7 +236,7 @@ describe('directory', () => {
     // A guest on one side earns nothing here; the account still does.
     const solo = await directory.recordResult(null, a, true)
     expect(solo.winner).toBeNull()
-    expect(solo.loser).toEqual({ packs: packsPerMatch, rating: null })
+    expect(solo.loser).toEqual({ packs: packsPerMatch, rating: null, stakes: null })
   })
 
   it('ranks the leaderboard by rating among players with a record', async () => {
@@ -266,5 +267,56 @@ describe('directory', () => {
     await directory.signOut(fresh.token)
     expect(await directory.accountFor(fresh.token)).toBeNull()
     expect(NO_VARIANTS).toEqual({ foil: {}, holo: {} })
+  })
+})
+
+describe('stakes on the service', () => {
+  const CHIRON = 'bugatti-chiron'
+  const F40 = 'ferrari-f40'
+
+  it('applies a CPU stakes report once a minute, real cars only, starters exempt', async () => {
+    const { directory, tick } = setUp()
+    const { token } = await directory.createPlayer('Ann')
+    const starter = STARTERS[0]?.cars[0] ?? ''
+    const first = await directory.cpuResult(token, 'cpu', true, {
+      gained: [CHIRON, starter, 'no-such-car'],
+      lost: [F40],
+    })
+    expect(first?.stakes).toEqual({ gained: [CHIRON], lost: [F40] })
+    expect(first?.data.collection.owned[CHIRON]).toBe(1)
+    expect(first?.data.collection.owned[starter]).toBe(1)
+    // Within the minute nothing more is applied, packs or cars.
+    const repeat = await directory.cpuResult(token, 'cpu', true, { gained: [CHIRON], lost: [] })
+    expect(repeat?.stakes).toBeNull()
+    expect(repeat?.data.collection.owned[CHIRON]).toBe(1)
+    tick(CPU_RESULT_GAP_MS)
+    const loss = await directory.cpuResult(token, 'cpu', false, { gained: [], lost: [CHIRON] })
+    expect(loss?.stakes).toEqual({ gained: [], lost: [CHIRON] })
+    expect(loss?.data.collection.owned[CHIRON]).toBe(0)
+    tick(CPU_RESULT_GAP_MS)
+    // Hotseat has no stakes, whatever the client sends.
+    const hotseat = await directory.cpuResult(token, 'hotseat', true, { gained: [F40], lost: [] })
+    expect(hotseat?.stakes).toBeNull()
+    expect(hotseat?.data.collection.owned[F40]).toBeUndefined()
+  })
+
+  it('moves the pink slips between two accounts at a match result', async () => {
+    const { directory } = setUp()
+    const ann = await directory.createPlayer('Ann')
+    const bo = await directory.createPlayer('Bo')
+    const annId = (await directory.accountFor(ann.token))?.id ?? ''
+    const boId = (await directory.accountFor(bo.token))?.id ?? ''
+    const outcome = await directory.recordResult(annId, boId, true, true, {
+      winner: { gained: [CHIRON, F40], lost: [] },
+      loser: { gained: [], lost: [CHIRON, F40] },
+    })
+    expect(outcome.winner?.stakes).toEqual({ gained: [CHIRON, F40], lost: [] })
+    expect(outcome.loser?.stakes).toEqual({ gained: [], lost: [CHIRON, F40] })
+    const annNow = await directory.accountFor(ann.token)
+    const boNow = await directory.accountFor(bo.token)
+    expect(annNow?.collection.owned[CHIRON]).toBe(1)
+    expect(boNow?.collection.owned[CHIRON] ?? 0).toBe(0)
+    const plain = await directory.recordResult(annId, boId, true, true)
+    expect(plain.winner?.stakes).toBeNull()
   })
 })

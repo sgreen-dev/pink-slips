@@ -35,6 +35,7 @@ type Screen =
   | { kind: 'profile' }
   | {
       kind: 'match'
+      stakes: boolean
       mode: Mode
       config: MatchConfig
       names: [string, string]
@@ -136,8 +137,8 @@ export function App() {
     page = (
       <StartScreen
         key={generation}
-        onStart={(mode, config, names, level) =>
-          setScreen({ kind: 'match', mode, config, names, level, seed: newSeed() })
+        onStart={(mode, config, names, level, stakes) =>
+          setScreen({ kind: 'match', mode, config, names, level, stakes, seed: newSeed() })
         }
         onBuilder={() => setScreen({ kind: 'builder' })}
         onCollection={() => setScreen({ kind: 'collection' })}
@@ -180,6 +181,7 @@ export function App() {
         seed={screen.seed}
         names={screen.names}
         level={screen.level}
+        stakes={screen.stakes}
         onRematch={() => setScreen({ ...screen, seed: newSeed() })}
         onNewMatch={toStart}
         onExit={toStart}

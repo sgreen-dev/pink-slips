@@ -1,7 +1,13 @@
 import { useCallback, useContext, useEffect, useReducer, useRef, useState } from 'react'
 import { packsEarned } from '../collection/collection.ts'
 import type { Level } from '../cpu/index.ts'
-import { addPacks, loadCollection } from '../collection/persist.ts'
+import { addPacks, loadCollection, saveCollection } from '../collection/persist.ts'
+import {
+  applyTransfer,
+  EMPTY_TRANSFER,
+  stakesTransfer,
+  type Transfer,
+} from '../collection/stakes.ts'
 import {
   currentPlayer,
   isOver,
@@ -37,6 +43,8 @@ interface MatchProps {
   names: readonly [string, string]
   /** CPU difficulty; ignored in hotseat. */
   level: Level
+  /** Captured cars change hands for real at the end (DESIGN.md 12); CPU matches only. */
+  stakes: boolean
   onRematch: () => void
   onNewMatch: () => void
   /** Leaves the match without finishing it; nothing is counted. */
@@ -53,6 +61,7 @@ export function Match({
   seed,
   names,
   level,
+  stakes,
   onRematch,
   onNewMatch,
   onExit,
@@ -92,21 +101,30 @@ export function Match({
   }, [cpu, state, raceEnd, seed, level])
 
   const winner = isOver(state)
+  // Under stakes the human seat's transfer is a pure read of the finished state.
+  const transfer: Transfer | null =
+    stakes && cpu && winner !== null ? stakesTransfer(state)[HUMAN_SEAT] : null
+  const [serverSettled, setServerSettled] = useState<Transfer | null>(null)
   useEffect(() => {
     if (winner === null || recorded.current) return
     recorded.current = true
     void recordMatch()
     const won = winner === HUMAN_SEAT
     if (account) {
-      void reportCpuResult(account.endpoint, account.token, mode, won).then((result) => {
+      void reportCpuResult(account.endpoint, account.token, mode, won, transfer).then((result) => {
         if (!result) return
         account.update(result.data)
         setGranted(result.packs)
+        setServerSettled(result.stakes)
       })
     } else {
       addPacks(packsEarned(mode, won))
+      if (transfer) {
+        const current = loadCollection()
+        saveCollection({ ...current, owned: applyTransfer(current.owned, transfer) })
+      }
     }
-  }, [winner, mode, account])
+  }, [winner, mode, account, transfer])
   const earned =
     winner === null ? 0 : account ? (granted ?? 0) : packsEarned(mode, winner === HUMAN_SEAT)
 
@@ -122,6 +140,13 @@ export function Match({
           names={names}
           title={headline(winner)}
           packsEarned={earned}
+          stakes={
+            stakes && cpu
+              ? account
+                ? (serverSettled ?? EMPTY_TRANSFER)
+                : (transfer ?? EMPTY_TRANSFER)
+              : null
+          }
           onRematch={onRematch}
           onNewMatch={onNewMatch}
         />

@@ -12,6 +12,7 @@ import {
   type Pack,
   type VariantCounts,
 } from '../collection/collection.ts'
+import { applyTransfer, sanitizeTransfer, type Transfer } from '../collection/stakes.ts'
 import { seedRng, TUNABLES } from '../engine/index.ts'
 import {
   CODE_ALPHABET,
@@ -96,6 +97,8 @@ export interface LeaderboardRow {
 export interface SideOutcome {
   packs: number
   rating: RatingChange | null
+  /** What the account's collection gained and lost under stakes, or null. */
+  stakes: Transfer | null
 }
 
 export interface MatchOutcome {
@@ -358,22 +361,30 @@ export class Directory {
     token: string,
     mode: unknown,
     won: unknown,
-  ): Promise<{ packs: number; data: AccountData } | null> {
+    stakes: unknown = null,
+  ): Promise<{ packs: number; stakes: Transfer | null; data: AccountData } | null> {
     const account = await this.accountFor(token)
     if (!account) return null
-    if (mode !== 'cpu' && mode !== 'hotseat') return { packs: 0, data: this.dataOf(account) }
+    if (mode !== 'cpu' && mode !== 'hotseat') {
+      return { packs: 0, stakes: null, data: this.dataOf(account) }
+    }
     const now = this.now()
     if (now - account.lastCpuResultAt < CPU_RESULT_GAP_MS) {
-      return { packs: 0, data: this.dataOf(account) }
+      return { packs: 0, stakes: null, data: this.dataOf(account) }
     }
     const packs = packsEarned(mode as Mode, won === true, this.t)
+    // Stakes against the CPU are trusted the way the result is: once a minute, real cars only.
+    const transfer = mode === 'cpu' ? sanitizeTransfer(stakes) : null
+    const owned = transfer
+      ? applyTransfer(account.collection.owned, transfer)
+      : account.collection.owned
     const next: Account = {
       ...account,
       lastCpuResultAt: now,
-      collection: { ...account.collection, packs: account.collection.packs + packs },
+      collection: { ...account.collection, packs: account.collection.packs + packs, owned },
     }
     await this.save(next)
-    return { packs, data: this.dataOf(next) }
+    return { packs, stakes: transfer, data: this.dataOf(next) }
   }
 
   /**
@@ -386,6 +397,7 @@ export class Directory {
     loserId: string | null,
     ranked: boolean,
     earnsPacks = true,
+    transfers: { winner: Transfer; loser: Transfer } | null = null,
   ): Promise<MatchOutcome> {
     const winner = winnerId ? await this.load(winnerId) : null
     const loser = loserId ? await this.load(loserId) : null
@@ -398,15 +410,19 @@ export class Directory {
       const packs = earnsPacks ? packsEarned('online', won, this.t) : 0
       const change = ratings ? (won ? ratings.winner : ratings.loser) : null
       if (rated && account.wins + account.losses === 0) newlyRated += 1
+      const transfer = transfers ? sanitizeTransfer(won ? transfers.winner : transfers.loser) : null
+      const owned = transfer
+        ? applyTransfer(account.collection.owned, transfer)
+        : account.collection.owned
       const next: Account = {
         ...account,
-        collection: { ...account.collection, packs: account.collection.packs + packs },
+        collection: { ...account.collection, packs: account.collection.packs + packs, owned },
         rating: change ? change.after : account.rating,
         wins: account.wins + (rated && won ? 1 : 0),
         losses: account.losses + (rated && !won ? 1 : 0),
       }
       await this.save(next)
-      return { packs, rating: change }
+      return { packs, rating: change, stakes: transfer }
     }
     outcome.winner = await settle(winner, true)
     outcome.loser = await settle(loser, false)

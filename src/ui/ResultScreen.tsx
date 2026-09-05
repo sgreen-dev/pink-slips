@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { carNames, isEmptyTransfer, type Transfer } from '../collection/stakes.ts'
 import type { MatchState, PlayerIndex } from '../engine/index.ts'
 import { CarCard } from './CarCard.tsx'
 import { PackDialog } from './PackDialog.tsx'
@@ -13,6 +14,8 @@ interface ResultScreenProps {
   note?: string | null
   /** Packs this match added to the collection. */
   packsEarned: number
+  /** What changed hands under stakes, or null when the match played for none. */
+  stakes?: Transfer | null
   /** Text on the first button; online play offers a new room instead of a rematch. */
   rematchLabel?: string
   onRematch: () => void
@@ -30,6 +33,7 @@ export function ResultScreen({
   title,
   note = null,
   packsEarned,
+  stakes = null,
   rematchLabel = 'Rematch',
   onRematch,
   onNewMatch,
@@ -71,6 +75,19 @@ export function ResultScreen({
               </button>
             )}
           </p>
+        )}
+        {stakes && (
+          <section className="result__stakes">
+            <h2>Stakes</h2>
+            {isEmptyTransfer(stakes) ? (
+              <p>Nothing changed hands. Starter cars never do.</p>
+            ) : (
+              <>
+                {stakes.gained.length > 0 && <p>You keep {carNames(stakes.gained)}.</p>}
+                {stakes.lost.length > 0 && <p>You lost {carNames(stakes.lost)}.</p>}
+              </>
+            )}
+          </section>
         )}
         <section className="result__slips">
           <h2>{names[winner]}&rsquo;s pink slips</h2>

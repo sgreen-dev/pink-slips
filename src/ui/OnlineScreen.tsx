@@ -23,6 +23,8 @@ export interface OnlineEntry {
   garage: PlayerConfig | null
   token: string | null
   ticket: string | null
+  /** The player's stakes toggle, sent with the join and the queue. */
+  stakes: boolean
 }
 
 interface OnlineScreenProps {
@@ -42,6 +44,7 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
   const [code, setCode] = useState(prefillCode ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [stakes, setStakes] = useState(false)
   const [queue, setQueue] = useState<QueueStatus | null>(null)
   const [waited, setWaited] = useState(0)
   const queueClient = useRef<QueueClient | null>(null)
@@ -60,7 +63,7 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
       setError('The room service did not answer. Try again in a moment.')
       return
     }
-    onPlay({ code: fresh, name: cleanName, garage: config(), token: null, ticket: null })
+    onPlay({ code: fresh, name: cleanName, garage: config(), token: null, ticket: null, stakes })
   }
   const join = () => {
     const clean = normalizeCode(code)
@@ -68,7 +71,7 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
       setError('A room code is six letters and numbers, like ABC234.')
       return
     }
-    onPlay({ code: clean, name: cleanName, garage: config(), token: null, ticket: null })
+    onPlay({ code: clean, name: cleanName, garage: config(), token: null, ticket: null, stakes })
   }
   const forget = () => {
     clearOnlineSeat()
@@ -85,7 +88,7 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
     if (!account || queueClient.current) return
     setError(null)
     setWaited(0)
-    const client = new QueueClient(queueUrl(endpoint, account.token), {
+    const client = new QueueClient(queueUrl(endpoint, account.token, stakes), {
       onStatus: (status) => {
         setQueue(status)
         if (status === 'closed') {
@@ -102,6 +105,7 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
           garage: config(),
           token: null,
           ticket: matched.ticket,
+          stakes,
         })
       },
     })
@@ -143,6 +147,7 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
                 garage: null,
                 token: saved.token,
                 ticket: null,
+                stakes: false,
               })
             }
           >
@@ -166,6 +171,22 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
       <div className="start__pickers start__pickers--one">
         <GaragePicker label="Your garage" options={options} value={garage} onChange={setGarage} />
       </div>
+      {account && (
+        <div className="stakes">
+          <label className="stakes__toggle">
+            <input
+              type="checkbox"
+              checked={stakes}
+              onChange={(event) => setStakes(event.target.checked)}
+            />
+            Play for stakes
+          </label>
+          <span className="stakes__note">
+            Captured cars change hands for real, both ways; starter cars never do. Both players need
+            it on.
+          </span>
+        </div>
+      )}
       <section className="online__queue">
         <h2>Ranked</h2>
         {account ? (

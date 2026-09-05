@@ -27,6 +27,14 @@ describe('rating', () => {
 })
 
 describe('queue', () => {
+  it('pairs stakes players only with each other', () => {
+    const plain = { accountId: 'p', rating: 1000, since: 1000 }
+    const stakes = { accountId: 's', rating: 1000, since: 1000, stakes: true }
+    const other = { accountId: 't', rating: 1000, since: 1500, stakes: true }
+    expect(pickPair([plain, stakes], 4000, 0)).toBeNull()
+    expect(pickPair([plain, stakes, other], 4000, 0)?.map((w) => w.accountId)).toEqual(['s', 't'])
+  })
+
   const at = (accountId: string, since: number, rating = 1000): Waiting => ({
     accountId,
     rating,

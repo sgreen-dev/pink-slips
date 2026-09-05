@@ -13,7 +13,13 @@ import { SoundButton } from './sound/SoundButton.tsx'
 import { loadGarages } from './storage.ts'
 
 interface StartScreenProps {
-  onStart: (mode: Mode, config: MatchConfig, names: [string, string], level: Level) => void
+  onStart: (
+    mode: Mode,
+    config: MatchConfig,
+    names: [string, string],
+    level: Level,
+    stakes: boolean,
+  ) => void
   onBuilder: () => void
   onCollection: () => void
   /** Absent when no room service is configured, which hides the online button. */
@@ -40,6 +46,9 @@ export function StartScreen({
   const rules = useRef<HTMLDialogElement>(null)
   const [mode, setMode] = useState<Mode>('cpu')
   const [level, setLevel] = useState<Level>('street')
+  const [stakes, setStakes] = useState(false)
+  // Stakes need a real opponent's collection to move cars with and a level that cannot be farmed.
+  const stakesAllowed = mode === 'cpu' && level !== 'rookie'
   const [first, setFirst] = useState(0)
   const [second, setSecond] = useState(1)
   const [confirmOut, setConfirmOut] = useState(false)
@@ -61,6 +70,7 @@ export function StartScreen({
         ? [account?.data.profile.name ?? 'Player', `${LEVEL_LABEL[level]} CPU`]
         : ['Player 1', 'Player 2'],
       level,
+      stakesAllowed && stakes,
     )
   }
   return (
@@ -172,6 +182,24 @@ export function StartScreen({
             </button>
           ))}
           <span className="start__level-note">{LEVEL_BLURB[level]}</span>
+        </div>
+      )}
+      {mode === 'cpu' && (
+        <div className="stakes">
+          <label className="stakes__toggle">
+            <input
+              type="checkbox"
+              checked={stakesAllowed && stakes}
+              disabled={!stakesAllowed}
+              onChange={(event) => setStakes(event.target.checked)}
+            />
+            Play for stakes
+          </label>
+          <span className="stakes__note">
+            {stakesAllowed
+              ? 'Captured cars change hands for real, both ways. Starter cars never do.'
+              : 'Stakes need the Street or Pro CPU.'}
+          </span>
         </div>
       )}
       <div className="start__pickers">

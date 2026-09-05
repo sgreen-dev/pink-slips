@@ -8,6 +8,7 @@ import {
 } from '../src/protocol/messages.ts'
 import { safeDisplayName } from '../src/protocol/names.ts'
 import { Directory, type Store } from '../src/server/directory.ts'
+import { sanitizeTransfer, type Transfer } from '../src/collection/stakes.ts'
 import { pickPair, type Waiting } from '../src/server/queue.ts'
 import { Room, type RoomSnapshot, type SeatIdentity, type Ticket } from '../src/server/room.ts'
 
@@ -34,6 +35,15 @@ interface QueueAttachment extends Waiting {
   name: string
   /** Set once the queue has handed this socket a match. */
   matched?: boolean
+}
+
+/** The two transfers a finished stakes room posts, each kept to real cars outside the starters. */
+function readTransfers(value: unknown): { winner: Transfer; loser: Transfer } | null {
+  if (typeof value !== 'object' || value === null) return null
+  const record = value as Record<string, unknown>
+  const winner = sanitizeTransfer(record['winner'])
+  const loser = sanitizeTransfer(record['loser'])
+  return winner && loser ? { winner, loser } : null
 }
 
 const ALLOWED_ORIGINS = [
@@ -255,6 +265,7 @@ export class AccountDirectory extends DurableObject<Env> {
         typeof loserId === 'string' ? loserId : null,
         body?.['ranked'] === true,
         body?.['earnsPacks'] !== false,
+        readTransfers(body?.['transfers']),
       )
       return json(outcome)
     }
@@ -301,7 +312,12 @@ export class AccountDirectory extends DurableObject<Env> {
     }
     if (path === '/me/cpu-result' && request.method === 'POST') {
       const body = (await readJson(request)) as Record<string, unknown> | null
-      const result = await this.directory.cpuResult(token, body?.['mode'], body?.['won'])
+      const result = await this.directory.cpuResult(
+        token,
+        body?.['mode'],
+        body?.['won'],
+        body?.['stakes'],
+      )
       return result ? json(result, 200, headers) : text('', 401, headers)
     }
     return text('Not found', 404, headers)
@@ -320,6 +336,7 @@ export class AccountDirectory extends DurableObject<Env> {
       name: account.name,
       rating: account.rating,
       since: Date.now(),
+      stakes: new URL(request.url).searchParams.get('stakes') === '1',
     }
     server.serializeAttachment(waiting)
     send(server, { type: 'waiting' })
@@ -359,7 +376,7 @@ export class AccountDirectory extends DurableObject<Env> {
       const room = this.env.ROOMS.get(this.env.ROOMS.idFromName(code))
       const setUp = await room.fetch('https://room/setup', {
         method: 'POST',
-        body: JSON.stringify({ code, tickets }),
+        body: JSON.stringify({ code, tickets, stakes: first.stakes ?? false }),
       })
       if (!setUp.ok) break
       const paired = new Set([first.accountId, second.accountId])
@@ -400,10 +417,14 @@ export class MatchRoom extends DurableObject<Env> {
   override async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url)
     if (url.pathname === '/setup' && request.method === 'POST') {
-      const body = (await readJson(request)) as { code?: string; tickets?: [Ticket, Ticket] } | null
+      const body = (await readJson(request)) as {
+        code?: string
+        tickets?: [Ticket, Ticket]
+        stakes?: boolean
+      } | null
       if (!body?.code || !body.tickets) return text('Bad setup', 400)
       if (!this.room) this.room = new Room(body.code, this.seed())
-      if (!this.room.setup(body.tickets)) return text('Room in use', 409)
+      if (!this.room.setup(body.tickets, body.stakes === true)) return text('Room in use', 409)
       await this.persist()
       return new Response(null, { status: 204 })
     }
@@ -458,10 +479,13 @@ export class MatchRoom extends DurableObject<Env> {
   private async report(room: Room): Promise<void> {
     const result = room.takeResult()
     if (!result) return
-    let outcome = { winner: null, loser: null } as {
-      winner: { packs: number; rating: { before: number; after: number } | null } | null
-      loser: { packs: number; rating: { before: number; after: number } | null } | null
-    }
+    type Side = {
+      packs: number
+      rating: { before: number; after: number } | null
+      stakes: Transfer | null
+    } | null
+    let outcome = { winner: null, loser: null } as { winner: Side; loser: Side }
+    const loserSeat = result.winnerSeat === 0 ? 1 : 0
     if (result.winner || result.loser) {
       const response = await directoryOf(this.env).fetch('https://directory/internal/result', {
         method: 'POST',
@@ -470,20 +494,24 @@ export class MatchRoom extends DurableObject<Env> {
           loserId: result.loser?.accountId ?? null,
           ranked: result.ranked,
           earnsPacks: !result.conceded || result.racesPlayed > 0,
+          transfers: result.transfers
+            ? { winner: result.transfers[result.winnerSeat], loser: result.transfers[loserSeat] }
+            : null,
         }),
       })
       if (response.ok) outcome = (await response.json()) as typeof outcome
     }
-    const loserSeat = result.winnerSeat === 0 ? 1 : 0
     this.broadcast(result.winnerSeat, {
       type: 'result',
       packsEarned: outcome.winner?.packs ?? null,
       rating: outcome.winner?.rating ?? null,
+      stakes: outcome.winner?.stakes ?? null,
     })
     this.broadcast(loserSeat, {
       type: 'result',
       packsEarned: outcome.loser?.packs ?? null,
       rating: outcome.loser?.rating ?? null,
+      stakes: outcome.loser?.stakes ?? null,
     })
   }
 

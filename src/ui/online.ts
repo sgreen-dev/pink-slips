@@ -173,8 +173,14 @@ export class RoomClient {
     socket.addEventListener('error', () => this.dropped(socket))
   }
 
-  join(name: string, garage: PlayerConfig, ticket?: string): void {
-    this.introduce(ticket ? { type: 'join', name, garage, ticket } : { type: 'join', name, garage })
+  join(name: string, garage: PlayerConfig, ticket?: string, stakes = false): void {
+    this.introduce({
+      type: 'join',
+      name,
+      garage,
+      ...(ticket ? { ticket } : {}),
+      ...(stakes ? { stakes: true } : {}),
+    })
   }
 
   resume(token: string): void {

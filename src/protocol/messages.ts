@@ -1,3 +1,4 @@
+import type { Transfer } from '../collection/stakes.ts'
 import type { Action, MatchState, PlayerConfig, PlayerIndex } from '../engine/index.ts'
 import { MAX_NAME_LENGTH, safeDisplayName } from './names.ts'
 
@@ -12,6 +13,8 @@ export interface JoinMessage {
   garage: PlayerConfig
   /** From a matched message; a ranked room seats only ticket holders. */
   ticket?: string
+  /** The player's stakes toggle: a room's first join sets it and later joins must match. */
+  stakes?: boolean
 }
 
 export interface ResumeMessage {
@@ -76,6 +79,8 @@ export interface ResultMessage {
   /** Packs the account was given, or null for a guest, who keeps the local rule. */
   packsEarned: number | null
   rating: RatingChange | null
+  /** What the seat's collection gained and lost under stakes, or null when the room played for none. */
+  stakes: Transfer | null
 }
 
 /** The queue found an opponent; join the room with the ticket. */
@@ -115,6 +120,14 @@ function isRatingChange(value: unknown): value is RatingChange {
   )
 }
 
+function isStringList(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string')
+}
+
+function isTransferShape(value: unknown): value is Transfer {
+  return isRecord(value) && isStringList(value['gained']) && isStringList(value['lost'])
+}
+
 /** Shape check only; the room checks legality against the match. */
 function isAction(value: unknown): value is Action {
   if (!isRecord(value)) return false
@@ -140,8 +153,11 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
       const trimmed = safeDisplayName(name)
       const ticket = value['ticket']
       if (ticket !== undefined && typeof ticket !== 'string') return null
+      const stakes = value['stakes']
+      if (stakes !== undefined && typeof stakes !== 'boolean') return null
       const join: JoinMessage = { type: 'join', name: trimmed || 'Player', garage: value['garage'] }
-      return ticket === undefined ? join : { ...join, ticket }
+      const seated = ticket === undefined ? join : { ...join, ticket }
+      return stakes === true ? { ...seated, stakes: true } : seated
     }
     case 'resume':
       return typeof value['token'] === 'string' ? { type: 'resume', token: value['token'] } : null
@@ -195,10 +211,13 @@ export function parseServerMessage(raw: unknown): ServerMessage | null {
       const rating = value['rating']
       if (packs !== null && typeof packs !== 'number') return null
       if (rating !== null && !isRatingChange(rating)) return null
+      const stakes = value['stakes'] ?? null
+      if (stakes !== null && !isTransferShape(stakes)) return null
       return {
         type: 'result',
         packsEarned: packs as number | null,
         rating: rating as RatingChange | null,
+        stakes: stakes as Transfer | null,
       }
     }
     case 'matched':

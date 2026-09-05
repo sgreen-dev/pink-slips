@@ -11,6 +11,7 @@ import {
   type PlayerConfig,
   type PlayerIndex,
 } from '../engine/index.ts'
+import { stakesTransfer, type Transfer } from '../collection/stakes.ts'
 import type { ClientMessage, ServerMessage } from '../protocol/messages.ts'
 
 /**
@@ -51,6 +52,8 @@ export interface RoomSnapshot {
   reported?: boolean
   /** States from before each mod play in the current mod step, with the seat that played. */
   history?: readonly { seat: PlayerIndex; state: MatchState }[]
+  /** True when the room plays for stakes (DESIGN.md 12). */
+  stakes?: boolean
 }
 
 export interface Outbound {
@@ -69,6 +72,8 @@ export interface RoomResult {
   conceded: boolean
   /** Races that reached the line, so a match given up before any race earns nothing. */
   racesPlayed: number
+  /** Each seat's stakes transfer, seat 0 first, or null when the room played for none. */
+  transfers: readonly [Transfer, Transfer] | null
 }
 
 export const REASONS = {
@@ -83,6 +88,9 @@ export const REASONS = {
   illegal: 'That move is not legal right now.',
   over: 'The match is over.',
   nothingToUndo: 'There is no mod play of yours to take back.',
+  stakesOn: 'This room plays for stakes. Turn stakes on to join it.',
+  stakesOff: 'This room does not play for stakes. Turn stakes off to join it.',
+  stakesNeedsPlayer: 'Stakes need a signed-in player on both seats. Create a player first.',
 } as const
 
 function isModPlay(action: Action): boolean {
@@ -99,6 +107,7 @@ export class Room {
   private tickets: [Ticket, Ticket] | null
   private reported: boolean
   private history: { seat: PlayerIndex; state: MatchState }[]
+  private forStakes: boolean
   readonly code: string
   readonly seed: number
 
@@ -110,6 +119,7 @@ export class Room {
     this.tickets = snapshot?.tickets ? [snapshot.tickets[0], snapshot.tickets[1]] : null
     this.reported = snapshot?.reported ?? false
     this.history = snapshot?.history ? [...snapshot.history] : []
+    this.forStakes = snapshot?.stakes ?? false
   }
 
   snapshot(): RoomSnapshot {
@@ -121,6 +131,7 @@ export class Room {
       tickets: this.tickets ? [...this.tickets] : null,
       reported: this.reported,
       history: [...this.history],
+      stakes: this.forStakes,
     }
   }
 
@@ -132,10 +143,15 @@ export class Room {
     return this.tickets !== null
   }
 
+  get stakes(): boolean {
+    return this.forStakes
+  }
+
   /** Reserves the seats for two ticket holders. Only an empty, unstarted room can be set up. */
-  setup(tickets: readonly [Ticket, Ticket]): boolean {
+  setup(tickets: readonly [Ticket, Ticket], stakes = false): boolean {
     if (this.state || this.seats[0] || this.seats[1] || this.tickets) return false
     this.tickets = [tickets[0], tickets[1]]
+    this.forStakes = stakes
     return true
   }
 
@@ -196,7 +212,7 @@ export class Room {
 
   private join(
     from: PlayerIndex | null,
-    message: { name: string; garage: PlayerConfig; ticket?: string },
+    message: { name: string; garage: PlayerConfig; ticket?: string; stakes?: boolean },
     newToken: () => string,
     identity: SeatIdentity | null,
   ): Outbound[] {
@@ -219,6 +235,20 @@ export class Room {
       return [fail(REASONS.full)]
     }
     if (!legalGarage(message.garage)) return [fail(REASONS.badGarage)]
+    // A friend room's first player sets its stakes; everyone after must match, and a stakes
+    // room seats only signed-in players, since only an account can gain or lose a car.
+    if (!this.tickets) {
+      const wants = message.stakes === true
+      const empty = this.seats[0] === null && this.seats[1] === null
+      if (empty) {
+        if (wants && !who) return [fail(REASONS.stakesNeedsPlayer)]
+        this.forStakes = wants
+      } else if (wants !== this.forStakes) {
+        return [fail(this.forStakes ? REASONS.stakesOn : REASONS.stakesOff)]
+      } else if (this.forStakes && !who) {
+        return [fail(REASONS.stakesNeedsPlayer)]
+      }
+    }
     const token = newToken()
     this.seats[seat] = { name, garage: message.garage, token, connected: true, identity: who }
     const out: Outbound[] = [
@@ -320,6 +350,7 @@ export class Room {
       winnerSeat: winner,
       conceded: this.state.log.at(-1)?.kind === 'concede',
       racesPlayed: this.state.players[0].pinkSlips.length + this.state.players[1].pinkSlips.length,
+      transfers: this.forStakes ? stakesTransfer(this.state) : null,
     }
   }
 }
