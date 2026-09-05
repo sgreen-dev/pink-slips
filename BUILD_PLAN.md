@@ -35,7 +35,7 @@
 | 16 | Sound | done | 8847fb6 |
 | 17 | Player name filter | done | c8d7c96 |
 | 18 | Concede online | done | 7387ec2 |
-| 19 | Card detail view | todo | |
+| 19 | Card detail view | done | 847ddad |
 
 ---
 
