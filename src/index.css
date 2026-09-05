@@ -1720,8 +1720,8 @@ h2 {
 .card__info,
 .mod__info {
   position: absolute;
-  top: 0.35rem;
-  right: 0.35rem;
+  top: -0.25rem;
+  right: -0.25rem;
   width: 1.35rem;
   height: 1.35rem;
   padding: 0;
