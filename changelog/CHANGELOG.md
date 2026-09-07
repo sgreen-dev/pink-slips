@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-07
 
+- The owner-made effect recordings were taken out; every effect is synthesized again, as in phase 16, with the recording path kept for later. (the commit that added this line)
 - The per-type launch recordings and the code that chose them were taken out; every car launches with the general recording again, to be revisited. (the commit that added this line)
 
 ## 2026-09-06
