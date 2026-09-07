@@ -26,7 +26,7 @@ import sys
 import time
 from pathlib import Path
 
-from PIL import Image, ImageFilter, ImageOps
+from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKDROP = (0xF3, 0xE7, 0xC9)
@@ -139,6 +139,34 @@ def edge_colour(picture: Image.Image) -> tuple[int, int, int]:
 TRACK_SIZE = (1024, 128)
 
 
+def key_out_background(rgba: Image.Image) -> Image.Image:
+    """
+    Makes an icon's background transparent: every near-white or pale-grey pixel that connects
+    to the picture's border, so a faked transparency checkerboard goes too while a white shape
+    inside the mark stays. A picture that already carries transparency is left alone.
+    """
+    if rgba.getchannel("A").getextrema()[0] < 255:
+        return rgba
+    marker = (255, 0, 255)
+    probe = rgba.convert("RGB")
+    w, h = probe.size
+    seeds = [(0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1), (w // 2, 0), (w // 2, h - 1), (0, h // 2), (w - 1, h // 2)]
+    for seed in seeds:
+        r, g, b = probe.getpixel(seed)
+        if min(r, g, b) >= 200 and max(r, g, b) - min(r, g, b) <= 24:
+            ImageDraw.floodfill(probe, seed, marker, thresh=64)
+    pixels = probe.load()
+    alpha = Image.new("L", (w, h), 255)
+    alpha_pixels = alpha.load()
+    for y in range(h):
+        for x in range(w):
+            if pixels[x, y] == marker:
+                alpha_pixels[x, y] = 0
+    out = rgba.copy()
+    out.putalpha(alpha)
+    return out
+
+
 def fit(picture: Image.Image, spec: dict, name: str = "") -> Image.Image:
     size = spec["size"]
     if spec["fit"] == "keep":
@@ -186,6 +214,25 @@ def fit(picture: Image.Image, spec: dict, name: str = "") -> Image.Image:
             return out
 
         return pad_horizontal(pad_vertical(flat, size[1]), size[0])
+    if spec["fit"] == "contain":
+        # An icon: background keyed out, the mark cropped to its bounds with a small margin,
+        # then fitted whole into the square on transparency.
+        rgba = key_out_background(ImageOps.exif_transpose(picture).convert("RGBA"))
+        bbox = rgba.getchannel("A").getbbox()
+        if bbox:
+            margin = round(max(bbox[2] - bbox[0], bbox[3] - bbox[1]) * 0.04)
+            rgba = rgba.crop(
+                (
+                    max(0, bbox[0] - margin),
+                    max(0, bbox[1] - margin),
+                    min(rgba.width, bbox[2] + margin),
+                    min(rgba.height, bbox[3] + margin),
+                )
+            )
+        rgba.thumbnail(size, Image.Resampling.LANCZOS)
+        canvas = Image.new("RGBA", size, (0, 0, 0, 0))
+        canvas.alpha_composite(rgba, ((size[0] - rgba.width) // 2, (size[1] - rgba.height) // 2))
+        return canvas
     return ImageOps.fit(flatten(picture), size, Image.Resampling.LANCZOS)
 
 

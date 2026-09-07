@@ -59,6 +59,20 @@ export const BACKDROPS: readonly string[] = [
   'start-screen2',
   'track',
 ]
-export const ICONS: readonly string[] = []
+export const ICONS: readonly string[] = [
+  'family-boost',
+  'family-part',
+  'family-sabotage',
+  'fuel',
+  'pack',
+  'pink-slip',
+  'type-ev',
+  'type-jdm',
+  'type-luxury',
+  'type-muscle',
+  'type-offroad',
+  'type-sports',
+  'wear',
+]
 /** Bumped by every import, so browsers fetch changed files under the same names. */
-export const ART_VERSION = '20260905060801'
+export const ART_VERSION = '20260907014731'
