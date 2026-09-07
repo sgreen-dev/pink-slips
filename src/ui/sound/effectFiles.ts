@@ -5,6 +5,12 @@
  */
 export const EFFECT_FILES: readonly string[] = [
   'advance',
+  'advance-ev',
+  'advance-jdm',
+  'advance-luxury',
+  'advance-muscle',
+  'advance-offroad',
+  'advance-sports',
   'boost',
   'coin',
   'deflect',
@@ -21,4 +27,4 @@ export const EFFECT_FILES: readonly string[] = [
   'yourTurn',
 ]
 /** Bumped by every encode, so browsers fetch changed files under the same names. */
-export const EFFECTS_VERSION = '20260907022455'
+export const EFFECTS_VERSION = '20260907031244'

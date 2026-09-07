@@ -2,6 +2,10 @@
 
 Every change to Pink Slips, by the day it landed. Dates are commit dates, newest first. Each line ends with the commit that made the change, so anything here can be traced in the history. A phase entry names its phase from `BUILD_PLAN.md`; the commit that marks a phase done is listed with it. Every commit adds a line here under its day.
 
+## 2026-09-07
+
+- Every car type launches with its own owner-made recording: sports, luxury, muscle, JDM, EV, and off-road. (the commit that added this line)
+
 ## 2026-09-06
 
 - A launch can play a recording made for the car's type, one per type, with the general advance recording as the fallback. (the commit that added this line)
