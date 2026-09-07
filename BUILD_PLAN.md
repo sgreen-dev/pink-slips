@@ -38,7 +38,7 @@
 | 19 | Card detail view | done | 83f5775 |
 | 21 | Owner artwork, part 1: mod illustrations, frames, card back | done | 30e467d |
 | 22 | Owner artwork, part 2: backdrops, track, icons and tokens | done | 30e467d |
-| 23 | Owner-made sound effects | todo | |
+| 23 | Owner-made sound effects | done | c2516f2 |
 | 20 | Stakes | done | 312f4d8 |
 
 ---
