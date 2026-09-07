@@ -46,9 +46,9 @@ export function SoundProvider({ children }: { children: ReactNode }) {
 
   const effects = settings.effects
   const play = useCallback(
-    (name: SoundName, intensity = 1, variant?: string) => {
+    (name: SoundName, intensity = 1) => {
       if (!effects) return
-      playEffect(name, intensity, variant)
+      playEffect(name, intensity)
       player.duck()
       setPlayed((n) => n + 1)
     },

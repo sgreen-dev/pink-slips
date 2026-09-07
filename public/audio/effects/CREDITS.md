@@ -7,12 +7,6 @@ file here is synthesized by the game itself.
 
 | File | Where it plays |
 | --- | --- |
-| advance-ev.mp3 | An EV's advance, in place of the general one |
-| advance-jdm.mp3 | A JDM car's advance, in place of the general one |
-| advance-luxury.mp3 | A Luxury car's advance, in place of the general one |
-| advance-muscle.mp3 | A Muscle car's advance, in place of the general one |
-| advance-offroad.mp3 | An Off-road car's advance, in place of the general one |
-| advance-sports.mp3 | A Sports car's advance, in place of the general one |
 | advance.mp3 | A car's advance; pitch and level follow the distance |
 | boost.mp3 | Playing a Boost |
 | coin.mp3 | A coin flip |

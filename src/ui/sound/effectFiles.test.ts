@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { EFFECT_FILES } from './effectFiles.ts'
-import { isEffectFile } from './sfx.ts'
+import { SOUND_NAMES } from './sfx.ts'
 
 const FOLDER = fileURLToPath(new URL('../../../public/audio/effects', import.meta.url))
 
@@ -25,7 +25,7 @@ describe('owner-made effects', () => {
     if (names.length === 0) return
     const credits = readFileSync(join(FOLDER, 'CREDITS.md'), 'utf8')
     for (const name of names) {
-      expect(isEffectFile(name), `${name} is not an effect`).toBe(true)
+      expect(SOUND_NAMES.includes(name as never), `${name} is not an effect`).toBe(true)
       expect(
         statSync(join(FOLDER, `${name}.mp3`)).size,
         `${name} is over budget`,

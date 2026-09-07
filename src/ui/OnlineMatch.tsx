@@ -83,7 +83,7 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
     if (view === null) return
     const events = soundsBetween(heard.current ?? beforeStart(view), view, seat)
     heard.current = view
-    for (const event of events) sound.play(event.name, event.intensity, event.variant)
+    for (const event of events) sound.play(event.name, event.intensity)
   }, [view, seat, sound])
   useEffect(() => {
     if (token !== null && seat !== null) saveOnlineSeat({ code, token, seat, name: entry.name })

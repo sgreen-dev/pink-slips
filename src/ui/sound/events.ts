@@ -1,4 +1,3 @@
-import { getCar } from '../../data/cars.ts'
 import { TUNABLES, type MatchState, type PlayerIndex } from '../../engine/index.ts'
 import type { SoundName } from './sfx.ts'
 
@@ -12,8 +11,6 @@ export interface SoundEvent {
   name: SoundName
   /** For the launch: how far the car went, from 0 to 1. */
   intensity?: number
-  /** For the launch: the car's type, so a recording made for that type can play. */
-  variant?: string
 }
 
 /** A launch across half the track is a full-strength one. */
@@ -27,26 +24,19 @@ export function soundsBetween(
   const added = next.log.slice(previous.log.length)
   const events: SoundEvent[] = []
   const seen = new Set<SoundName>()
-  const push = (name: SoundName, intensity?: number, variant?: string) => {
+  const push = (name: SoundName, intensity?: number) => {
     if (name !== 'advance') {
       if (seen.has(name)) return
       seen.add(name)
     }
-    const event: SoundEvent = { name }
-    if (intensity !== undefined) event.intensity = intensity
-    if (variant !== undefined) event.variant = variant
-    events.push(event)
+    events.push(intensity === undefined ? { name } : { name, intensity })
   }
   const over = added.some((entry) => entry.kind === 'matchEnd' || entry.kind === 'concede')
   for (const entry of added) {
     if (entry.kind === 'stage') push('stage')
     else if (entry.kind === 'fuel') push('fuel')
     else if (entry.kind === 'advance') {
-      push(
-        'advance',
-        Math.min(1, Math.max(0, (entry.toFt - entry.fromFt) / FULL_LAUNCH_FT)),
-        getCar(entry.carId).type,
-      )
+      push('advance', Math.min(1, Math.max(0, (entry.toFt - entry.fromFt) / FULL_LAUNCH_FT)))
     } else if (entry.kind === 'advanceSkipped') push('stall')
     else if (entry.kind === 'playBoost') push('boost')
     else if (entry.kind === 'playPart') push('part')

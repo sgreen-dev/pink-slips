@@ -85,7 +85,7 @@ export function Match({
   useEffect(() => {
     const events = soundsBetween(heard.current, state, cpu ? HUMAN_SEAT : null)
     heard.current = state
-    for (const event of events) sound.play(event.name, event.intensity, event.variant)
+    for (const event of events) sound.play(event.name, event.intensity)
   }, [state, cpu, sound])
 
   // The CPU acts one step at a time and waits while the race-end banner is up.

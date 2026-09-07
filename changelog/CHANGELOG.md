@@ -4,11 +4,10 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-07
 
-- Every car type launches with its own owner-made recording: sports, luxury, muscle, JDM, EV, and off-road. (the commit that added this line)
+- The per-type launch recordings and the code that chose them were taken out; every car launches with the general recording again, to be revisited. (the commit that added this line)
 
 ## 2026-09-06
 
-- A launch can play a recording made for the car's type, one per type, with the general advance recording as the fallback. (the commit that added this line)
 - All fifteen sound effects play owner-made recordings, decoded from the moment the page loads. (the commit that added this line)
 - Phase 23 marked done in the build plan. (the commit that added this line)
 - Phase 23, owner-made sound effects: each effect plays a recording when its file exists and the synthesized recipe otherwise, with an encoder that trims, normalises, and cuts the owner's WAVs to MP3 and a generated list of what is present. (the commit that added this line)
