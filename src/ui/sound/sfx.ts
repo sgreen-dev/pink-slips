@@ -1,8 +1,11 @@
+import { EFFECT_FILES, EFFECTS_VERSION } from './effectFiles.ts'
+
 /**
- * Sound effects (DESIGN.md 8), all synthesized: no files, no licences, one style. Every
- * effect is a short recipe of oscillators, filtered noise, and gain envelopes on one
- * AudioContext that exists only after the first gesture. Without Web Audio, or before the
- * unlock, every call is a no-op.
+ * Sound effects (DESIGN.md 8). Each effect is an owner-made recording when its file exists,
+ * fetched and decoded once after the first gesture, and otherwise a short synthesized recipe
+ * of oscillators, filtered noise, and gain envelopes, so the set can be replaced one sound at a
+ * time. Everything plays on one AudioContext that exists only after the first gesture; without
+ * Web Audio, or before the unlock, every call is a no-op.
  */
 
 export type SoundName =
@@ -80,7 +83,50 @@ export function unlockEffects(): boolean {
   const ctx = audioContext()
   if (!ctx) return false
   if (ctx.state === 'suspended') void ctx.resume()
+  loadEffectFiles(ctx)
   return true
+}
+
+const recordings = new Map<SoundName, AudioBuffer>()
+let loadingStarted = false
+
+/** Fetches and decodes every owner-made effect once, in the background; failures keep the recipe. */
+function loadEffectFiles(ctx: AudioContext): void {
+  if (loadingStarted) return
+  loadingStarted = true
+  for (const name of EFFECT_FILES) {
+    if (!SOUND_NAMES.includes(name as SoundName)) continue
+    const url = `${import.meta.env.BASE_URL}audio/effects/${name}.mp3?v=${EFFECTS_VERSION}`
+    void fetch(url)
+      .then((response) =>
+        response.ok ? response.arrayBuffer() : Promise.reject(new Error(String(response.status))),
+      )
+      .then((data) => ctx.decodeAudioData(data))
+      .then((buffer) => {
+        recordings.set(name as SoundName, buffer)
+      })
+      .catch(() => {
+        // The synthesized recipe plays instead.
+      })
+  }
+}
+
+/** How many owner-made effects are listed and how many have decoded, for the debug readout. */
+export function effectsSnapshot(): { files: number; decoded: number } {
+  return { files: EFFECT_FILES.length, decoded: recordings.size }
+}
+
+/** Plays a recording; the launch's intensity, when given, bends its pitch and level. */
+function playRecording(buffer: AudioBuffer, launch: number | null): void {
+  if (!context || !master) return
+  const source = context.createBufferSource()
+  source.buffer = buffer
+  source.playbackRate.value = launch === null ? 1 : 0.85 + 0.3 * launch
+  const gain = context.createGain()
+  gain.gain.value = launch === null ? 0.9 : 0.6 + 0.4 * launch
+  source.connect(gain)
+  gain.connect(master)
+  source.start()
 }
 
 export function effectsReady(): boolean {
@@ -173,6 +219,11 @@ const NOTE = { g4: 392, c5: 523.25, e5: 659.25, g5: 783.99, c6: 1046.5 }
 export function playEffect(name: SoundName, intensity = 1): void {
   if (!context || !master) return
   const level = Math.min(1, Math.max(0, intensity))
+  const recording = recordings.get(name)
+  if (recording) {
+    playRecording(recording, name === 'advance' ? level : null)
+    return
+  }
   switch (name) {
     case 'stage':
       tone({ from: 90, to: 55, duration: 0.2, gain: 0.7 })

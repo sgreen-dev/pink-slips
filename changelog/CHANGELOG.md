@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-06
 
+- Phase 23, owner-made sound effects: each effect plays a recording when its file exists and the synthesized recipe otherwise, with an encoder that trims, normalises, and cuts the owner's WAVs to MP3 and a generated list of what is present. (the commit that added this line)
 - Owner-made icons and tokens land: type badges, family marks, the fuel token, the wear mark, the pink slip emblem, and the pack emblem; icon backgrounds are keyed out on import and each mark cropped to its bounds. (the commit that added this line)
 
 ## 2026-09-05

@@ -38,6 +38,7 @@
 | 19 | Card detail view | done | 83f5775 |
 | 21 | Owner artwork, part 1: mod illustrations, frames, card back | done | 30e467d |
 | 22 | Owner artwork, part 2: backdrops, track, icons and tokens | done | 30e467d |
+| 23 | Owner-made sound effects | todo | |
 | 20 | Stakes | done | 312f4d8 |
 
 ---
@@ -586,6 +587,27 @@
 **Done when**: the game renders as before with no files and the tests pass; the owner's files land afterwards.
 
 **Prompt**: Do phase 22 of BUILD_PLAN.md.
+
+---
+
+## Phase 23 — Owner-made sound effects
+
+**Goal**: each of the fifteen effects plays an owner-made recording when its file exists and the synthesized recipe otherwise, so the set can be replaced one sound at a time.
+
+**Design to record first** (`DESIGN.md` 8, Sound, and 9): sources outside the repository, the encoder's trimming, normalising, and length per effect, the credits note, the generated list with its version, the launch's intensity on a recording.
+
+**Deliverables**
+
+- `scripts/audio/encode_effects.py` and the generated `src/ui/sound/effectFiles.ts`
+- The effects module fetching and decoding listed files after the first gesture and playing them in place of the recipes; the debug readout's decoded count
+
+**Tests**
+
+- The list equals the files present; every file is an effect the game plays, under 64 KB, and credited
+
+**Done when**: the game sounds as before with no files, a check run of the encoder trims, cuts, and normalises two synthetic recordings in the scratchpad, and the tests pass. The owner's recordings land afterwards.
+
+**Prompt**: Do phase 23 of BUILD_PLAN.md.
 
 ---
 
