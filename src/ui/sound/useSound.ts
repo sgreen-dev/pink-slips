@@ -7,7 +7,7 @@ export interface SoundHandle {
   settings: SoundSettings
   setSettings: (next: SoundSettings) => void
   /** Plays an effect when effects are on and audio is unlocked. */
-  play: (name: SoundName, intensity?: number) => void
+  play: (name: SoundName, intensity?: number, variant?: string) => void
   /** Tells the music which scene is on screen; a change starts the next track. */
   setScene: (scene: Scene) => void
   /** Effects played so far, for checks that cannot listen. */

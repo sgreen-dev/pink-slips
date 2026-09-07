@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { getCar } from '../../data/cars.ts'
 import { createMatch, isOver, type MatchState } from '../../engine/index.ts'
 import { playOutRandomly, starterConfig } from '../../engine/test-helpers.ts'
 import { beforeStart, shuffleOrder, soundsBetween } from './events.ts'
@@ -40,10 +41,15 @@ describe('soundsBetween', () => {
         const names = events.map((e) => e.name)
         advances += added.filter((e) => e.kind === 'advance').length
         launches += events.filter((e) => e.name === 'advance').length
+        const advanced = added.filter((e) => e.kind === 'advance')
+        let launch = 0
         for (const event of events) {
           if (event.name === 'advance') {
             expect(event.intensity).toBeGreaterThanOrEqual(0)
             expect(event.intensity).toBeLessThanOrEqual(1)
+            const entry = advanced[launch++]
+            expect(entry?.kind).toBe('advance')
+            if (entry?.kind === 'advance') expect(event.variant).toBe(getCar(entry.carId).type)
           }
         }
         if (added.some((e) => e.kind === 'advanceSkipped')) expect(names).toContain('stall')

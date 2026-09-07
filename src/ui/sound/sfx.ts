@@ -1,3 +1,4 @@
+import { CAR_TYPES } from '../../data/types.ts'
 import { EFFECT_FILES, EFFECTS_VERSION } from './effectFiles.ts'
 
 /**
@@ -89,7 +90,15 @@ export function unlockEffects(): boolean {
   return true
 }
 
-const recordings = new Map<SoundName, AudioBuffer>()
+/** Recordings a car type can have of its own: the advance, one per type. */
+export const EFFECT_VARIANTS: readonly string[] = CAR_TYPES.map((type) => `advance-${type}`)
+
+/** True for a file name the game would play: an effect or one of its variants. */
+export function isEffectFile(name: string): boolean {
+  return SOUND_NAMES.includes(name as SoundName) || EFFECT_VARIANTS.includes(name)
+}
+
+const recordings = new Map<string, AudioBuffer>()
 let loadingStarted = false
 
 /** Fetches and decodes every owner-made effect once, in the background; failures keep the recipe. */
@@ -97,7 +106,7 @@ function loadEffectFiles(ctx: AudioContext): void {
   if (loadingStarted) return
   loadingStarted = true
   for (const name of EFFECT_FILES) {
-    if (!SOUND_NAMES.includes(name as SoundName)) continue
+    if (!isEffectFile(name)) continue
     const url = `${import.meta.env.BASE_URL}audio/effects/${name}.mp3?v=${EFFECTS_VERSION}`
     void fetch(url)
       .then((response) =>
@@ -105,7 +114,7 @@ function loadEffectFiles(ctx: AudioContext): void {
       )
       .then((data) => ctx.decodeAudioData(data))
       .then((buffer) => {
-        recordings.set(name as SoundName, buffer)
+        recordings.set(name, buffer)
       })
       .catch(() => {
         // The synthesized recipe plays instead.
@@ -217,11 +226,16 @@ function burst(spec: Burst): void {
 
 const NOTE = { g4: 392, c5: 523.25, e5: 659.25, g5: 783.99, c6: 1046.5 }
 
-/** Plays one effect. `intensity` from 0 to 1 scales the launch; other sounds ignore it. */
-export function playEffect(name: SoundName, intensity = 1): void {
+/**
+ * Plays one effect. `intensity` from 0 to 1 scales the launch; other sounds ignore it. A
+ * `variant`, the car's type on a launch, prefers a recording named for it, then the effect's
+ * own recording, then the recipe.
+ */
+export function playEffect(name: SoundName, intensity = 1, variant?: string): void {
   if (!context || !master) return
   const level = Math.min(1, Math.max(0, intensity))
-  const recording = recordings.get(name)
+  const recording =
+    (variant ? recordings.get(`${name}-${variant}`) : undefined) ?? recordings.get(name)
   if (recording) {
     playRecording(recording, name === 'advance' ? level : null)
     return
