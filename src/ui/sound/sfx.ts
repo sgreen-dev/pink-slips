@@ -75,6 +75,8 @@ export function audioContext(): AudioContext | null {
     context = null
     return null
   }
+  // Recordings decode fine in a suspended context, so they load from the first moment.
+  loadEffectFiles(context)
   return context
 }
 
