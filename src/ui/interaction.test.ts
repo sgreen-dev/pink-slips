@@ -5,6 +5,7 @@ import { scenario } from '../engine/test-helpers.ts'
 import {
   buttonActions,
   carIntents,
+  handedOver,
   modIntent,
   NO_SELECTION,
   prompt,
@@ -141,5 +142,13 @@ describe('stagedFirst', () => {
     expect(stagedFirst(garage, null)).toBe(garage)
     expect(stagedFirst(garage, 'zzz')).toBe(garage)
     expect(garage.map((c) => c.carId)).toEqual(['a', 'b', 'c', 'd'])
+  })
+  it('notices the hand-over when the viewer stops acting', () => {
+    const mine = board([], 'fuel')
+    const theirs = { ...mine, turn: { ...mine.turn, player: 1 as const } }
+    expect(handedOver(mine, theirs, 0)).toBe(true)
+    expect(handedOver(mine, mine, 0)).toBe(false)
+    expect(handedOver(theirs, mine, 0)).toBe(false)
+    expect(handedOver(theirs, mine, 1)).toBe(true)
   })
 })

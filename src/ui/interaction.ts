@@ -107,6 +107,11 @@ export function buttonActions(state: MatchState, player: PlayerIndex): Action[] 
   )
 }
 
+/** True when the viewer was acting before and is not now: their turn, or their staging, ended. */
+export function handedOver(before: MatchState, after: MatchState, viewer: PlayerIndex): boolean {
+  return currentPlayer(before) === viewer && currentPlayer(after) !== viewer
+}
+
 /** The one-line instruction shown above the controls. */
 export function prompt(
   state: MatchState,

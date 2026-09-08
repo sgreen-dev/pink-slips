@@ -4,6 +4,7 @@ import { cardBackUrl } from './artwork.ts'
 import { CardBack } from './CardBack.tsx'
 import { CarCard, type CardSize } from './CarCard.tsx'
 import { stagedFirst, type CarIntent, type Selection } from './interaction.ts'
+import { scrollRowBack } from './scroll.ts'
 
 interface GarageProps {
   player: PlayerState
@@ -19,6 +20,8 @@ interface GarageProps {
   handCount?: number
   /** The race in progress; a new race scrolls the row back to its staged car. */
   raceNumber?: number
+  /** Counts the viewer's turns ended; each one scrolls the row back to its start. */
+  turnsEnded?: number
 }
 
 export function Garage({
@@ -31,17 +34,14 @@ export function Garage({
   size = 'sm',
   handCount,
   raceNumber,
+  turnsEnded,
 }: GarageProps) {
   const row = useRef<HTMLDivElement | null>(null)
-  // The staged car leads the row; when it changes, or a new race begins, bring it back into
-  // view on a phone, where the row scrolls (DESIGN.md 8, Board order).
+  // The staged car leads the row; when it changes, a new race begins, or the viewer's turn ends,
+  // bring the row back to its start on a phone, where it scrolls (DESIGN.md 8, Board order).
   useEffect(() => {
-    const el = row.current
-    if (!el || typeof el.scrollTo !== 'function') return
-    const reduced =
-      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
-    el.scrollTo({ left: 0, behavior: reduced ? 'auto' : 'smooth' })
-  }, [player.stagedCarId, raceNumber])
+    scrollRowBack(row.current)
+  }, [player.stagedCarId, raceNumber, turnsEnded])
   return (
     <section className="garage">
       <header className="garage__header">
