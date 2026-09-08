@@ -15,7 +15,8 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 - Phase 26, rematch in the same room: after a friend match online, Play again asks the room for a rematch, the screen shows who has asked, and when both have the room starts a new match with the same garages, the seed advanced, and the first move swapped; ranked and stakes rooms keep New room. (35ca95a)
 - Phase 26 marked done in the build plan. (af9c762)
 - Phase 27, laps: once every car is owned, Take the lap returns the collection to the starters, keeps one keepsake in the new Chrome finish, makes later packs hold an extra car per lap up to two, and shows the lap as a plate on the collection, the profile, the leaderboard, and online; keepsakes never change hands under stakes. (75242bb)
-- Phase 27 marked done in the build plan. (the commit that added this line)
+- Phase 27 marked done in the build plan. (743f12e)
+- Phase 28, loaner garages and the intro set: the three prebuilt garages stay raceable but are no longer owned, and a fresh collection starts with six cars capped at Performance and sixteen mods at two copies, 22 of 159 cards instead of 46, so no mod arrives at the deck limit and no Ultra Rare car is given away; older collections are rebased once in the browser and on the service, keeping everything opened or won. (the commit that adds this line)
 
 ## 2026-09-07
 

@@ -1,9 +1,11 @@
-import type { StarterGarage } from './types.ts'
+import type { IntroSet, StarterGarage } from './types.ts'
 
 /**
- * The three starter garages from DESIGN.md 5. The car lists are fixed by the design doc. The
+ * The three loaner garages from DESIGN.md 5: always raceable and never owned, so they can never
+ * be broken and a new player is racing at once. The car lists are fixed by the design doc. The
  * decks were finalized in phase 7 against the tuned numbers: with the CPU on both sides the
  * three garages win about half their matches overall, and each beats the next in a cycle.
+ * What a fresh collection owns is INTRO_SET at the foot of this file, not these.
  */
 
 /** Expands [modId, copies] pairs into a flat deck list. */
@@ -97,3 +99,42 @@ export const STARTERS: readonly StarterGarage[] = [
 export const STARTER_BY_ID: ReadonlyMap<string, StarterGarage> = new Map(
   STARTERS.map((starter) => [starter.id, starter]),
 )
+
+/**
+ * The intro set (DESIGN.md 12): what a fresh collection owns. Six cars kept from the loaner
+ * garages, none above Performance, so every Super and Hyper is opened rather than given. The
+ * cars were picked by measurement, not by looks: a first pass on slower ones left the set at
+ * 25% against the field where the loaners run 43 to 50, and these bring it to 46. The mods are
+ * the consistent half of the pool at two copies each, one below the deck cap, so no pack slot
+ * is dead on the first pack. Concentrating them into a three-copy spine was tried and dropped:
+ * it bought about three points and cost six live pack slots. The type-locked mods are held
+ * back deliberately, and every one of them has a car here to land on.
+ */
+export const INTRO_SET: IntroSet = {
+  cars: [
+    'ford-f-150-raptor-r',
+    'hyundai-ioniq-5-n',
+    'ford-mustang-gt',
+    'mazda-rx-7',
+    'honda-civic-si',
+    'mazda-mx-5-miata',
+  ],
+  mods: [
+    ['turbo-kit', 2],
+    ['stage-2-tune', 2],
+    ['weight-reduction', 2],
+    ['drag-slicks', 2],
+    ['fuel-cell', 2],
+    ['power-shift', 2],
+    ['perfect-launch', 2],
+    ['nitrous-shot', 2],
+    ['pit-crew', 2],
+    ['sponsor', 2],
+    ['extra-tank', 2],
+    ['launch-control', 2],
+    ['wheelspin', 2],
+    ['missed-shift', 2],
+    ['fuel-siphon', 2],
+    ['bad-tune', 2],
+  ],
+}

@@ -179,3 +179,14 @@ export interface StarterGarage {
   /** Exactly 30 mod ids, at most 3 of any one mod. */
   deck: readonly string[]
 }
+
+/**
+ * What a fresh collection owns (DESIGN.md 12). Separate from the loaner garages above: those
+ * are always raceable and never owned, this is the floor everything else is opened from.
+ */
+export interface IntroSet {
+  /** Car ids, one copy each. Every one is a loaner car at or below Performance. */
+  cars: readonly string[]
+  /** Mod ids with the copies granted, at most 2 of any one so no pack slot starts dead. */
+  mods: ReadonlyArray<readonly [string, number]>
+}

@@ -9,15 +9,17 @@ import {
   type StorageLike,
 } from '../ui/storage.ts'
 import {
+  GRANT_VERSION,
   NO_VARIANTS,
   claimLap,
   garagesAfterLap,
   grant,
   grantGarage,
   grantVariants,
+  introCollection,
   openPack,
   packCards,
-  starterCollection,
+  rebaseToIntro,
   type Collection,
   type Pack,
 } from './collection.ts'
@@ -25,6 +27,9 @@ import {
 /** The collection in localStorage, next to the garages and through the same wrapper. */
 
 export const COLLECTION_KEY = 'pink-slips.collection.v1'
+
+/** Set when a record is rebased onto the intro set, so the collection screen can say so once. */
+export const REBASE_NOTICE_KEY = 'pink-slips.rebase.v1'
 
 export type { CollectionState }
 
@@ -34,6 +39,7 @@ interface StoredState {
   packs: number
   variants?: { foil: Collection; holo: Collection; chrome?: Collection }
   laps?: number
+  grantVersion?: number
 }
 
 function isCounts(value: unknown): value is Collection {
@@ -56,17 +62,35 @@ function isStored(value: unknown): value is StoredState {
 }
 
 /**
- * Loads the collection. A browser without one starts with the starter cards plus every card in
- * a garage it saved before collections existed, so nothing built on v1 stops working. That
- * grant is written back at once and never repeats: from then on only packs add cards. A
- * corrupt record is replaced the same way.
+ * Loads the collection. A browser without one starts with the intro set plus every card in a
+ * garage it saved before collections existed, so nothing built on v1 stops working. That grant
+ * is written back at once and never repeats: from then on only packs add cards. A corrupt
+ * record is replaced the same way. A record written against the legacy loaner-garage grant is
+ * rebased onto the intro set once, and the new version is written back so it never repeats.
  */
 export function loadCollection(store: StorageLike | null = browserStorage()): CollectionState {
   const saved = readRecord(COLLECTION_KEY, isStored, store)
-  if (saved) return normalizeCollection({ ...saved, variants: saved.variants ?? NO_VARIANTS })
-  let owned = starterCollection()
+  if (saved) {
+    const state = normalizeCollection({ ...saved, variants: saved.variants ?? NO_VARIANTS })
+    if (state.grantVersion >= GRANT_VERSION) return state
+    const rebased: CollectionState = {
+      ...state,
+      owned: rebaseToIntro(state.owned),
+      grantVersion: GRANT_VERSION,
+    }
+    writeRecord(COLLECTION_KEY, rebased, store)
+    writeRecord(REBASE_NOTICE_KEY, true, store)
+    return rebased
+  }
+  let owned = introCollection()
   for (const garage of loadGarages(store)) owned = grantGarage(owned, garage.cars, garage.deck)
-  const state: CollectionState = { owned, packs: 0, variants: NO_VARIANTS, laps: 0 }
+  const state: CollectionState = {
+    owned,
+    packs: 0,
+    variants: NO_VARIANTS,
+    laps: 0,
+    grantVersion: GRANT_VERSION,
+  }
   writeRecord(COLLECTION_KEY, state, store)
   return state
 }
@@ -106,6 +130,7 @@ export function openNextPack(
     packs: current.packs - 1,
     variants: grantVariants(current.variants, cards),
     laps: current.laps,
+    grantVersion: current.grantVersion,
   }
   saveCollection(state, store)
   return { state, pack }
@@ -124,4 +149,17 @@ export function claimLapLocally(
   saveCollection(next, store)
   saveGarages(garagesAfterLap(loadGarages(store), next.owned), store)
   return next
+}
+
+/** True while the collection screen still owes the player the rebase notice. */
+export function rebaseNoticePending(store: StorageLike | null = browserStorage()): boolean {
+  return readRecord(REBASE_NOTICE_KEY, (v): v is boolean => v === true, store) === true
+}
+
+export function clearRebaseNotice(store: StorageLike | null = browserStorage()): void {
+  try {
+    store?.removeItem(REBASE_NOTICE_KEY)
+  } catch {
+    // Nothing to do: a store that cannot be cleared shows the notice again at worst.
+  }
 }

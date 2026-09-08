@@ -6,8 +6,8 @@ import { grant, type Collection } from './collection.ts'
 /**
  * Stakes (DESIGN.md 12): with the toggle on, every pink slip taken during a match changes
  * hands for real when it ends. The captor's collection gains a copy of the car and the owner's
- * loses one, whoever won the match. Starter cars are exempt both ways, so the starters always
- * rebuild. These are the pure pieces; the browser, the directory, and the room apply them.
+ * loses one, whoever won the match. Loaner cars are exempt both ways, so a collection can never
+ * be emptied. These are the pure pieces; the browser, the directory, and the room apply them.
  */
 
 export interface Transfer {
@@ -19,14 +19,18 @@ export interface Transfer {
 
 export const EMPTY_TRANSFER: Transfer = { gained: [], lost: [] }
 
-/** Every car in a starter garage. Exempt from stakes in both directions. */
-export const STARTER_CAR_IDS: ReadonlySet<string> = new Set(STARTERS.flatMap((s) => s.cars))
+/**
+ * Every car in a loaner garage, which includes every intro-set car. Exempt from stakes in both
+ * directions: a loaner car is not owned so it can be neither won nor lost, and the intro cars
+ * inside it are what stops a collection being emptied.
+ */
+export const LOANER_CAR_IDS: ReadonlySet<string> = new Set(STARTERS.flatMap((s) => s.cars))
 
 const CAR_IDS: ReadonlySet<string> = new Set(CARS.map((car) => car.id))
 
-/** True for a real car that stakes can move: any car outside the starter garages. */
+/** True for a real car that stakes can move: any car outside the loaner garages. */
 export function isStakedCar(id: string): boolean {
-  return CAR_IDS.has(id) && !STARTER_CAR_IDS.has(id)
+  return CAR_IDS.has(id) && !LOANER_CAR_IDS.has(id)
 }
 
 /** The cars in a list that stakes can move, capped at the pink slips one match can hold. */

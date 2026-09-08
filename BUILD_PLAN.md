@@ -44,6 +44,7 @@
 | 25 | Refused plays explained | done | 9bd2052 |
 | 26 | Rematch in the same room | done | 35ca95a |
 | 27 | Laps | done | 75242bb |
+| 28 | Loaner garages and the intro set | done | (this commit) |
 
 ---
 
@@ -713,6 +714,32 @@
 **Done when**: a seeded complete guest collection takes a lap in the browser and the record reads laps 1 with the keepsake in Chrome, the live service refuses a lap on an incomplete collection, and the tests pass.
 
 **Prompt**: Do phase 27 of BUILD_PLAN.md.
+
+---
+
+## Phase 28 — Loaner garages and the intro set
+
+**Goal**: split what a new player can race from what they own. The three prebuilt garages become loaners, always raceable and never owned, and a new, smaller intro set becomes the collection floor, so packs have something left to find from the first one.
+
+**Design to record first** (`DESIGN.md` 1, 5, 10, and 12): both terms in the vocabulary, the loaner framing on the garages, the intro set's cars and mods with the reasoning, the migration, and the refreshed pack measurements.
+
+**Deliverables**
+
+- `src/data/types.ts` and `starters.ts`: the `IntroSet` type and `INTRO_SET`, six cars capped at Performance and sixteen mods at two copies, with `STARTERS` untouched
+- `src/collection/collection.ts`: `introCollection` in place of `starterCollection`, the frozen `LEGACY_STARTER_GRANT`, `rebaseToIntro`, `GRANT_VERSION`, and `claimLap` resetting to the intro set; `stakes.ts` renamed to `LOANER_CAR_IDS`
+- `records.ts` carrying `grantVersion` with a default for older records; the rebase on load in `persist.ts` and in the directory, and on a guest record before a claim merges it
+- `builder.ts`'s `loaner` flag, the picker's loaner line, and the collection screen's one-time notice
+- `sim/garages.ts`'s `introGarage` and the run's intro-versus-loaner section; the balance-log line
+
+**Tests**
+
+- The intro set: loaner cars only, none above Performance, always a legal garage and deck, no mod at the deck limit, all four mod families, no rare or type-locked mod, and a home for every held-back type lock
+- The rebase: the legacy free cards taken back, what was opened or won kept, idempotent, run once per record, and skipped for a record already on the current grant
+- The service rebasing an account on load and a guest record on claim, so the per-id max cannot restore the old cards
+
+**Done when**: a fresh browser reads 22 of 159 cards and can still build a legal garage, the three loaners still race unowned, a seeded legacy record rebases once and keeps what it earned, the four targets and the loaner cycle are unchanged, and the tests pass.
+
+**Prompt**: Do phase 28 of BUILD_PLAN.md.
 
 ---
 

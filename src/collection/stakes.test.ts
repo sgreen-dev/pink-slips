@@ -11,7 +11,7 @@ import {
   isStakedCar,
   sanitizeTransfer,
   stakesTransfer,
-  STARTER_CAR_IDS,
+  LOANER_CAR_IDS,
 } from './stakes.ts'
 
 const CHIRON = 'bugatti-chiron'
@@ -40,14 +40,14 @@ describe('stakes', () => {
 
   it('never moves a starter car', () => {
     expect(STARTER).not.toBe('')
-    expect(STARTER_CAR_IDS.has(STARTER)).toBe(true)
+    expect(LOANER_CAR_IDS.has(STARTER)).toBe(true)
     expect(isStakedCar(STARTER)).toBe(false)
     expect(isStakedCar(CHIRON)).toBe(true)
     const [first, second] = stakesTransfer(withSlips([STARTER, CHIRON], [STARTER]))
     expect(first).toEqual({ gained: [CHIRON], lost: [] })
     expect(second).toEqual({ gained: [], lost: [CHIRON] })
     for (const starter of STARTERS) {
-      for (const car of starter.cars) expect(STARTER_CAR_IDS.has(car), car).toBe(true)
+      for (const car of starter.cars) expect(LOANER_CAR_IDS.has(car), car).toBe(true)
     }
   })
 

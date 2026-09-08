@@ -55,7 +55,13 @@ const sample: AccountData = {
     claimed: true,
     laps: 0,
   },
-  collection: { owned: { x: 1 }, packs: 1, variants: { foil: {}, holo: {}, chrome: {} }, laps: 0 },
+  collection: {
+    owned: { x: 1 },
+    packs: 1,
+    variants: { foil: {}, holo: {}, chrome: {} },
+    laps: 0,
+    grantVersion: 2,
+  },
   garages: [{ id: 'g', name: 'G', cars: ['x'], deck: [], updatedAt: 1 }],
 }
 

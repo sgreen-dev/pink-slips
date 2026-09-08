@@ -1,6 +1,6 @@
 import { CARS } from '../data/cars.ts'
 import { MODS, modRarity } from '../data/mods.ts'
-import { STARTERS } from '../data/starters.ts'
+import { INTRO_SET } from '../data/starters.ts'
 import { TIERS, type Tier } from '../data/types.ts'
 import { nextFloat, nextInt, TUNABLES, type RngState } from '../engine/index.ts'
 import type { CollectionState, SavedGarage } from '../protocol/records.ts'
@@ -50,17 +50,87 @@ export function countIds(ids: readonly string[]): Map<string, number> {
 }
 
 /**
- * What a fresh browser owns: every card in every starter garage, with as many copies as the
- * starter deck that uses it most, so each starter can always be rebuilt. All base copies.
+ * What a fresh collection owns: the intro set (DESIGN.md 12), one copy of each car and the
+ * granted copies of each mod, all base. The loaner garages race without being owned, so
+ * nothing here has to be able to rebuild them.
  */
-export function starterCollection(): Collection {
+export function introCollection(): Collection {
   const owned: Record<string, number> = {}
-  for (const starter of STARTERS) {
-    for (const [id, count] of countIds([...starter.cars, ...starter.deck])) {
-      owned[id] = Math.max(owned[id] ?? 0, count)
-    }
-  }
+  for (const id of INTRO_SET.cars) owned[id] = 1
+  for (const [id, copies] of INTRO_SET.mods) owned[id] = copies
   return owned
+}
+
+/** The grant a record was written against. 1 is the legacy loaner-garage union, 2 the intro set. */
+export const GRANT_VERSION = 2
+
+/**
+ * The grant every collection started with before the intro set replaced it: the union of the
+ * three loaner garages at the copies the deck using each most needed. Frozen as a literal
+ * rather than read from STARTERS, so the loaner garages stay free to change without moving
+ * what an old record is rebased against.
+ */
+const LEGACY_STARTER_GRANT: Collection = {
+  'ford-mustang-gt': 1,
+  'chevrolet-camaro-ss-1le': 1,
+  'mazda-rx-7': 1,
+  'honda-s2000': 1,
+  'honda-civic-si': 1,
+  'lamborghini-aventador-svj': 1,
+  'ferrari-458-italia': 1,
+  'mercedes-amg-gt-r': 1,
+  'porsche-911-carrera-s': 1,
+  'mazda-mx-5-miata': 1,
+  'tesla-model-s-plaid': 1,
+  'hyundai-ioniq-5-n': 1,
+  'ford-f-150-raptor-r': 1,
+  'subaru-wrx-sti': 1,
+  'toyota-prius': 1,
+  'two-step': 3,
+  'anti-lag': 2,
+  'perfect-launch': 3,
+  'power-shift': 3,
+  'drag-slicks': 2,
+  'stage-2-tune': 3,
+  'turbo-kit': 2,
+  'pit-crew': 3,
+  wheelspin: 3,
+  'red-light': 2,
+  'bad-tune': 2,
+  roadblock: 2,
+  'extra-tank': 3,
+  'tow-truck': 3,
+  'fuel-cell': 3,
+  sponsor: 3,
+  supercharger: 3,
+  'carbon-body-kit': 2,
+  'roll-cage': 2,
+  'nitrous-shot': 3,
+  'fuel-dump': 2,
+  'fuel-siphon': 3,
+  'missed-shift': 2,
+  'parts-thief': 2,
+  regen: 3,
+  'launch-control': 2,
+  'wheelie-bar': 2,
+  'weight-reduction': 2,
+  'aero-package': 2,
+  overdrive: 2,
+  'oil-slick': 2,
+}
+
+/**
+ * Brings a collection written against the legacy grant onto the intro set: what was given free
+ * is taken back, everything opened or won is kept, and the intro set is laid down under it.
+ * Runs once per record, guarded by the grant version in the stored state.
+ */
+export function rebaseToIntro(owned: Collection): Collection {
+  const next: Record<string, number> = { ...introCollection() }
+  for (const [id, count] of Object.entries(owned)) {
+    const earned = count - (LEGACY_STARTER_GRANT[id] ?? 0)
+    if (earned > 0) next[id] = (next[id] ?? 0) + earned
+  }
+  return next
 }
 
 export function copiesOwned(collection: Collection, id: string): number {
@@ -114,7 +184,7 @@ export function packCarCount(laps: number, t: typeof TUNABLES = TUNABLES): numbe
 }
 
 /**
- * Takes the lap (DESIGN.md 12, Laps): the collection returns to the starters plus every
+ * Takes the lap (DESIGN.md 12, Laps): the collection returns to the intro set plus every
  * keepsake at one copy, the new one wearing chrome with the old ones, packs stay, foil and holo
  * finishes go, and the lap count rises. Null unless every car is owned and the keepsake is a
  * car the player owns.
@@ -126,13 +196,14 @@ export function claimLap(state: CollectionState, keepsakeId: string): Collection
   const chrome = owns(state.variants.chrome, keepsakeId)
     ? state.variants.chrome
     : grant(state.variants.chrome, [keepsakeId])
-  let owned = starterCollection()
+  let owned = introCollection()
   for (const id of Object.keys(chrome)) if (!owns(owned, id)) owned = grant(owned, [id])
   return {
     owned,
     packs: state.packs,
     variants: { foil: {}, holo: {}, chrome },
     laps: state.laps + 1,
+    grantVersion: GRANT_VERSION,
   }
 }
 

@@ -1,12 +1,12 @@
 import { CARS, getCar } from '../data/cars.ts'
 import { MODS } from '../data/mods.ts'
-import { STARTERS } from '../data/starters.ts'
+import { INTRO_SET, STARTERS } from '../data/starters.ts'
 import type { Car, CarType, Tier } from '../data/types.ts'
 import { copyLimit, shuffle, TUNABLES, type PlayerConfig, type RngState } from '../engine/index.ts'
 
 /** Garage generators for the simulator (DESIGN.md section 7). Every pick flows through the rng. */
 
-export type GarageKind = 'random' | 'single-type' | 'single-tier' | 'starter'
+export type GarageKind = 'random' | 'single-type' | 'single-tier' | 'starter' | 'intro'
 
 export interface GarageSpec extends PlayerConfig {
   name: string
@@ -61,4 +61,16 @@ export function starterGarage(index: number): GarageSpec {
   const starter = STARTERS[index]
   if (!starter) throw new Error(`No starter at index ${index}`)
   return { name: starter.name, kind: 'starter', garage: starter.cars, deck: starter.deck }
+}
+
+/**
+ * A garage built only from the intro set (DESIGN.md 12): five of its six cars and thirty of its
+ * thirty-two mod copies, both drawn through the rng, so a run measures the set rather than one
+ * hand-picked deck out of it.
+ */
+export function introGarage(rng: RngState): [GarageSpec, RngState] {
+  const [cars, afterCars] = pick(INTRO_SET.cars, TUNABLES.garageSize, rng)
+  const copies = INTRO_SET.mods.flatMap(([id, n]) => Array.from({ length: n }, () => id))
+  const [deck, next] = pick(copies, TUNABLES.modDeckSize, afterCars)
+  return [{ name: 'intro', kind: 'intro', garage: cars, deck }, next]
 }

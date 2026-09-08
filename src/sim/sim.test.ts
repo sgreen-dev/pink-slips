@@ -3,7 +3,14 @@ import { getCar } from '../data/cars.ts'
 import { getMod } from '../data/mods.ts'
 import { CAR_TYPES, TIERS } from '../data/types.ts'
 import { createMatch, seedRng, TUNABLES } from '../engine/index.ts'
-import { randomGarage, singleTierGarage, singleTypeGarage, starterGarage } from './garages.ts'
+import { INTRO_SET } from '../data/starters.ts'
+import {
+  introGarage,
+  randomGarage,
+  singleTierGarage,
+  singleTypeGarage,
+  starterGarage,
+} from './garages.ts'
 import { checkTargets, formatReport, runSimulation } from './run.ts'
 import { median, percentile } from './stats.ts'
 
@@ -61,6 +68,19 @@ describe('garage generators', () => {
   it('starter garages come straight from the data', () => {
     for (const index of [0, 1, 2]) expectValid(starterGarage(index))
     expect(() => starterGarage(3)).toThrow()
+  })
+
+  it('intro garages are valid, vary with the rng, and use only the intro set', () => {
+    const [a, rng] = introGarage(seedRng(1))
+    const [b] = introGarage(rng)
+    expectValid(a)
+    expectValid(b)
+    const cars = new Set(INTRO_SET.cars)
+    const mods = new Set(INTRO_SET.mods.map(([id]) => id))
+    for (const garage of [a, b]) {
+      for (const id of garage.garage) expect(cars.has(id), id).toBe(true)
+      for (const id of garage.deck) expect(mods.has(id), id).toBe(true)
+    }
   })
 })
 

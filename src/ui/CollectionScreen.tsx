@@ -12,7 +12,13 @@ import {
   packCards,
   type Pack,
 } from '../collection/collection.ts'
-import { claimLapLocally, loadCollection, type CollectionState } from '../collection/persist.ts'
+import {
+  claimLapLocally,
+  clearRebaseNotice,
+  loadCollection,
+  rebaseNoticePending,
+  type CollectionState,
+} from '../collection/persist.ts'
 import { AccountContext, claimLapOnline, mirror, openNext } from './account.ts'
 import { Plate } from './Plate.tsx'
 import { CARS } from '../data/cars.ts'
@@ -52,6 +58,8 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const [type, setType] = useState<CarType | 'all'>('all')
   const [tier, setTier] = useState<Tier | 'all'>('all')
   const [family, setFamily] = useState<ModFamily | 'all'>('all')
+  // Shown once to a collection that was rebased onto the intro set (DESIGN.md 12).
+  const [rebased, setRebased] = useState(() => rebaseNoticePending())
 
   const owned = state.owned
   // Taking the lap (DESIGN.md 12, Laps): offered once every car is owned, behind a confirm.
@@ -117,6 +125,27 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
       </header>
 
       <section className="collection__packs" aria-live="polite">
+        {rebased && (
+          <div className="collection__notice">
+            <p>
+              The free cards changed. A new collection now starts with six cars and sixteen mods
+              instead of all three garages, so packs have more left to find. Everything you opened
+              or won is still yours. The three garages are loaners: you can still race them, they
+              just are not in your collection. A saved garage that needs a card you no longer have
+              waits in the builder until you fix it.
+            </p>
+            <button
+              type="button"
+              className="button"
+              onClick={() => {
+                clearRebaseNotice()
+                setRebased(false)
+              }}
+            >
+              Got it
+            </button>
+          </div>
+        )}
         <p className="collection__summary">
           You own {ownedCount(owned)} of {ALL_CARD_IDS.length} cards.
           <Plate laps={state.laps} size="md" />

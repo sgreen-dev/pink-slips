@@ -123,6 +123,14 @@ describe('garage builder rules', () => {
       'Old',
     ])
     expect(options.filter((o) => o.custom)).toHaveLength(2)
+    // The three loaners are offered whatever the collection holds, and are flagged as loaners
+    // so the picker can say their cars are not owned (DESIGN.md 5).
+    expect(options.filter((o) => o.loaner).map((o) => o.name)).toEqual([
+      'Street Kings',
+      'Exotic Garage',
+      'Electric Avenue',
+    ])
+    expect(options.every((o) => o.loaner !== o.custom)).toBe(true)
     const custom = options[3]!
     const config = {
       players: [
@@ -178,12 +186,12 @@ describe('garage storage', () => {
   })
 })
 
-import { copiesOwned, owns, starterCollection } from '../collection/collection.ts'
+import { copiesOwned, owns, introCollection } from '../collection/collection.ts'
 import { CARS as ALL_CARS } from '../data/cars.ts'
 import { MODS as ALL_MODS } from '../data/mods.ts'
 
 describe('ownership', () => {
-  const owned = starterCollection()
+  const owned = introCollection()
   const outsideCar = ALL_CARS.find((car) => !owns(owned, car.id))
   const scarceMod = ALL_MODS.find((mod) => {
     const have = copiesOwned(owned, mod.id)

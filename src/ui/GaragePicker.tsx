@@ -8,7 +8,7 @@ interface GaragePickerProps {
   onChange: (index: number) => void
 }
 
-/** A radio list of garages: the starters and any the player saved in the builder. */
+/** A radio list of garages: the loaners and any the player saved in the builder. */
 export function GaragePicker({ label, options, value, onChange }: GaragePickerProps) {
   return (
     <fieldset className="picker">
@@ -26,6 +26,9 @@ export function GaragePicker({ label, options, value, onChange }: GaragePickerPr
           />
           <span className="picker__title">{option.name}</span>
           <span className="picker__style">{option.style}</span>
+          {option.loaner ? (
+            <span className="picker__loaner">Loaner. These cars are not in your collection.</span>
+          ) : null}
           <span className="picker__cars">
             {option.cars.map((carId) => (
               <CarCard key={carId} carId={carId} size="sm" />

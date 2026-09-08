@@ -8,22 +8,26 @@ export {
   grant,
   grantGarage,
   grantVariants,
+  introCollection,
   openPack,
   ownedCount,
   owns,
   packCards,
   packIds,
   packsEarned,
+  rebaseToIntro,
   rollTier,
   rollVariant,
-  starterCollection,
 } from './collection.ts'
 export type { Collection, Mode, Pack, PackCard, Variant, VariantCounts } from './collection.ts'
 export {
   COLLECTION_KEY,
+  REBASE_NOTICE_KEY,
   addPacks,
+  clearRebaseNotice,
   loadCollection,
   openNextPack,
+  rebaseNoticePending,
   saveCollection,
 } from './persist.ts'
 export type { CollectionState } from './persist.ts'

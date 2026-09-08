@@ -1,11 +1,12 @@
 import { STARTERS } from '../data/starters.ts'
 import { describe, expect, it } from 'vitest'
 import {
+  GRANT_VERSION,
   grant,
+  introCollection,
   NO_VARIANTS,
   ownedCount,
   owns,
-  starterCollection,
 } from '../collection/collection.ts'
 import { CARS } from '../data/cars.ts'
 import { TUNABLES } from '../engine/index.ts'
@@ -76,7 +77,7 @@ describe('directory', () => {
       packs: 0,
       claimed: false,
     })
-    expect(made.data.collection.owned).toEqual(starterCollection())
+    expect(made.data.collection.owned).toEqual(introCollection())
     expect(made.recoveryCode).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/)
     expect((await directory.accountFor(made.token))?.id).toBe(made.data.profile.id)
     expect(await directory.accountFor('nope')).toBeNull()
@@ -154,10 +155,11 @@ describe('directory', () => {
     const { directory } = setUp()
     const { token } = await directory.createPlayer('Ann')
     const guest: CollectionState = {
-      owned: { ...starterCollection(), 'mazda-mx-5-miata': 3 },
+      owned: { ...introCollection(), 'mazda-mx-5-miata': 3 },
       packs: 3,
       variants: { foil: { 'mazda-mx-5-miata': 1 }, holo: {}, chrome: {} },
       laps: 0,
+      grantVersion: GRANT_VERSION,
     }
     const garages = [{ id: 'g1', name: 'Mine', cars: ['a'], deck: ['b'], updatedAt: 1 }]
     const data = await directory.claim(token, { collection: guest, garages })
@@ -206,7 +208,7 @@ describe('directory', () => {
     expect(opened?.data.profile.packs).toBe(packsPerCpuWin - 1)
     const account = await directory.accountFor(token)
     expect(ownedCount(account?.collection.owned ?? {})).toBeGreaterThanOrEqual(
-      ownedCount(starterCollection()),
+      ownedCount(introCollection()),
     )
     for (const card of opened?.pack.cars ?? []) {
       expect(account?.collection.owned[card.id] ?? 0).toBeGreaterThan(0)
@@ -329,9 +331,9 @@ describe('stakes on the service', () => {
   })
 })
 describe('laps on the service', () => {
-  const starter = starterCollection()
-  const outside = CARS.filter((car) => !owns(starter, car.id)).map((car) => car.id)
-  const everyCar = grant(starter, outside)
+  const intro = introCollection()
+  const outside = CARS.filter((car) => !owns(intro, car.id)).map((car) => car.id)
+  const everyCar = grant(intro, outside)
   const spare = outside[0] ?? ''
   const other = outside[1] ?? ''
 
@@ -340,7 +342,13 @@ describe('laps on the service', () => {
     const { token } = await directory.createPlayer('Ann')
     expect(await directory.claimLap(token, spare)).toBe('refused')
     await directory.claim(token, {
-      collection: { owned: everyCar, packs: 2, variants: NO_VARIANTS, laps: 1 },
+      collection: {
+        owned: everyCar,
+        packs: 2,
+        variants: NO_VARIANTS,
+        laps: 1,
+        grantVersion: GRANT_VERSION,
+      },
       garages: [
         { id: 'keep', name: 'Keep', cars: [spare], deck: [], updatedAt: 1 },
         { id: 'gone', name: 'Gone', cars: [other], deck: [], updatedAt: 1 },
@@ -355,5 +363,62 @@ describe('laps on the service', () => {
     expect(owns(data.collection.owned, other)).toBe(false)
     expect(data.garages.map((g) => g.id)).toEqual(['keep'])
     expect(await directory.claimLap(token, spare)).toBe('refused')
+  })
+})
+
+describe('rebase onto the intro set', () => {
+  /** Writes the account's collection back as a record on the legacy grant. */
+  async function makeLegacy(store: MemoryStore, id: string, extra: Record<string, number>) {
+    const key = `acct:${id}`
+    const account = store.data.get(key) as { collection: CollectionState }
+    store.data.set(key, {
+      ...account,
+      collection: {
+        owned: { ...LEGACY_OWNED, ...extra },
+        packs: 3,
+        variants: NO_VARIANTS,
+        laps: 0,
+      },
+    })
+  }
+
+  /** The old grant: the union of the loaner garages at the copies the deck using each most needed. */
+  const LEGACY_OWNED: Record<string, number> = {}
+  for (const s of STARTERS) {
+    for (const id of s.cars) LEGACY_OWNED[id] = 1
+    const counts = new Map<string, number>()
+    for (const id of s.deck) counts.set(id, (counts.get(id) ?? 0) + 1)
+    for (const [id, n] of counts) LEGACY_OWNED[id] = Math.max(LEGACY_OWNED[id] ?? 0, n)
+  }
+
+  it('rebases an account on the legacy grant once, on load, and keeps what was earned', async () => {
+    const { directory, store } = setUp()
+    const { token, data } = await directory.createPlayer('Ann')
+    const chiron = 'bugatti-chiron'
+    await makeLegacy(store, data.profile.id, { [chiron]: 2 })
+
+    const account = await directory.accountFor(token)
+    expect(account?.collection.grantVersion).toBe(GRANT_VERSION)
+    // Free under the old grant, absent from the intro set: taken back.
+    expect(owns(account?.collection.owned ?? {}, 'lamborghini-aventador-svj')).toBe(false)
+    expect(owns(account?.collection.owned ?? {}, 'red-light')).toBe(false)
+    // Opened: kept in full. Packs and everything else untouched.
+    expect(account?.collection.owned[chiron]).toBe(2)
+    expect(account?.collection.packs).toBe(3)
+    // Written back, so the rebase never runs twice.
+    const stored = store.data.get(`acct:${data.profile.id}`) as { collection: CollectionState }
+    expect(stored.collection.grantVersion).toBe(GRANT_VERSION)
+  })
+
+  it('rebases a guest record on claim, so the merge cannot hand the legacy cards back', async () => {
+    const { directory } = setUp()
+    const { token } = await directory.createPlayer('Bo')
+    await directory.claim(token, {
+      collection: { owned: { ...LEGACY_OWNED }, packs: 1, variants: NO_VARIANTS, laps: 0 },
+      garages: [],
+    })
+    const account = await directory.accountFor(token)
+    expect(owns(account?.collection.owned ?? {}, 'lamborghini-aventador-svj')).toBe(false)
+    expect(account?.collection.grantVersion).toBe(GRANT_VERSION)
   })
 })

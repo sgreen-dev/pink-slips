@@ -1,9 +1,11 @@
 import { MODS } from '../data/mods.ts'
+import { STARTERS } from '../data/starters.ts'
 import { CAR_TYPES, CAR_TYPE_LABEL, TIERS, type CarType, type Tier } from '../data/types.ts'
 import { TIER_LABEL } from '../data/tiers.ts'
 import { playCpuMatch } from '../cpu/index.ts'
 import { nextUint32, seedRng, TUNABLES, type PlayerIndex, type RngState } from '../engine/index.ts'
 import {
+  introGarage,
   randomGarage,
   singleTierGarage,
   singleTypeGarage,
@@ -43,6 +45,8 @@ export interface SimulationReport {
   dailyVsHyper: Tally
   /** Starter pairings, from the first-named side. */
   starters: Map<string, Tally>
+  /** The intro-set garage against each loaner, from the intro side (DESIGN.md 12). */
+  intro: Map<string, Tally>
   /** Turns per player, random garages only. */
   lengthsRandom: number[]
   /** Turns per player, every match. */
@@ -58,7 +62,7 @@ export interface SimulationReport {
 }
 
 /** Shares of the match budget per experiment. */
-const SHARE = { types: 0.3, tiers: 0.2, dailyVsHyper: 0.1, starters: 0.15 } as const
+const SHARE = { types: 0.3, tiers: 0.2, dailyVsHyper: 0.1, starters: 0.15, intro: 0.1 } as const
 
 export function runSimulation(options: SimulationOptions): SimulationReport {
   const started = Date.now()
@@ -76,6 +80,7 @@ export function runSimulation(options: SimulationOptions): SimulationReport {
     byTier: new Map(TIERS.map((tier) => [tier, tally()])),
     dailyVsHyper: tally(),
     starters: new Map(),
+    intro: new Map(),
     lengthsRandom: [],
     lengthsAll: [],
     firstPlayer: tally(),
@@ -152,13 +157,15 @@ export function runSimulation(options: SimulationOptions): SimulationReport {
     [2, 0],
   ]
   const perStarterPair = Math.round((total * SHARE.starters) / starterPairs.length)
+  const perIntroPair = Math.round((total * SHARE.intro) / STARTERS.length)
   const randomCount = Math.max(
     0,
     total -
       perType * CAR_TYPES.length -
       perTier * TIERS.length -
       dailyHyper -
-      perStarterPair * starterPairs.length,
+      perStarterPair * starterPairs.length -
+      perIntroPair * STARTERS.length,
   )
 
   for (const type of CAR_TYPES) {
@@ -195,6 +202,17 @@ export function runSimulation(options: SimulationOptions): SimulationReport {
       record(t, play(first, second, (i % 2) as PlayerIndex, false))
     }
     report.starters.set(key, t)
+  }
+  // The intro set against each loaner: what a first custom garage runs into (DESIGN.md 12).
+  for (let index = 0; index < STARTERS.length; index++) {
+    const loaner = starterGarage(index)
+    const t = tally()
+    for (let i = 0; i < perIntroPair; i++) {
+      let intro: GarageSpec
+      ;[intro, rng] = introGarage(rng)
+      record(t, play(intro, loaner, (i % 2) as PlayerIndex, false))
+    }
+    report.intro.set(`intro vs ${loaner.name}`, t)
   }
   for (let i = 0; i < randomCount; i++) {
     let a: GarageSpec
@@ -285,6 +303,7 @@ export function formatReport(report: SimulationReport): string {
 
   lines.push('', 'Starter pairings, first-named side')
   for (const [key, t] of report.starters) lines.push(tallyLine(key, t, 36))
+  for (const [key, t] of report.intro) lines.push(tallyLine(key, t, 36))
 
   lines.push('', 'Match length in turns per player')
   for (const [label, values] of [

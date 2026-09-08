@@ -5,8 +5,10 @@ import {
   openPack,
   ownedCount,
   packCards,
+  GRANT_VERSION,
+  introCollection,
   packsEarned,
-  starterCollection,
+  rebaseToIntro,
   type Collection,
   type Mode,
   type Pack,
@@ -219,7 +221,13 @@ export class Directory {
       wins: 0,
       losses: 0,
       claimed: false,
-      collection: { owned: starterCollection(), packs: 0, variants: NO_VARIANTS, laps: 0 },
+      collection: {
+        owned: introCollection(),
+        packs: 0,
+        variants: NO_VARIANTS,
+        laps: 0,
+        grantVersion: GRANT_VERSION,
+      },
       garages: [],
       createdAt: this.now(),
       lastCpuResultAt: 0,
@@ -288,9 +296,26 @@ export class Directory {
     await this.store.delete(`${SESSION}${token}`)
   }
 
+  /**
+   * Loads an account, filling what an older record lacks. An account still on the legacy
+   * loaner-garage grant is rebased onto the intro set here rather than in a sweep, so the work
+   * happens once per account as it is read (DESIGN.md 12).
+   */
   async load(id: string): Promise<Account | null> {
     const account = await this.store.get<Account>(`${ACCOUNT}${id}`)
-    return account ? { ...account, collection: normalizeCollection(account.collection) } : null
+    if (!account) return null
+    const collection = normalizeCollection(account.collection)
+    if (collection.grantVersion >= GRANT_VERSION) return { ...account, collection }
+    const rebased = {
+      ...account,
+      collection: {
+        ...collection,
+        owned: rebaseToIntro(collection.owned),
+        grantVersion: GRANT_VERSION,
+      },
+    }
+    await this.save(rebased)
+    return rebased
   }
 
   dataOf(account: Account): AccountData {
@@ -324,16 +349,21 @@ export class Directory {
     const garages = record['garages']
     let next: Account = { ...account, claimed: true }
     if (isCollectionState(collection)) {
+      const guestState = normalizeCollection(collection)
+      // The account is rebased by load; a guest record still on the legacy grant is rebased
+      // here, so the merge below cannot hand the legacy cards back through the per-id max.
+      const guestOwned =
+        guestState.grantVersion >= GRANT_VERSION
+          ? guestState.owned
+          : rebaseToIntro(guestState.owned)
       next = {
         ...next,
         collection: {
-          owned: maxCounts(account.collection.owned, collection.owned),
+          owned: maxCounts(account.collection.owned, guestOwned),
           packs: account.collection.packs + collection.packs,
-          variants: mergeVariants(
-            account.collection.variants,
-            normalizeCollection(collection).variants,
-          ),
-          laps: Math.max(account.collection.laps, normalizeCollection(collection).laps),
+          variants: mergeVariants(account.collection.variants, guestState.variants),
+          laps: Math.max(account.collection.laps, guestState.laps),
+          grantVersion: GRANT_VERSION,
         },
       }
     }
@@ -368,6 +398,7 @@ export class Directory {
       ),
       packs: account.collection.packs - 1,
       variants: grantVariants(account.collection.variants, cards),
+      grantVersion: account.collection.grantVersion,
       laps: account.collection.laps,
     }
     const next = { ...account, collection }

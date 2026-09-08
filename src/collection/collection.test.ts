@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CARS } from '../data/cars.ts'
 import { MODS, modRarity } from '../data/mods.ts'
-import { STARTERS } from '../data/starters.ts'
+import { INTRO_SET, STARTERS } from '../data/starters.ts'
 import { TIERS, type Tier } from '../data/types.ts'
 import { createMatch, seedRng, TUNABLES } from '../engine/index.ts'
 import { starterConfig } from '../engine/test-helpers.ts'
@@ -14,7 +14,9 @@ import {
   owns,
   packCards,
   packsEarned,
-  starterCollection,
+  introCollection,
+  rebaseToIntro,
+  GRANT_VERSION,
   NO_VARIANTS,
   bestVariant,
   grantVariants,
@@ -24,7 +26,15 @@ import {
   ownedCount,
   packCarCount,
 } from './collection.ts'
-import { COLLECTION_KEY, addPacks, loadCollection, openNextPack } from './persist.ts'
+import {
+  COLLECTION_KEY,
+  REBASE_NOTICE_KEY,
+  addPacks,
+  clearRebaseNotice,
+  loadCollection,
+  openNextPack,
+  rebaseNoticePending,
+} from './persist.ts'
 
 function memoryStore(
   initial: Record<string, string> = {},
@@ -43,10 +53,10 @@ function must<T>(value: T | undefined, what: string): T {
   return value
 }
 
-const starter = starterCollection()
+const intro = introCollection()
 const outsideCar = must(
-  CARS.find((car) => !owns(starter, car.id)),
-  'car outside the starters',
+  CARS.find((car) => !owns(intro, car.id)),
+  'car outside the intro set',
 ).id
 
 describe('packs', () => {
@@ -95,31 +105,110 @@ describe('packs', () => {
   })
 })
 
-describe('starter collection', () => {
+describe('intro collection', () => {
   it('does not own the rare Fuel Drain until a pack turns it up', () => {
-    expect(owns(starter, 'fuel-drain')).toBe(false)
+    expect(owns(intro, 'fuel-drain')).toBe(false)
   })
 
-  it('holds every starter card with enough copies to rebuild each starter', () => {
-    for (const s of STARTERS) {
-      for (const id of s.cars) expect(owns(starter, id), id).toBe(true)
-      for (const [id, count] of countIds(s.deck)) {
-        expect(copiesOwned(starter, id), id).toBeGreaterThanOrEqual(count)
-      }
+  it('holds exactly the intro set: one copy per car, the granted copies per mod', () => {
+    for (const id of INTRO_SET.cars) expect(copiesOwned(intro, id), id).toBe(1)
+    for (const [id, copies] of INTRO_SET.mods) expect(copiesOwned(intro, id), id).toBe(copies)
+    expect(ownedCount(intro)).toBe(INTRO_SET.cars.length + INTRO_SET.mods.length)
+  })
+
+  it('cannot rebuild a loaner garage, which is why loaners are never owned', () => {
+    const shortfall = STARTERS.filter(
+      (s) =>
+        s.cars.some((id) => !owns(intro, id)) ||
+        [...countIds(s.deck)].some(([id, count]) => copiesOwned(intro, id) < count),
+    )
+    expect(shortfall).toHaveLength(STARTERS.length)
+  })
+
+  it('leaves every mod below the deck cap, so no pack slot starts dead', () => {
+    for (const [id, copies] of INTRO_SET.mods) {
+      expect(copies, id).toBeLessThan(TUNABLES.maxCopiesPerMod)
     }
   })
 
-  it('does not hold cars outside the starters, and counts duplicates', () => {
-    expect(owns(starter, outsideCar)).toBe(false)
-    const more = grant(starter, [outsideCar, outsideCar])
+  it('does not hold cars outside the intro set, and counts duplicates', () => {
+    expect(owns(intro, outsideCar)).toBe(false)
+    const more = grant(intro, [outsideCar, outsideCar])
     expect(copiesOwned(more, outsideCar)).toBe(2)
-    expect(copiesOwned(starter, outsideCar)).toBe(0)
+    expect(copiesOwned(intro, outsideCar)).toBe(0)
+  })
+})
+
+describe('rebase onto the intro set', () => {
+  const legacy = { ...intro, 'lamborghini-aventador-svj': 1, 'pit-crew': 3, 'red-light': 2 }
+
+  it('takes back the legacy free cards and keeps what was earned', () => {
+    const earnedCar = outsideCar
+    const before = { ...legacy, [earnedCar]: 2 }
+    const after = rebaseToIntro(before)
+    // Given free by the old grant, in neither the intro set nor a pack: gone.
+    expect(owns(after, 'lamborghini-aventador-svj')).toBe(false)
+    expect(owns(after, 'red-light')).toBe(false)
+    // In the intro set: back to the intro copies, not the legacy three.
+    expect(copiesOwned(after, 'pit-crew')).toBe(copiesOwned(intro, 'pit-crew'))
+    // Opened or won: kept in full.
+    expect(copiesOwned(after, earnedCar)).toBe(2)
+  })
+
+  it('adds copies earned above the legacy grant to the intro copies', () => {
+    const after = rebaseToIntro({ ...legacy, 'lamborghini-aventador-svj': 3 })
+    expect(copiesOwned(after, 'lamborghini-aventador-svj')).toBe(2)
+  })
+
+  it('is idempotent: rebasing an already rebased collection changes nothing', () => {
+    const once = rebaseToIntro({ ...legacy, [outsideCar]: 1 })
+    expect(rebaseToIntro(once)).toEqual(once)
+  })
+
+  it('rebases a stored record once, writes the version back, and flags the notice', () => {
+    const store = memoryStore({
+      [COLLECTION_KEY]: JSON.stringify({ owned: legacy, packs: 2, variants: NO_VARIANTS }),
+    })
+    const first = loadCollection(store)
+    expect(first.grantVersion).toBe(GRANT_VERSION)
+    expect(owns(first.owned, 'lamborghini-aventador-svj')).toBe(false)
+    expect(first.packs).toBe(2)
+    expect(rebaseNoticePending(store)).toBe(true)
+    const second = loadCollection(store)
+    expect(second.owned).toEqual(first.owned)
+  })
+
+  it('leaves a record already on the current grant alone', () => {
+    const owned = { ...intro, [outsideCar]: 1 }
+    const store = memoryStore({
+      [COLLECTION_KEY]: JSON.stringify({
+        owned,
+        packs: 0,
+        variants: NO_VARIANTS,
+        laps: 0,
+        grantVersion: GRANT_VERSION,
+      }),
+    })
+    expect(loadCollection(store).owned).toEqual(owned)
+    expect(store.data.get(REBASE_NOTICE_KEY)).toBeUndefined()
+  })
+
+  it('shows the notice once: clearing it survives a later load', () => {
+    const store = memoryStore({
+      [COLLECTION_KEY]: JSON.stringify({ owned: legacy, packs: 0, variants: NO_VARIANTS }),
+    })
+    loadCollection(store)
+    expect(rebaseNoticePending(store)).toBe(true)
+    clearRebaseNotice(store)
+    expect(rebaseNoticePending(store)).toBe(false)
+    loadCollection(store)
+    expect(rebaseNoticePending(store)).toBe(false)
   })
 })
 
 describe('persistence', () => {
   const mod = must(
-    MODS.find((m) => copiesOwned(starter, m.id) < TUNABLES.maxCopiesPerMod),
+    MODS.find((m) => copiesOwned(intro, m.id) < TUNABLES.maxCopiesPerMod),
     'mod with room to grant',
   ).id
   const oldGarage = {
@@ -146,10 +235,10 @@ describe('persistence', () => {
     const store = memoryStore({ [COLLECTION_KEY]: '{not json' })
     const state = loadCollection(store)
     expect(state.packs).toBe(0)
-    expect(state.owned).toEqual(starter)
+    expect(state.owned).toEqual(intro)
     expect(JSON.parse(store.data.get(COLLECTION_KEY) ?? '')).toEqual(state)
     const wrongShape = memoryStore({ [COLLECTION_KEY]: JSON.stringify({ owned: 'x', packs: 'y' }) })
-    expect(loadCollection(wrongShape).owned).toEqual(starter)
+    expect(loadCollection(wrongShape).owned).toEqual(intro)
   })
 
   it('opens packs from the stack and keeps what they held', () => {
@@ -167,8 +256,8 @@ describe('persistence', () => {
     expect(openNextPack(7, store)).toBeNull()
   })
 
-  it('reads as the starter set when storage is missing', () => {
-    expect(loadCollection(null).owned).toEqual(starter)
+  it('reads as the intro set when storage is missing', () => {
+    expect(loadCollection(null).owned).toEqual(intro)
     expect(openNextPack(1, null)).toBeNull()
   })
 })
@@ -211,7 +300,7 @@ describe('variants', () => {
   })
 
   it('persist next to the counts and default to none for older records', () => {
-    const store = memoryStore({ [COLLECTION_KEY]: JSON.stringify({ owned: starter, packs: 1 }) })
+    const store = memoryStore({ [COLLECTION_KEY]: JSON.stringify({ owned: intro, packs: 1 }) })
     expect(loadCollection(store).variants).toEqual(NO_VARIANTS)
     const opened = openNextPack(3, store)
     if (!opened) throw new Error('No pack to open')
@@ -223,12 +312,12 @@ describe('variants', () => {
   })
 })
 describe('laps', () => {
-  const missingCars = CARS.filter((car) => !owns(starter, car.id)).map((car) => car.id)
-  const everyCar = grant(starter, missingCars)
+  const missingCars = CARS.filter((car) => !owns(intro, car.id)).map((car) => car.id)
+  const everyCar = grant(intro, missingCars)
   const secondCar = must(missingCars[1], 'second car outside the starters')
 
   it('is complete when every car is owned, whatever the mods and finishes', () => {
-    expect(isComplete(starter)).toBe(false)
+    expect(isComplete(intro)).toBe(false)
     expect(isComplete(everyCar)).toBe(true)
   })
 
@@ -241,20 +330,21 @@ describe('laps', () => {
     expect(pack.cars).toHaveLength(packCars + 2)
   })
 
-  it('takes the lap: starters plus keepsakes in chrome, packs kept, finishes cleared', () => {
+  it('takes the lap: the intro set plus keepsakes in chrome, packs kept, finishes cleared', () => {
     const before = {
       owned: everyCar,
       packs: 4,
       variants: { foil: { [outsideCar]: 1 }, holo: {}, chrome: {} },
       laps: 0,
+      grantVersion: GRANT_VERSION,
     }
-    expect(claimLap({ ...before, owned: starter }, outsideCar)).toBeNull()
+    expect(claimLap({ ...before, owned: intro }, outsideCar)).toBeNull()
     expect(claimLap(before, 'not-a-car')).toBeNull()
     const after = must(claimLap(before, outsideCar) ?? undefined, 'first lap')
     expect(after.laps).toBe(1)
     expect(after.packs).toBe(4)
     expect(owns(after.owned, outsideCar)).toBe(true)
-    expect(ownedCount(after.owned)).toBe(ownedCount(starter) + 1)
+    expect(ownedCount(after.owned)).toBe(ownedCount(intro) + 1)
     expect(after.variants).toEqual({ foil: {}, holo: {}, chrome: { [outsideCar]: 1 } })
     expect(bestVariant(after.variants, outsideCar)).toBe('chrome')
     const again = must(
@@ -272,7 +362,7 @@ describe('laps', () => {
       { id: 'a', name: 'A', cars: [outsideCar], deck: [], updatedAt: 1 },
       { id: 'b', name: 'B', cars: [], deck: [], updatedAt: 1 },
     ]
-    expect(garagesAfterLap(garages, starter).map((g) => g.id)).toEqual(['b'])
+    expect(garagesAfterLap(garages, intro).map((g) => g.id)).toEqual(['b'])
     expect(garagesAfterLap(garages, everyCar).map((g) => g.id)).toEqual(['a', 'b'])
   })
 })

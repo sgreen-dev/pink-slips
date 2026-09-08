@@ -22,14 +22,24 @@ export interface CollectionState {
   variants: VariantCounts
   /** Laps taken: times the roster was completed and the collection started over (DESIGN.md 12). */
   laps: number
+  /**
+   * Which free grant this record was written against: 1 the loaner-garage union, 2 the intro
+   * set. A record still at 1 is rebased once on load (DESIGN.md 12).
+   */
+  grantVersion: number
 }
 
-/** Fills what records written before laps existed lack: chrome copies and the lap count. */
+/**
+ * Fills what older records lack: chrome copies, the lap count, and the grant version. A record
+ * with no version was written against the legacy grant, so it defaults to 1 and the loader
+ * rebases it.
+ */
 export function normalizeCollection(value: {
   owned: Collection
   packs: number
   variants: { foil: Collection; holo: Collection; chrome?: Collection }
   laps?: number
+  grantVersion?: number
 }): CollectionState {
   return {
     owned: value.owned,
@@ -40,6 +50,7 @@ export function normalizeCollection(value: {
       chrome: value.variants.chrome ?? {},
     },
     laps: value.laps ?? 0,
+    grantVersion: value.grantVersion ?? 1,
   }
 }
 

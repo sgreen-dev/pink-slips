@@ -141,7 +141,7 @@ export function removeMod(draft: GarageDraft, modId: string): GarageDraft {
   return { ...draft, deck: [...draft.deck.slice(0, index), ...draft.deck.slice(index + 1)] }
 }
 
-/** A garage a player can pick at match start: a starter or a saved custom garage. */
+/** A garage a player can pick at match start: a loaner or a saved custom garage. */
 export interface GarageOption {
   id: string
   name: string
@@ -149,16 +149,19 @@ export interface GarageOption {
   cars: readonly string[]
   deck: readonly string[]
   custom: boolean
+  /** A loaner garage: always raceable, and its cars are not in the collection (DESIGN.md 5). */
+  loaner: boolean
 }
 
 export function garageOptions(saved: readonly SavedGarage[]): GarageOption[] {
-  const starters = STARTERS.map((s) => ({
+  const loaners = STARTERS.map((s) => ({
     id: s.id,
     name: s.name,
     style: s.style,
     cars: s.cars,
     deck: s.deck,
     custom: false,
+    loaner: true,
   }))
   const custom = [...saved]
     .sort((a, b) => b.updatedAt - a.updatedAt)
@@ -173,6 +176,7 @@ export function garageOptions(saved: readonly SavedGarage[]): GarageOption[] {
       cars: g.cars,
       deck: g.deck,
       custom: true,
+      loaner: false,
     }))
-  return [...starters, ...custom]
+  return [...loaners, ...custom]
 }

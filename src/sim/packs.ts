@@ -2,7 +2,7 @@ import {
   ALL_CARD_IDS,
   openPack,
   packCards,
-  starterCollection,
+  introCollection,
   owns,
 } from '../collection/collection.ts'
 import { CARS } from '../data/cars.ts'
@@ -43,13 +43,13 @@ export function runPackSimulation(options: {
   const laps = options.laps ?? 0
   const ultraRare = new Set(CARS.filter((car) => car.tier === 'hyper').map((car) => car.id))
   const carIds = new Set(CARS.map((car) => car.id))
-  const starter = starterCollection()
+  const intro = introCollection()
   const toComplete: number[] = []
   const toAllCars: number[] = []
   const toUltraRare: number[] = []
   let rng: RngState = seedRng(options.seed)
   for (let trial = 0; trial < options.trials; trial++) {
-    const missing = new Set(ALL_CARD_IDS.filter((id) => !owns(starter, id)))
+    const missing = new Set(ALL_CARD_IDS.filter((id) => !owns(intro, id)))
     let packs = 0
     let firstUltraRare = 0
     let allCars = 0
@@ -71,7 +71,7 @@ export function runPackSimulation(options: {
     trials: options.trials,
     seed: options.seed,
     cards: ALL_CARD_IDS.length,
-    startingOwned: ALL_CARD_IDS.length - ALL_CARD_IDS.filter((id) => !owns(starter, id)).length,
+    startingOwned: ALL_CARD_IDS.length - ALL_CARD_IDS.filter((id) => !owns(intro, id)).length,
     laps,
     meanToComplete: mean(toComplete),
     medianToComplete: median(toComplete),
