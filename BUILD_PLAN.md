@@ -42,6 +42,7 @@
 | 20 | Stakes | done | 312f4d8 |
 | 24 | Guided first match | done | 3743945 |
 | 25 | Refused plays explained | done | 9bd2052 |
+| 26 | Rematch in the same room | done | 35ca95a |
 
 ---
 
@@ -713,7 +714,6 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
    *Why here:* Freshness for returning players; nothing for a first visit.
 7. Linking an outside sign-in (GitHub, Google) to a player as a second way to recover it, if lost recovery codes turn out to be common
    *Why here:* Insurance against lost recovery codes; only worth it if losses turn out to be common.
-14. Rematch in the same room, online. After a friend match the result screen offers Play again to both seats; when both accept, the room starts a new match with the same garages, the seed advanced, and the seats' first-move order swapped. Needs a `rematch` message, a room state for one side having accepted, a test that a rematch swaps the first player, and a section 13 line
 15. Match history and car records. The profile lists the last twenty matches with opponent, result, and rating change, and each car's wins and losses across the player's matches, so a player sees which cars work for them. The directory records a summary at result time; the room passes the winner's staged cars and the pink slips. Needs a bounded history per account, a test that the list is capped, and a section 13 line
 16. Daily first-win pack. The first win of each calendar day, against the CPU or online, earns one extra pack, with the day boundary taken from the browser's clock for guests and the service's for players. A small badge set for milestones (first Ultra Rare, ten ranked wins, a full type) shown on the profile. A tunable for the bonus, a test that the second win of a day earns nothing extra, and a section 12 addendum
 17. Challenge a friend by name, online. From the online screen, type a player's name to send an invite; the invited player sees it on their start screen while signed in and accepts into a private room. The seed of a friends list, which would follow. Needs an invite store on the directory with expiry, two protocol messages, and a section 13 line
@@ -742,4 +742,6 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 
 12. Guided first match, on phones and desktop. Phase 24, 2026-09-08 (3743945, a73be60).
 
-22. Refused plays explained. Phase 25, 2026-09-08 (9bd2052, the commit that marks it done).
+22. Refused plays explained. Phase 25, 2026-09-08 (9bd2052, 30879cd).
+
+14. Rematch in the same room, online, for friend matches played for no stakes. Phase 26, 2026-09-08 (35ca95a, the commit that marks it done).
