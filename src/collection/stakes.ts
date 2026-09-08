@@ -48,10 +48,18 @@ export function stakesTransfer(state: MatchState): [Transfer, Transfer] {
   ]
 }
 
-/** Applies a transfer to a collection: a gain adds a copy, a loss takes one, never below zero. */
-export function applyTransfer(collection: Collection, transfer: Transfer): Collection {
+/**
+ * Applies a transfer to a collection: a gain adds a copy, a loss takes one, never below zero.
+ * A car held in `keep` (the keepsakes in chrome) is never lost.
+ */
+export function applyTransfer(
+  collection: Collection,
+  transfer: Transfer,
+  keep: Collection = {},
+): Collection {
   const next: Record<string, number> = { ...grant(collection, transfer.gained) }
   for (const id of transfer.lost) {
+    if ((keep[id] ?? 0) > 0) continue
     const have = next[id] ?? 0
     if (have > 0) next[id] = have - 1
   }
@@ -73,6 +81,21 @@ export function sanitizeTransfer(value: unknown): Transfer | null {
   const lost = list(record['lost'])
   if (!gained || !lost) return null
   return { gained, lost }
+}
+
+/**
+ * Keepsakes never change hands (DESIGN.md 12, Laps): a car the loser holds in chrome leaves
+ * the loser's losses and the winner's gains alike.
+ */
+export function protectKeepsakes(
+  transfers: { winner: Transfer; loser: Transfer },
+  keepsakes: Collection,
+): { winner: Transfer; loser: Transfer } {
+  const kept = (id: string) => (keepsakes[id] ?? 0) > 0
+  return {
+    winner: { ...transfers.winner, gained: transfers.winner.gained.filter((id) => !kept(id)) },
+    loser: { ...transfers.loser, lost: transfers.loser.lost.filter((id) => !kept(id)) },
+  }
 }
 
 export function isEmptyTransfer(transfer: Transfer): boolean {

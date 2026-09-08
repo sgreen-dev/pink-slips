@@ -18,8 +18,29 @@ export interface CollectionState {
   owned: Collection
   /** Packs earned and not yet opened. */
   packs: number
-  /** Foil and holo copies among the owned ones. */
+  /** Foil, holo, and chrome copies among the owned ones. */
   variants: VariantCounts
+  /** Laps taken: times the roster was completed and the collection started over (DESIGN.md 12). */
+  laps: number
+}
+
+/** Fills what records written before laps existed lack: chrome copies and the lap count. */
+export function normalizeCollection(value: {
+  owned: Collection
+  packs: number
+  variants: { foil: Collection; holo: Collection; chrome?: Collection }
+  laps?: number
+}): CollectionState {
+  return {
+    owned: value.owned,
+    packs: value.packs,
+    variants: {
+      foil: value.variants.foil,
+      holo: value.variants.holo,
+      chrome: value.variants.chrome ?? {},
+    },
+    laps: value.laps ?? 0,
+  }
 }
 
 export function isStringArray(value: unknown): value is string[] {
@@ -64,6 +85,11 @@ export function isCollectionState(value: unknown): value is CollectionState {
     isCounts(record['owned']) &&
     variants !== undefined &&
     isCounts(variants['foil']) &&
-    isCounts(variants['holo'])
+    isCounts(variants['holo']) &&
+    (variants['chrome'] === undefined || isCounts(variants['chrome'])) &&
+    (record['laps'] === undefined ||
+      (typeof record['laps'] === 'number' &&
+        Number.isInteger(record['laps']) &&
+        record['laps'] >= 0))
   )
 }

@@ -3,6 +3,7 @@ import { MODS, modRarity } from '../data/mods.ts'
 import { STARTERS } from '../data/starters.ts'
 import { TIERS, type Tier } from '../data/types.ts'
 import { nextFloat, nextInt, TUNABLES, type RngState } from '../engine/index.ts'
+import type { CollectionState, SavedGarage } from '../protocol/records.ts'
 
 /**
  * The collection: how many copies of each card a player owns, the foil and holo copies among
@@ -27,14 +28,20 @@ const RARE_MOD_IDS: readonly string[] = MODS.filter((mod) => modRarity(mod) === 
 
 export type Mode = 'cpu' | 'hotseat' | 'online'
 
-/** Cosmetic finish of one copy. Holo is rarer than foil; base is the plain card. */
-export type Variant = 'base' | 'foil' | 'holo'
+/**
+ * Cosmetic finish of one copy. Holo is rarer than foil; base is the plain card. Chrome is a
+ * keepsake's finish, given by a lap and never by a pack (DESIGN.md 12, Laps).
+ */
+export type Variant = 'base' | 'foil' | 'holo' | 'chrome'
 
 export const VARIANT_LABEL: Readonly<Record<Variant, string>> = {
   base: '',
   foil: 'Foil',
   holo: 'Holo',
+  chrome: 'Chrome',
 }
+
+const CAR_IDS: ReadonlySet<string> = new Set(CARS.map((car) => car.id))
 
 export function countIds(ids: readonly string[]): Map<string, number> {
   const counts = new Map<string, number>()
@@ -95,25 +102,71 @@ export function ownedCount(collection: Collection): number {
   return ALL_CARD_IDS.filter((id) => owns(collection, id)).length
 }
 
-/** Foil and holo copies by card id. Base copies are the rest of the collection's count. */
+/** Complete for a lap: every car owned at least once. Mods and finishes do not count. */
+export function isComplete(collection: Collection): boolean {
+  return CARS.every((car) => owns(collection, car.id))
+}
+
+/** Cars in a pack after this many laps: the base count plus one per lap, capped. */
+export function packCarCount(laps: number, t: typeof TUNABLES = TUNABLES): number {
+  const counted = Math.min(Math.max(0, laps), t.collection.lapBonusCap)
+  return t.collection.packCars + counted * t.collection.lapBonusCars
+}
+
+/**
+ * Takes the lap (DESIGN.md 12, Laps): the collection returns to the starters plus every
+ * keepsake at one copy, the new one wearing chrome with the old ones, packs stay, foil and holo
+ * finishes go, and the lap count rises. Null unless every car is owned and the keepsake is a
+ * car the player owns.
+ */
+export function claimLap(state: CollectionState, keepsakeId: string): CollectionState | null {
+  if (!isComplete(state.owned) || !CAR_IDS.has(keepsakeId) || !owns(state.owned, keepsakeId)) {
+    return null
+  }
+  const chrome = owns(state.variants.chrome, keepsakeId)
+    ? state.variants.chrome
+    : grant(state.variants.chrome, [keepsakeId])
+  let owned = starterCollection()
+  for (const id of Object.keys(chrome)) if (!owns(owned, id)) owned = grant(owned, [id])
+  return {
+    owned,
+    packs: state.packs,
+    variants: { foil: {}, holo: {}, chrome },
+    laps: state.laps + 1,
+  }
+}
+
+/** The saved garages that can still be built from what is owned; the rest go with the lap. */
+export function garagesAfterLap(garages: readonly SavedGarage[], owned: Collection): SavedGarage[] {
+  return garages.filter(
+    (garage) =>
+      garage.cars.every((id) => owns(owned, id)) &&
+      [...countIds(garage.deck)].every(([id, count]) => copiesOwned(owned, id) >= count),
+  )
+}
+
+/** Foil, holo, and chrome copies by card id. Base copies are the rest of the collection's count. */
 export interface VariantCounts {
   readonly foil: Collection
   readonly holo: Collection
+  readonly chrome: Collection
 }
 
-export const NO_VARIANTS: VariantCounts = { foil: {}, holo: {} }
+export const NO_VARIANTS: VariantCounts = { foil: {}, holo: {}, chrome: {} }
 
 export function grantVariants(counts: VariantCounts, cards: readonly PackCard[]): VariantCounts {
-  let { foil, holo } = counts
+  let { foil, holo, chrome } = counts
   for (const card of cards) {
     if (card.variant === 'foil') foil = grant(foil, [card.id])
     if (card.variant === 'holo') holo = grant(holo, [card.id])
+    if (card.variant === 'chrome') chrome = grant(chrome, [card.id])
   }
-  return { foil, holo }
+  return { foil, holo, chrome }
 }
 
-/** The finish that shows for a card: a holo copy beats a foil copy beats base. */
+/** The finish that shows for a card: chrome beats holo beats foil beats base. */
 export function bestVariant(counts: VariantCounts, id: string): Variant {
+  if (owns(counts.chrome, id)) return 'chrome'
   if (owns(counts.holo, id)) return 'holo'
   if (owns(counts.foil, id)) return 'foil'
   return 'base'
@@ -172,7 +225,11 @@ function pick(state: RngState, items: readonly string[]): [string, RngState] {
  * Opens one pack: car slots roll a tier by the odds, then a car in it; mod slots roll rare at
  * the rare odds, then pick uniformly within that rarity. Every card then rolls its finish.
  */
-export function openPack(state: RngState, t: typeof TUNABLES = TUNABLES): [Pack, RngState] {
+export function openPack(
+  state: RngState,
+  t: typeof TUNABLES = TUNABLES,
+  laps = 0,
+): [Pack, RngState] {
   const cars: PackCard[] = []
   const mods: PackCard[] = []
   let rng = state
@@ -181,7 +238,7 @@ export function openPack(state: RngState, t: typeof TUNABLES = TUNABLES): [Pack,
     ;[variant, rng] = rollVariant(rng, t)
     return { id, variant }
   }
-  for (let i = 0; i < t.collection.packCars; i++) {
+  for (let i = 0; i < packCarCount(laps, t); i++) {
     let tier: Tier
     ;[tier, rng] = rollTier(rng, t.collection.carTierOdds)
     let car: string

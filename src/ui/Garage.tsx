@@ -3,12 +3,15 @@ import type { PlayerState } from '../engine/index.ts'
 import { cardBackUrl } from './artwork.ts'
 import { CardBack } from './CardBack.tsx'
 import { CarCard, type CardSize } from './CarCard.tsx'
+import { Plate } from './Plate.tsx'
 import { stagedFirst, type CarIntent, type Selection } from './interaction.ts'
 import { scrollRowBack, TURN_END_RESET_MS } from './scroll.ts'
 
 interface GarageProps {
   player: PlayerState
   name: string
+  /** The player's laps, shown as a plate beside the name and on the card backs. */
+  plate?: number
   /** Cards that respond to a click, keyed by car id. Omit for a view-only garage. */
   intents?: Map<string, CarIntent>
   selection?: Selection
@@ -27,6 +30,7 @@ interface GarageProps {
 export function Garage({
   player,
   name,
+  plate = 0,
   intents,
   selection,
   onCar,
@@ -50,14 +54,17 @@ export function Garage({
   return (
     <section className="garage">
       <header className="garage__header">
-        <span className="garage__name">{name}</span>
+        <span className="garage__name">
+          {name}
+          <Plate laps={plate} />
+        </span>
         <span className="garage__meta">
           Pink slips {player.pinkSlips.length}/3 · Hand {handCount ?? player.hand.length} · Deck{' '}
           {player.deck.length}
           {handCount !== undefined && cardBackUrl() && (
             <span className="garage__fan" aria-hidden="true">
               {Array.from({ length: Math.min(5, handCount) }, (_, i) => (
-                <CardBack key={i} size="xs" />
+                <CardBack key={i} size="xs" plate={plate} />
               ))}
             </span>
           )}

@@ -62,6 +62,8 @@ export interface StateMessage {
   /** The match as this seat may see it. */
   view: MatchState
   names: readonly [string, string]
+  /** Each seat's laps for its plate, zero for a guest (DESIGN.md 12). */
+  plates: readonly [number, number]
 }
 
 export interface PresenceMessage {
@@ -187,6 +189,14 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
   }
 }
 
+function isPlates(value: unknown): value is [number, number] {
+  return (
+    Array.isArray(value) &&
+    value.length === 2 &&
+    value.every((n) => typeof n === 'number' && Number.isInteger(n) && n >= 0)
+  )
+}
+
 /** The client's mirror of parseClientMessage, so a bad frame never reaches the board. */
 export function parseServerMessage(raw: unknown): ServerMessage | null {
   let value = raw
@@ -222,6 +232,7 @@ export function parseServerMessage(raw: unknown): ServerMessage | null {
             type: 'state',
             view: value['view'] as unknown as MatchState,
             names: [value['names'][0] ?? 'Player 1', value['names'][1] ?? 'Player 2'],
+            plates: isPlates(value['plates']) ? [value['plates'][0], value['plates'][1]] : [0, 0],
           }
         : null
     case 'presence':

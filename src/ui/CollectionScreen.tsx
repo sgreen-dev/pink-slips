@@ -5,12 +5,16 @@ import {
   ALL_CARD_IDS,
   bestVariant,
   copiesOwned,
+  isComplete,
   ownedCount,
+  owns,
+  packCarCount,
   packCards,
   type Pack,
 } from '../collection/collection.ts'
-import { loadCollection, type CollectionState } from '../collection/persist.ts'
-import { AccountContext, openNext } from './account.ts'
+import { claimLapLocally, loadCollection, type CollectionState } from '../collection/persist.ts'
+import { AccountContext, claimLapOnline, mirror, openNext } from './account.ts'
+import { Plate } from './Plate.tsx'
 import { CARS } from '../data/cars.ts'
 import { MODS } from '../data/mods.ts'
 import { TIER_LABEL } from '../data/tiers.ts'
@@ -50,6 +54,39 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const [family, setFamily] = useState<ModFamily | 'all'>('all')
 
   const owned = state.owned
+  // Taking the lap (DESIGN.md 12, Laps): offered once every car is owned, behind a confirm.
+  const complete = isComplete(owned)
+  const [keepsake, setKeepsake] = useState('')
+  const [confirmLap, setConfirmLap] = useState(false)
+  const [lapError, setLapError] = useState<string | null>(null)
+  const ownedCars = CARS.filter((car) => owns(owned, car.id))
+  const rarestFirst = [...TIERS].reverse()
+  const defaultKeepsake =
+    rarestFirst.flatMap((t) => ownedCars.filter((car) => car.tier === t))[0]?.id ?? ''
+  const chosen = keepsake || defaultKeepsake
+  const takeLap = async () => {
+    setLapError(null)
+    if (account) {
+      const data = await claimLapOnline(account.endpoint, account.token, chosen)
+      if (!data || data === 'refused') {
+        setLapError('The lap could not be taken. Check the connection and try again.')
+        return
+      }
+      account.update(data)
+      mirror(data)
+      setState(data.collection)
+    } else {
+      const next = claimLapLocally(chosen)
+      if (!next) {
+        setLapError('The lap could not be taken.')
+        return
+      }
+      setState(next)
+    }
+    setConfirmLap(false)
+    setKeepsake('')
+    setOpened(null)
+  }
   const cars = CARS.filter(
     (car) => (type === 'all' || car.type === type) && (tier === 'all' || car.tier === tier),
   )
@@ -82,7 +119,54 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
       <section className="collection__packs" aria-live="polite">
         <p className="collection__summary">
           You own {ownedCount(owned)} of {ALL_CARD_IDS.length} cards.
+          <Plate laps={state.laps} size="md" />
         </p>
+        {complete && (
+          <div className="collection__lap">
+            <p>
+              Every car is yours. Take the lap: your collection returns to the starter set, you keep
+              one car in Chrome, and packs hold an extra car from then on, up to two. Custom garages
+              that need cars you give up are removed.
+            </p>
+            <label className="collection__keepsake">
+              Keepsake{' '}
+              <select value={chosen} onChange={(event) => setKeepsake(event.target.value)}>
+                {ownedCars.map((car) => (
+                  <option key={car.id} value={car.id}>
+                    {car.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {confirmLap ? (
+              <span className="board__confirm">
+                <button
+                  type="button"
+                  className="button button--primary"
+                  onClick={() => void takeLap()}
+                >
+                  Take lap {state.laps + 1}
+                </button>
+                <button
+                  type="button"
+                  className="button button--ghost"
+                  onClick={() => setConfirmLap(false)}
+                >
+                  Not yet
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="button button--primary"
+                onClick={() => setConfirmLap(true)}
+              >
+                Take the lap
+              </button>
+            )}
+            {lapError && <p className="builder__notice">{lapError}</p>}
+          </div>
+        )}
         <button
           type="button"
           className="button button--primary button--big"
@@ -94,7 +178,8 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
             : `Open a pack (${state.packs} ${state.packs === 1 ? 'pack' : 'packs'} waiting)`}
         </button>
         <p className="builder__hint">
-          Finishing a match earns {packsPerMatch} pack. Beating the CPU earns {packsPerCpuWin}.
+          Finishing a match earns {packsPerMatch} pack. Beating the CPU earns {packsPerCpuWin}. A
+          pack holds {packCarCount(state.laps)} cars and {TUNABLES.collection.packMods} mods.
         </p>
         {opened && <PackReveal pack={opened.pack} fresh={opened.fresh} />}
       </section>

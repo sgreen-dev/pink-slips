@@ -28,6 +28,8 @@ import type { ClientMessage, ServerMessage } from '../protocol/messages.ts'
 export interface SeatIdentity {
   accountId: string
   name: string
+  /** Laps taken, for the plate both seats see (DESIGN.md 12). */
+  laps?: number
 }
 
 export interface Ticket {
@@ -179,13 +181,23 @@ export class Room {
     return [this.seats[0]?.name ?? 'Player 1', this.seats[1]?.name ?? 'Player 2']
   }
 
+  /** Each seat's laps for its plate; a guest, whom the room cannot know, shows none. */
+  private plates(): [number, number] {
+    return [this.seats[0]?.identity?.laps ?? 0, this.seats[1]?.identity?.laps ?? 0]
+  }
+
   /** Both seats' current views, or nothing before the match starts. */
   private views(): Outbound[] {
     const state = this.state
     if (!state) return []
     return ([0, 1] as const).map((seat) => ({
       to: seat,
-      message: { type: 'state', view: redact(state, seat), names: this.names() },
+      message: {
+        type: 'state',
+        view: redact(state, seat),
+        names: this.names(),
+        plates: this.plates(),
+      },
     }))
   }
 
@@ -296,7 +308,12 @@ export class Room {
     if (this.state) {
       out.push({
         to: null,
-        message: { type: 'state', view: redact(this.state, seat), names: this.names() },
+        message: {
+          type: 'state',
+          view: redact(this.state, seat),
+          names: this.names(),
+          plates: this.plates(),
+        },
       })
     } else {
       out.push({ to: null, message: { type: 'waiting' } })

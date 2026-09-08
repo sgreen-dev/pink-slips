@@ -60,6 +60,8 @@ interface BoardProps {
   onExit?: () => void
   /** Draw the opponent's cards without finishes, as for the CPU. */
   plainOpponent?: boolean
+  /** Each seat's laps for its plate, online (DESIGN.md 12). */
+  plates?: readonly [number, number]
   /** The first-match guide's callout, drawn under the prompt (DESIGN.md 8). */
   guide?: ReactNode
 }
@@ -89,6 +91,7 @@ export function Board({
   frozen,
   inert,
   plainOpponent,
+  plates,
   guide,
   canUndo = false,
   onUndo,
@@ -265,6 +268,7 @@ export function Board({
         <Garage
           player={state.players[opponent]}
           name={names[opponent]}
+          plate={plates?.[opponent]}
           handCount={state.players[opponent].hand.length}
           onOther={onOther(opponent)}
           size="sm"
@@ -284,6 +288,7 @@ export function Board({
       <Garage
         player={me}
         name={names[viewer]}
+        plate={plates?.[viewer]}
         intents={busy && options ? undefined : intents}
         selection={selection}
         onCar={onCar}

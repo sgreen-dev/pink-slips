@@ -60,6 +60,9 @@ export const TUNABLES = {
     packsPerCpuWin: 2,
     packCars: 2,
     packMods: 3,
+    /** Extra cars per pack for each lap taken (DESIGN.md 12, Laps), and the most laps that count. */
+    lapBonusCars: 1,
+    lapBonusCap: 2,
     /** Chance that a pack card is foil, and that it is holo. Exclusive; the rest are base. */
     foilOdds: 0.1,
     holoOdds: 0.02,

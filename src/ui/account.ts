@@ -121,6 +121,24 @@ export function rotateRecovery(
 }
 
 /** Renames the player. `refused` when the name is not allowed; null when unreachable. */
+/** Takes the lap on the account (DESIGN.md 12, Laps); 'refused' when the service says no. */
+export async function claimLapOnline(
+  endpoint: string,
+  token: string,
+  car: string,
+  fetcher: Fetcher | undefined = globalThis.fetch,
+): Promise<AccountData | 'refused' | null> {
+  const { status, body } = await call<AccountData>(
+    endpoint,
+    '/me/lap',
+    token,
+    { method: 'POST', body: JSON.stringify({ car }) },
+    fetcher,
+  )
+  if (status === 400) return 'refused'
+  return body
+}
+
 export async function renamePlayer(
   endpoint: string,
   token: string,

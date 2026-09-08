@@ -1,6 +1,13 @@
 import { STARTERS } from '../data/starters.ts'
 import { describe, expect, it } from 'vitest'
-import { NO_VARIANTS, ownedCount, starterCollection } from '../collection/collection.ts'
+import {
+  grant,
+  NO_VARIANTS,
+  ownedCount,
+  owns,
+  starterCollection,
+} from '../collection/collection.ts'
+import { CARS } from '../data/cars.ts'
 import { TUNABLES } from '../engine/index.ts'
 import { normalizeRecoveryCode, RECOVERY_LENGTH } from '../protocol/messages.ts'
 import type { CollectionState } from '../protocol/records.ts'
@@ -149,7 +156,8 @@ describe('directory', () => {
     const guest: CollectionState = {
       owned: { ...starterCollection(), 'mazda-mx-5-miata': 3 },
       packs: 3,
-      variants: { foil: { 'mazda-mx-5-miata': 1 }, holo: {} },
+      variants: { foil: { 'mazda-mx-5-miata': 1 }, holo: {}, chrome: {} },
+      laps: 0,
     }
     const garages = [{ id: 'g1', name: 'Mine', cars: ['a'], deck: ['b'], updatedAt: 1 }]
     const data = await directory.claim(token, { collection: guest, garages })
@@ -266,7 +274,7 @@ describe('directory', () => {
     const fresh = await directory.createPlayer('Ann')
     await directory.signOut(fresh.token)
     expect(await directory.accountFor(fresh.token)).toBeNull()
-    expect(NO_VARIANTS).toEqual({ foil: {}, holo: {} })
+    expect(NO_VARIANTS).toEqual({ foil: {}, holo: {}, chrome: {} })
   })
 })
 
@@ -318,5 +326,34 @@ describe('stakes on the service', () => {
     expect(boNow?.collection.owned[CHIRON] ?? 0).toBe(0)
     const plain = await directory.recordResult(annId, boId, true, true)
     expect(plain.winner?.stakes).toBeNull()
+  })
+})
+describe('laps on the service', () => {
+  const starter = starterCollection()
+  const outside = CARS.filter((car) => !owns(starter, car.id)).map((car) => car.id)
+  const everyCar = grant(starter, outside)
+  const spare = outside[0] ?? ''
+  const other = outside[1] ?? ''
+
+  it('takes the lap once every car is owned, prunes garages, and carries laps through a claim', async () => {
+    const { directory } = setUp()
+    const { token } = await directory.createPlayer('Ann')
+    expect(await directory.claimLap(token, spare)).toBe('refused')
+    await directory.claim(token, {
+      collection: { owned: everyCar, packs: 2, variants: NO_VARIANTS, laps: 1 },
+      garages: [
+        { id: 'keep', name: 'Keep', cars: [spare], deck: [], updatedAt: 1 },
+        { id: 'gone', name: 'Gone', cars: [other], deck: [], updatedAt: 1 },
+      ],
+    })
+    const data = await directory.claimLap(token, spare)
+    if (!data || data === 'refused') throw new Error('The lap was refused')
+    expect(data.profile.laps).toBe(2)
+    expect(data.collection.packs).toBe(2)
+    expect(data.collection.variants.chrome).toEqual({ [spare]: 1 })
+    expect(owns(data.collection.owned, spare)).toBe(true)
+    expect(owns(data.collection.owned, other)).toBe(false)
+    expect(data.garages.map((g) => g.id)).toEqual(['keep'])
+    expect(await directory.claimLap(token, spare)).toBe('refused')
   })
 })

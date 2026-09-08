@@ -53,8 +53,9 @@ const sample: AccountData = {
     cards: 46,
     packs: 1,
     claimed: true,
+    laps: 0,
   },
-  collection: { owned: { x: 1 }, packs: 1, variants: { foil: {}, holo: {} } },
+  collection: { owned: { x: 1 }, packs: 1, variants: { foil: {}, holo: {}, chrome: {} }, laps: 0 },
   garages: [{ id: 'g', name: 'G', cars: ['x'], deck: [], updatedAt: 1 }],
 }
 

@@ -12,6 +12,12 @@ describe('rematch on the client', () => {
       accepted: [true, false],
     })
     expect(parseServerMessage('{"type":"rematch","accepted":[true]}')).toBeNull()
+    expect(parseServerMessage('{"type":"state","view":{},"names":["a","b"]}')).toMatchObject({
+      plates: [0, 0],
+    })
+    expect(
+      parseServerMessage('{"type":"state","view":{},"names":["a","b"],"plates":[2,0]}'),
+    ).toMatchObject({ plates: [2, 0] })
   })
 
   it('tracks who accepted and starts over when a fresh match arrives after a result', () => {
@@ -24,7 +30,7 @@ describe('rematch on the client', () => {
     })
     session = reduceOnline(session, {
       type: 'message',
-      message: { type: 'state', view: redact(over, 0), names },
+      message: { type: 'state', view: redact(over, 0), names, plates: [0, 0] },
     })
     session = reduceOnline(session, {
       type: 'message',
@@ -39,7 +45,7 @@ describe('rematch on the client', () => {
     const fresh = createMatch({ ...starterConfig(), firstPlayer: 1 }, 4)
     session = reduceOnline(session, {
       type: 'message',
-      message: { type: 'state', view: redact(fresh, 0), names },
+      message: { type: 'state', view: redact(fresh, 0), names, plates: [0, 0] },
     })
     expect(session.result).toBeNull()
     expect(session.rematch).toEqual([false, false])

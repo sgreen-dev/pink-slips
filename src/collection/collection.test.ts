@@ -18,6 +18,11 @@ import {
   NO_VARIANTS,
   bestVariant,
   grantVariants,
+  claimLap,
+  garagesAfterLap,
+  isComplete,
+  ownedCount,
+  packCarCount,
 } from './collection.ts'
 import { COLLECTION_KEY, addPacks, loadCollection, openNextPack } from './persist.ts'
 
@@ -170,7 +175,7 @@ describe('persistence', () => {
 
 describe('variants', () => {
   it('roll foil and holo at the tunable odds over 10,000 packs', () => {
-    const hits = { base: 0, foil: 0, holo: 0 }
+    const hits = { base: 0, foil: 0, holo: 0, chrome: 0 }
     let rng = seedRng(11)
     let pack
     for (let i = 0; i < 10_000; i++) {
@@ -215,5 +220,59 @@ describe('variants', () => {
       expect(copiesOwned(opened.state.variants[card.variant], card.id)).toBeGreaterThanOrEqual(1)
     }
     expect(loadCollection(store).variants).toEqual(opened.state.variants)
+  })
+})
+describe('laps', () => {
+  const missingCars = CARS.filter((car) => !owns(starter, car.id)).map((car) => car.id)
+  const everyCar = grant(starter, missingCars)
+  const secondCar = must(missingCars[1], 'second car outside the starters')
+
+  it('is complete when every car is owned, whatever the mods and finishes', () => {
+    expect(isComplete(starter)).toBe(false)
+    expect(isComplete(everyCar)).toBe(true)
+  })
+
+  it('holds more cars per pack on later laps, capped', () => {
+    const { packCars, lapBonusCap } = TUNABLES.collection
+    expect(packCarCount(0)).toBe(packCars)
+    expect(packCarCount(1)).toBe(packCars + 1)
+    expect(packCarCount(5)).toBe(packCars + lapBonusCap)
+    const [pack] = openPack(seedRng(3), TUNABLES, 2)
+    expect(pack.cars).toHaveLength(packCars + 2)
+  })
+
+  it('takes the lap: starters plus keepsakes in chrome, packs kept, finishes cleared', () => {
+    const before = {
+      owned: everyCar,
+      packs: 4,
+      variants: { foil: { [outsideCar]: 1 }, holo: {}, chrome: {} },
+      laps: 0,
+    }
+    expect(claimLap({ ...before, owned: starter }, outsideCar)).toBeNull()
+    expect(claimLap(before, 'not-a-car')).toBeNull()
+    const after = must(claimLap(before, outsideCar) ?? undefined, 'first lap')
+    expect(after.laps).toBe(1)
+    expect(after.packs).toBe(4)
+    expect(owns(after.owned, outsideCar)).toBe(true)
+    expect(ownedCount(after.owned)).toBe(ownedCount(starter) + 1)
+    expect(after.variants).toEqual({ foil: {}, holo: {}, chrome: { [outsideCar]: 1 } })
+    expect(bestVariant(after.variants, outsideCar)).toBe('chrome')
+    const again = must(
+      claimLap({ ...after, owned: everyCar }, secondCar) ?? undefined,
+      'second lap',
+    )
+    expect(again.laps).toBe(2)
+    expect(owns(again.owned, outsideCar)).toBe(true)
+    expect(owns(again.owned, secondCar)).toBe(true)
+    expect(again.variants.chrome).toEqual({ [outsideCar]: 1, [secondCar]: 1 })
+  })
+
+  it('drops garages that need a given-up car', () => {
+    const garages = [
+      { id: 'a', name: 'A', cars: [outsideCar], deck: [], updatedAt: 1 },
+      { id: 'b', name: 'B', cars: [], deck: [], updatedAt: 1 },
+    ]
+    expect(garagesAfterLap(garages, starter).map((g) => g.id)).toEqual(['b'])
+    expect(garagesAfterLap(garages, everyCar).map((g) => g.id)).toEqual(['a', 'b'])
   })
 })

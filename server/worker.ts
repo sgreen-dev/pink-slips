@@ -254,7 +254,15 @@ export class AccountDirectory extends DurableObject<Env> {
     }
     if (path === '/internal/whoami') {
       const account = token ? await this.directory.accountFor(token) : null
-      return json(account ? { accountId: account.id, name: safeDisplayName(account.name) } : null)
+      return json(
+        account
+          ? {
+              accountId: account.id,
+              name: safeDisplayName(account.name),
+              laps: account.collection.laps,
+            }
+          : null,
+      )
     }
     if (path === '/internal/result' && request.method === 'POST') {
       const body = (await readJson(request)) as Record<string, unknown> | null
@@ -297,6 +305,14 @@ export class AccountDirectory extends DurableObject<Env> {
       const problem = Directory.nameProblem(name)
       if (problem) return text(problem, 400, headers)
       const data = await this.directory.rename(token, name)
+      return data ? json(data, 200, headers) : text('', 401, headers)
+    }
+    if (path === '/me/lap' && request.method === 'POST') {
+      const body = (await readJson(request)) as Record<string, unknown> | null
+      const data = await this.directory.claimLap(token, body?.['car'])
+      if (data === 'refused') {
+        return text('Every car must be owned, and the keepsake must be one of them.', 400, headers)
+      }
       return data ? json(data, 200, headers) : text('', 401, headers)
     }
     if (path === '/me/recovery' && request.method === 'POST') {
@@ -369,9 +385,24 @@ export class AccountDirectory extends DurableObject<Env> {
       const nameOf = (id: string) => entries.find((e) => e.accountId === id)?.name ?? 'Player'
       const names: [string, string] = [nameOf(first.accountId), nameOf(second.accountId)]
       const code = newCode()
+      const lapsOf = async (id: string) => (await this.directory.load(id))?.collection.laps ?? 0
       const tickets: [Ticket, Ticket] = [
-        { ticket: randomToken(), identity: { accountId: first.accountId, name: names[0] } },
-        { ticket: randomToken(), identity: { accountId: second.accountId, name: names[1] } },
+        {
+          ticket: randomToken(),
+          identity: {
+            accountId: first.accountId,
+            name: names[0],
+            laps: await lapsOf(first.accountId),
+          },
+        },
+        {
+          ticket: randomToken(),
+          identity: {
+            accountId: second.accountId,
+            name: names[1],
+            laps: await lapsOf(second.accountId),
+          },
+        },
       ]
       const room = this.env.ROOMS.get(this.env.ROOMS.idFromName(code))
       const setUp = await room.fetch('https://room/setup', {

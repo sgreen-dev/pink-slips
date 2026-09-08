@@ -690,6 +690,31 @@
 
 ---
 
+## Phase 27 — Laps
+
+**Goal**: a reason to collect every car and start over: taking a lap resets the collection to the starters, keeps one keepsake in Chrome, makes later packs bigger up to a cap, and shows the lap as a plate wherever the player is seen.
+
+**Design to record first** (`DESIGN.md` 12 and 13): completion, the claim and what it keeps and clears, Chrome and its stakes exemption, the pack bonus and its two tunables, the plate and where it shows, laps on guests and claimed players.
+
+**Deliverables**
+
+- `src/collection/collection.ts`: `isComplete`, `packCarCount`, `openPack` by laps, `claimLap`, `garagesAfterLap`, the Chrome finish; `records.ts` and `persist.ts` carrying `laps` and chrome with defaults for older records; `stakes.ts` protecting keepsakes
+- The directory's `claimLap`, laps on the profile, the leaderboard, and seat identities; the state message's `plates`; the worker's `POST /me/lap`
+- `Plate.tsx`; the collection screen's lap panel with the keepsake picker and confirm; the profile's laps and keepsakes; the leaderboard column; plates on the board's garages, card backs, and the online result title; the Chrome sheen and tag
+- The pack simulator's per-lap report and the balance-log line
+
+**Tests**
+
+- Completion, pack car counts by lap, the claim's reset and refusals, a second lap keeping both keepsakes, garage pruning, chrome above holo
+- Keepsakes protected on both sides of a transfer
+- The service's claim route, the profile's laps, the guest claim keeping the larger lap count; the room's plates from identities and zeros for guests; the state message's plates defaulting
+
+**Done when**: a seeded complete guest collection takes a lap in the browser and the record reads laps 1 with the keepsake in Chrome, the live service refuses a lap on an incomplete collection, and the tests pass.
+
+**Prompt**: Do phase 27 of BUILD_PLAN.md.
+
+---
+
 ## Backlog
 
 Anything new goes here first and becomes a phase when picked up. Items sit in value order within their tier, judged by how many players feel them and how often; a new item goes to the tier that fits, at the end. Numbers never change, since the design and past commits refer to them. A finished item leaves its tier for the Done list at the end, with the phase and the commits that closed it.
@@ -704,6 +729,7 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 13. Race animation. On each advance the car slides along its lane over a short time instead of jumping, a played mod card flies from the hand to the table, and a sabotage lands on the opponent's car with a shake. All CSS transitions keyed off the log entries the race-end moment already reads, off under reduced motion, and never delaying an action. A section 8 addendum
 
 21. A use for surplus fuel. Fuel is never spent by advancing, one token must be placed every turn, and fuel stays on a car between races, so once every car in the garage sits at its cost each further token has nowhere to go; only Nitrous Shot and Fuel Dump spend it. Shapes considered: a pit stop action in the mod step, once per turn, spending 2 fuel above a car's cost to remove 1 wear (the recommendation: it uses the wear system that exists, makes a repair-or-fuel-the-bench choice, and sits behind a tunable cost); a burnout before advancing, up to 2 surplus fuel for +50 ft each (direct, but it shortens races and competes with Fuel Dump); a pit crew action, 2 surplus fuel to draw a card (quiet, least effect on pace); or new Boosts that convert fuel with no core rule. Whichever is chosen needs an engine action with a section 3 rule and test, a CPU rule, a tunable for its cost, and the sim's targets re-run. Tabled on 2026-09-04 for more thought
+23. Laps. Once every car is owned, the player can take a lap: the collection returns to the starter set, the lap count rises, one keepsake car stays in a Chrome finish, packs hold an extra car per lap up to two, and the lap shows as a plate on the profile, the leaderboard, and online. Brainstormed and chosen on 2026-09-08
    *Why here:* Surplus fuel shows up in most matches, and a sink turns dead turns into decisions.
 
 ### Medium value: felt often by some players

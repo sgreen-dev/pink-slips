@@ -147,8 +147,11 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
     clearOnlineSeat()
     onAgain()
   }
-  const headline = (player: PlayerIndex) =>
-    player === seat ? 'You win' : `${session.names[player]} wins`
+  const headline = (player: PlayerIndex) => {
+    if (player === seat) return 'You win'
+    const laps = session.plates[player]
+    return `${session.names[player]}${laps > 0 ? ` (Lap ${laps})` : ''} wins`
+  }
 
   if (seat === null && session.error !== null) {
     return (
@@ -316,6 +319,7 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
         state={view}
         viewer={seat}
         names={session.names}
+        plates={session.plates}
         selection={selection}
         options={options}
         onAction={onAction}

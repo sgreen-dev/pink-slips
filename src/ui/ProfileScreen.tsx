@@ -1,6 +1,8 @@
 import { useContext, useEffect, useState } from 'react'
 import { backdropUrl } from './artwork.ts'
 import { Backdrop } from './Backdrop.tsx'
+import { CarCard } from './CarCard.tsx'
+import { Plate } from './Plate.tsx'
 import { MAX_NAME_LENGTH } from '../protocol/messages.ts'
 import { nameProblem } from '../protocol/names.ts'
 import type { LeaderboardRow } from '../server/directory.ts'
@@ -24,6 +26,8 @@ interface ProfileScreenProps {
  */
 export function ProfileScreen({ onBack, onShowCode }: ProfileScreenProps) {
   const account = useContext(AccountContext)
+  // The cars kept through laps, in chrome (DESIGN.md 12, Laps).
+  const keepsakes = Object.keys(account?.data.collection.variants.chrome ?? {})
   const [rows, setRows] = useState<LeaderboardRow[] | null>(null)
   const [name, setName] = useState(account?.data.profile.name ?? '')
   const [busy, setBusy] = useState<'name' | 'code' | null>(null)
@@ -108,9 +112,23 @@ export function ProfileScreen({ onBack, onShowCode }: ProfileScreenProps) {
             <dt>Packs to open</dt>
             <dd>{profile.packs}</dd>
           </div>
+          <div>
+            <dt>Laps</dt>
+            <dd>{profile.laps > 0 ? <Plate laps={profile.laps} size="md" /> : 'none yet'}</dd>
+          </div>
         </dl>
       ) : (
         <p className="start__tagline">Create a player to see your rating and record.</p>
+      )}
+      {keepsakes.length > 0 && (
+        <section className="profile__keepsakes">
+          <h2>Keepsakes</h2>
+          <div className="garage__cars">
+            {keepsakes.map((id) => (
+              <CarCard key={id} carId={id} size="sm" variant="chrome" />
+            ))}
+          </div>
+        </section>
       )}
       {account && (
         <>
@@ -206,6 +224,7 @@ export function ProfileScreen({ onBack, onShowCode }: ProfileScreenProps) {
                 <th>Player</th>
                 <th>Rating</th>
                 <th>Record</th>
+                <th>Lap</th>
               </tr>
             </thead>
             <tbody>
@@ -217,6 +236,7 @@ export function ProfileScreen({ onBack, onShowCode }: ProfileScreenProps) {
                   <td>
                     {row.wins}–{row.losses}
                   </td>
+                  <td>{row.laps > 0 ? row.laps : ''}</td>
                 </tr>
               ))}
             </tbody>

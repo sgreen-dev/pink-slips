@@ -257,6 +257,8 @@ export interface OnlineSession {
   result: ResultMessage | null
   /** Which seats have asked for a rematch of the finished match. */
   rematch: readonly [boolean, boolean]
+  /** Each seat's laps for its plate, zero for a guest. */
+  plates: readonly [number, number]
 }
 
 export type OnlineEvent =
@@ -279,6 +281,7 @@ export function startOnline(code: string, name: string): OnlineSession {
     error: null,
     result: null,
     rematch: [false, false],
+    plates: [0, 0],
   }
 }
 
@@ -321,7 +324,13 @@ function onMessage(session: OnlineSession, message: ServerMessage): OnlineSessio
       return session
     case 'state': {
       const next = message.view
-      const base = { ...session, names: message.names, waiting: false, error: null }
+      const base = {
+        ...session,
+        names: message.names,
+        plates: message.plates,
+        waiting: false,
+        error: null,
+      }
       // A running match after a result is a rematch: the finished match's leftovers go.
       if (session.result !== null && isOver(next) === null) {
         return {

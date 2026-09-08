@@ -181,18 +181,18 @@ describe('the online session', () => {
     // Views straight from the engine, redacted the way the room does it.
     let state = createMatch(starterConfig(0, 1), 11)
     const names = ['Ann', 'Bo'] as const
-    send({ type: 'state', view: redact(state, 0), names })
+    send({ type: 'state', view: redact(state, 0), names, plates: [0, 0] })
     expect(session).toMatchObject({ waiting: false, error: null, raceEnd: null, names })
     expect(session.view?.players[1].hand.every((id) => id === '?')).toBe(true)
     for (let i = 0; i < 400 && session.raceEnd === null; i++) {
       state = playOutRandomly(state, 100 + i, 1)
-      send({ type: 'state', view: redact(state, 0), names })
+      send({ type: 'state', view: redact(state, 0), names, plates: [0, 0] })
     }
     expect(session.raceEnd).not.toBeNull()
     const shown = session.view
     // Views that arrive during the banner are held, then applied on continue.
     state = playOutRandomly(state, 999, 1)
-    send({ type: 'state', view: redact(state, 0), names })
+    send({ type: 'state', view: redact(state, 0), names, plates: [0, 0] })
     expect(session.view).toBe(shown)
     expect(session.held).not.toBeNull()
     session = reduceOnline(session, { type: 'continue' })

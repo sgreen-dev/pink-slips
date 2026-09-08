@@ -31,7 +31,11 @@ if (process.argv.includes('--levels')) {
     ),
   )
 } else if (packs > 0) {
-  console.log(formatPackReport(runPackSimulation({ trials: packs, seed: readArg('seed', 1) })))
+  for (const laps of [0, 1, 2]) {
+    console.log(
+      formatPackReport(runPackSimulation({ trials: packs, seed: readArg('seed', 1), laps })),
+    )
+  }
 } else {
   const report = runSimulation({
     matches: readArg('matches', 5000),

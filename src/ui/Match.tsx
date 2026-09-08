@@ -129,7 +129,10 @@ export function Match({
       addPacks(packsEarned(mode, won))
       if (transfer) {
         const current = loadCollection()
-        saveCollection({ ...current, owned: applyTransfer(current.owned, transfer) })
+        saveCollection({
+          ...current,
+          owned: applyTransfer(current.owned, transfer, current.variants.chrome),
+        })
       }
     }
   }, [winner, mode, account, transfer])

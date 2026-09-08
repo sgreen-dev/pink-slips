@@ -11,8 +11,15 @@ import {
   type Mode,
   type Pack,
   type VariantCounts,
+  claimLap,
+  garagesAfterLap,
 } from '../collection/collection.ts'
-import { applyTransfer, sanitizeTransfer, type Transfer } from '../collection/stakes.ts'
+import {
+  applyTransfer,
+  protectKeepsakes,
+  sanitizeTransfer,
+  type Transfer,
+} from '../collection/stakes.ts'
 import { seedRng, TUNABLES } from '../engine/index.ts'
 import {
   CODE_ALPHABET,
@@ -27,6 +34,7 @@ import {
   isGarageList,
   type CollectionState,
   type SavedGarage,
+  normalizeCollection,
 } from '../protocol/records.ts'
 import { updateRatings } from './rating.ts'
 
@@ -78,6 +86,8 @@ export interface Profile {
   cards: number
   packs: number
   claimed: boolean
+  /** Laps taken (DESIGN.md 12). */
+  laps: number
 }
 
 export interface AccountData {
@@ -92,6 +102,7 @@ export interface LeaderboardRow {
   rating: number
   wins: number
   losses: number
+  laps: number
 }
 
 export interface SideOutcome {
@@ -146,7 +157,11 @@ function maxCounts(a: Collection, b: Collection): Collection {
 }
 
 function mergeVariants(a: VariantCounts, b: VariantCounts): VariantCounts {
-  return { foil: maxCounts(a.foil, b.foil), holo: maxCounts(a.holo, b.holo) }
+  return {
+    foil: maxCounts(a.foil, b.foil),
+    holo: maxCounts(a.holo, b.holo),
+    chrome: maxCounts(a.chrome, b.chrome),
+  }
 }
 
 /** A recovery code from random hex: every two hex digits pick one alphabet character. */
@@ -204,7 +219,7 @@ export class Directory {
       wins: 0,
       losses: 0,
       claimed: false,
-      collection: { owned: starterCollection(), packs: 0, variants: NO_VARIANTS },
+      collection: { owned: starterCollection(), packs: 0, variants: NO_VARIANTS, laps: 0 },
       garages: [],
       createdAt: this.now(),
       lastCpuResultAt: 0,
@@ -266,7 +281,7 @@ export class Directory {
     if (session.expiresAt - now < SESSION_TTL_MS - SESSION_RENEW_MS) {
       await this.store.put(`${SESSION}${token}`, { ...session, expiresAt: now + SESSION_TTL_MS })
     }
-    return (await this.store.get<Account>(`${ACCOUNT}${session.accountId}`)) ?? null
+    return this.load(session.accountId)
   }
 
   async signOut(token: string): Promise<void> {
@@ -274,7 +289,8 @@ export class Directory {
   }
 
   async load(id: string): Promise<Account | null> {
-    return (await this.store.get<Account>(`${ACCOUNT}${id}`)) ?? null
+    const account = await this.store.get<Account>(`${ACCOUNT}${id}`)
+    return account ? { ...account, collection: normalizeCollection(account.collection) } : null
   }
 
   dataOf(account: Account): AccountData {
@@ -288,6 +304,7 @@ export class Directory {
         cards: ownedCount(account.collection.owned),
         packs: account.collection.packs,
         claimed: account.claimed,
+        laps: account.collection.laps,
       },
       collection: account.collection,
       garages: account.garages,
@@ -312,7 +329,11 @@ export class Directory {
         collection: {
           owned: maxCounts(account.collection.owned, collection.owned),
           packs: account.collection.packs + collection.packs,
-          variants: mergeVariants(account.collection.variants, collection.variants),
+          variants: mergeVariants(
+            account.collection.variants,
+            normalizeCollection(collection).variants,
+          ),
+          laps: Math.max(account.collection.laps, normalizeCollection(collection).laps),
         },
       }
     }
@@ -338,7 +359,7 @@ export class Directory {
   async openPack(token: string, seed: number): Promise<{ pack: Pack; data: AccountData } | null> {
     const account = await this.accountFor(token)
     if (!account || account.collection.packs <= 0) return null
-    const [pack] = openPack(seedRng(seed), this.t)
+    const [pack] = openPack(seedRng(seed), this.t, account.collection.laps)
     const cards = packCards(pack)
     const collection: CollectionState = {
       owned: grant(
@@ -347,10 +368,31 @@ export class Directory {
       ),
       packs: account.collection.packs - 1,
       variants: grantVariants(account.collection.variants, cards),
+      laps: account.collection.laps,
     }
     const next = { ...account, collection }
     await this.save(next)
     return { pack, data: this.dataOf(next) }
+  }
+
+  /**
+   * Takes the lap (DESIGN.md 12, Laps): the collection returns to the starters with the
+   * keepsake in chrome, and garages needing a given-up car go. Refused unless every car is
+   * owned and the keepsake is one of them.
+   */
+  async claimLap(token: string, keepsakeId: unknown): Promise<AccountData | 'refused' | null> {
+    const account = await this.accountFor(token)
+    if (!account) return null
+    if (typeof keepsakeId !== 'string') return 'refused'
+    const collection = claimLap(account.collection, keepsakeId)
+    if (!collection) return 'refused'
+    const next = {
+      ...account,
+      collection,
+      garages: garagesAfterLap(account.garages, collection.owned),
+    }
+    await this.save(next)
+    return this.dataOf(next)
   }
 
   /**
@@ -401,6 +443,9 @@ export class Directory {
   ): Promise<MatchOutcome> {
     const winner = winnerId ? await this.load(winnerId) : null
     const loser = loserId ? await this.load(loserId) : null
+    // A keepsake never changes hands: the loser keeps it and the winner gains nothing for it.
+    if (transfers && loser)
+      transfers = protectKeepsakes(transfers, loser.collection.variants.chrome)
     const rated = ranked && winner !== null && loser !== null
     const ratings = rated ? updateRatings(winner.rating, loser.rating, this.t) : null
     const outcome: MatchOutcome = { winner: null, loser: null }
@@ -443,7 +488,14 @@ export class Directory {
       .filter((a) => a.wins + a.losses > 0)
       .sort((a, b) => b.rating - a.rating || b.wins - a.wins || a.createdAt - b.createdAt)
       .slice(0, limit)
-      .map((a) => ({ id: a.id, name: shown(a), rating: a.rating, wins: a.wins, losses: a.losses }))
+      .map((a) => ({
+        id: a.id,
+        name: shown(a),
+        rating: a.rating,
+        wins: a.wins,
+        losses: a.losses,
+        laps: a.collection.laps ?? 0,
+      }))
   }
 
   private async save(account: Account): Promise<void> {

@@ -486,3 +486,19 @@ describe('rematch in the same room', () => {
     expect(rematch(e, [f])).toEqual([{ type: 'error', reason: REASONS.noRematchStakes }])
   })
 })
+describe('plates', () => {
+  it('sends each seat its laps, and none for a guest', () => {
+    const room = new Room('PLATES', 7)
+    const a = new FakeClient(room)
+    const b = new FakeClient(room)
+    const joinRaw = (name: string) =>
+      parseClientMessage(JSON.stringify({ type: 'join', name, garage: garage(0) })) as ClientMessage
+    a.deliver(
+      room.handle(a.seat, joinRaw('Ann'), newToken, { accountId: 'acct-a', name: 'Ann', laps: 3 }),
+      [b],
+    )
+    b.deliver(room.handle(b.seat, joinRaw('Bo'), newToken, null), [a])
+    expect(a.received.at(-1)).toMatchObject({ type: 'state', plates: [3, 0] })
+    expect(b.received.at(-1)).toMatchObject({ type: 'state', plates: [3, 0] })
+  })
+})

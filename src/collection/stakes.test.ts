@@ -5,6 +5,7 @@ import { starterConfig } from '../engine/test-helpers.ts'
 import { copiesOwned } from './collection.ts'
 import {
   applyTransfer,
+  protectKeepsakes,
   carNames,
   isEmptyTransfer,
   isStakedCar,
@@ -77,5 +78,21 @@ describe('stakes', () => {
     expect(carNames([CHIRON])).toBe('Bugatti Chiron')
     expect(carNames([CHIRON, F40])).toBe('Bugatti Chiron and Ferrari F40')
     expect(carNames([CHIRON, F40, DB5])).toBe('Bugatti Chiron, Ferrari F40 and Aston Martin DB5')
+  })
+})
+describe('keepsakes under stakes', () => {
+  it('never change hands, on either side', () => {
+    const transfers = {
+      winner: { gained: ['x', 'y'], lost: [] },
+      loser: { gained: [], lost: ['x', 'y'] },
+    }
+    expect(protectKeepsakes(transfers, { x: 1 })).toEqual({
+      winner: { gained: ['y'], lost: [] },
+      loser: { gained: [], lost: ['y'] },
+    })
+    expect(applyTransfer({ x: 1, y: 1 }, { gained: [], lost: ['x', 'y'] }, { x: 1 })).toEqual({
+      x: 1,
+      y: 0,
+    })
   })
 })
