@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { getMod } from '../data/mods.ts'
 import {
   otherPlayer,
@@ -47,6 +47,8 @@ interface BoardProps {
   onExit?: () => void
   /** Draw the opponent's cards without finishes, as for the CPU. */
   plainOpponent?: boolean
+  /** The first-match guide's callout, drawn under the prompt (DESIGN.md 8). */
+  guide?: ReactNode
 }
 
 function buttonLabel(action: Action): string {
@@ -74,6 +76,7 @@ export function Board({
   frozen,
   inert,
   plainOpponent,
+  guide,
   canUndo = false,
   onUndo,
   onExit,
@@ -202,6 +205,7 @@ export function Board({
           {prompt(state, viewer, selection, names)}
           {canUndo && !busy ? ' Undo takes back your last mod.' : ''}
         </p>
+        {guide}
         <div className="controls__buttons">
           {options
             ? options.map((action) => (

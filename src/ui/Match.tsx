@@ -19,6 +19,8 @@ import { AccountContext, reportCpuResult } from './account.ts'
 import { Board } from './Board.tsx'
 import { canUndo, reduceSession, startSession } from './celebration.ts'
 import { recordMatch } from './counter.ts'
+import { Guide } from './Guide.tsx'
+import { guideStep, guideSteps, loadGuideDone, saveGuideDone } from './guide.ts'
 import { HandOverScreen } from './HandOverScreen.tsx'
 import { NO_SELECTION, type Selection } from './interaction.ts'
 import { RaceEndBanner } from './RaceEndBanner.tsx'
@@ -78,6 +80,12 @@ export function Match({
   const [variantOf] = useState(() => lookupFrom(loadCollection().variants))
   const account = useContext(AccountContext)
   const onContinue = useCallback(() => dispatch({ type: 'continue' }), [])
+  // The guide runs through a browser's first CPU match and is remembered once finished or skipped.
+  const [guide, setGuide] = useState(() => cpu && !loadGuideDone())
+  const endGuide = () => {
+    saveGuideDone()
+    setGuide(false)
+  }
   const sound = useSound()
   const heard = useRef<typeof state>(beforeStart(state))
 
@@ -176,6 +184,8 @@ export function Match({
     : raceEnd !== null
       ? (revealedFor ?? raceEnd.winner)
       : (acting ?? HUMAN_SEAT)
+  const busy = selection.kind !== 'none' || options !== null
+  const step = guide ? guideStep(state, viewer, raceEnd, busy) : null
 
   const onAction = (action: Action) => {
     dispatch({ type: 'act', action })
@@ -203,6 +213,7 @@ export function Match({
         frozen={raceEnd}
         inert={raceEnd !== null}
         plainOpponent={cpu}
+        guide={guide ? <Guide step={step} onSkip={endGuide} /> : undefined}
         canUndo={canUndo(session, viewer)}
         onUndo={onUndo}
         onExit={onExit}
@@ -211,7 +222,15 @@ export function Match({
         <RaceEndBanner
           raceEnd={raceEnd}
           headline={headline(raceEnd.winner)}
-          onContinue={onContinue}
+          note={step === 'finish' ? guideSteps().finish.text : undefined}
+          onContinue={
+            step === 'finish'
+              ? () => {
+                  endGuide()
+                  onContinue()
+                }
+              : onContinue
+          }
         />
       )}
     </VariantContext>

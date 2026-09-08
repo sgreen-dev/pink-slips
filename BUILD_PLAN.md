@@ -611,6 +611,32 @@
 
 ---
 
+## Phase 24 — Guided first match
+
+**Goal**: the first CPU match a browser plays gets a short guide that points at one thing at a time, stage a car, place fuel, play mods and end the step, advance, and the finish, dismissable at any step and never shown again once finished or skipped, on phones as much as on desktop.
+
+**Design to record first** (`DESIGN.md` 8 and 9): the callout in the flow of the board under the prompt and its pointer, phones, reduced motion, OK and Skip guide, the finish line in the banner, the storage key, and how the step is read from the board state.
+
+**Deliverables**
+
+- `src/ui/guide.ts`: the five step texts, `guideStep`, and the remembered flag under `pink-slips.guide.v1`
+- `src/ui/Guide.tsx`: the callout, shown once per step and scrolled into view; the finish step as a line in the race-end banner
+- `Match.tsx` turning the guide on for a first CPU match and off on Skip guide or the first Continue; `Board.tsx` drawing the callout under the prompt
+- The styles, with the phone and reduced-motion rules
+
+**Tests**
+
+- The guide text holds the rules dialog's limits: sentences of twenty words or fewer, thirteen on average, under 120 words in all, lines under 240 characters, and its number from the tunables
+- Each of the stage, fuel, mods, and advance texts carries the phrase the board's prompt uses for that step
+- `guideStep` over board states: staging with and without a staged car, each turn step, the CPU's turn, the choice phase, a selection open, a held race end, a finished match
+- The flag round-trips through storage and reads false from garbage or no store
+
+**Done when**: a browser with the key cleared sees the guide through a CPU match on a desktop and at phone width, Skip guide and Continue at the line each end it for good, hotseat shows nothing, and the tests pass.
+
+**Prompt**: Do phase 24 of BUILD_PLAN.md.
+
+---
+
 ## Backlog
 
 Anything new goes here first and becomes a phase when picked up. Items sit in value order within their tier, judged by how many players feel them and how often; a new item goes to the tier that fits, at the end. Numbers never change, since the design and past commits refer to them. A finished item leaves its tier for the Done list at the end, with the phase and the commits that closed it.

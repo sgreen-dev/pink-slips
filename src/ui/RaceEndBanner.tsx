@@ -7,6 +7,8 @@ interface RaceEndBannerProps {
   raceEnd: RaceEnd
   /** "You win", "The CPU wins", or "Player 2 wins". */
   headline: string
+  /** The first-match guide's finish step, shown above Continue (DESIGN.md 8). */
+  note?: string
   onContinue: () => void
 }
 
@@ -14,7 +16,7 @@ interface RaceEndBannerProps {
  * The moment after the finish line: who won, which car changed hands, and the pink slip tally.
  * It stays up until Continue, so nobody loses it to a timer or a stray tap.
  */
-export function RaceEndBanner({ raceEnd, headline, onContinue }: RaceEndBannerProps) {
+export function RaceEndBanner({ raceEnd, headline, note, onContinue }: RaceEndBannerProps) {
   const captured = getCar(raceEnd.capturedCarId)
 
   return (
@@ -31,6 +33,7 @@ export function RaceEndBanner({ raceEnd, headline, onContinue }: RaceEndBannerPr
         <p className="raceend__tally">
           Pink slips {raceEnd.slips} of {TUNABLES.pinkSlipsToWin}
         </p>
+        {note && <p className="raceend__guide">{note}</p>}
         <button
           type="button"
           className="button button--primary button--big button--next"

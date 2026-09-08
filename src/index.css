@@ -979,7 +979,8 @@ h2 {
   .button {
     min-height: 2.6rem;
   }
-  .controls__buttons .button {
+  .controls__buttons .button,
+  .guide__actions .button {
     flex: 1 1 auto;
   }
   .track {
@@ -1659,9 +1660,60 @@ h2 {
   box-shadow: 0 0 0 0.15rem rgba(242, 193, 78, 0.45);
   animation: glow 1.2s ease-in-out infinite;
 }
+/* Guided first match (DESIGN.md 8): one callout under the prompt, pointing up at the garage or
+   down at the buttons and hand. */
+.guide {
+  position: relative;
+  padding: 0.6rem 0.8rem;
+  border: 2px solid var(--gold);
+  border-radius: 0.6rem;
+  background: var(--asphalt-2);
+  font-size: 0.95rem;
+  animation: guide-in 0.25s ease-out both;
+}
+.guide::before {
+  content: '';
+  position: absolute;
+  left: 1.5rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  background: var(--asphalt-2);
+  border: 2px solid var(--gold);
+  transform: rotate(45deg);
+}
+.guide--up::before {
+  top: -0.5rem;
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+}
+.guide--down::before {
+  bottom: -0.5rem;
+  border-top-color: transparent;
+  border-left-color: transparent;
+}
+.guide__text {
+  margin: 0 0 0.5rem;
+}
+.guide__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+@keyframes guide-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+}
+.raceend__guide {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
 @media (prefers-reduced-motion: reduce) {
   .controls__prompt--live,
-  .button--next {
+  .button--next,
+  .guide {
     animation: none;
   }
 }
