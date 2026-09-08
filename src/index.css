@@ -370,6 +370,9 @@ h2 {
 .mod--unplayable {
   opacity: 0.5;
 }
+.mod--unplayable[aria-disabled] {
+  cursor: help;
+}
 .mod--selected {
   box-shadow: 0 0 0 0.25rem #fff;
 }
@@ -1704,6 +1707,19 @@ h2 {
     opacity: 0;
     transform: translateY(0.25rem);
   }
+}
+/* A refused play's notice shares the guide's box in the correction colour. */
+.guide--notice,
+.guide--notice::before {
+  border-color: var(--sabotage);
+}
+.guide--notice.guide--up::before {
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+}
+.guide--notice.guide--down::before {
+  border-top-color: transparent;
+  border-left-color: transparent;
 }
 .raceend__guide {
   margin: 0 0 1rem;

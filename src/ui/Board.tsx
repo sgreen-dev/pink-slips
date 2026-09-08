@@ -8,7 +8,8 @@ import {
   currentPlayer,
 } from '../engine/index.ts'
 import type { RaceEnd } from './celebration.ts'
-import { blockedReason, handNote } from './explain.ts'
+import { Callout } from './Callout.tsx'
+import { blockedReason, handNote, whyNotPlayable, whyNotTarget } from './explain.ts'
 import { Garage } from './Garage.tsx'
 import {
   buttonActions,
@@ -24,7 +25,16 @@ import { describeLogEntry } from './narrate.ts'
 import { RaceTrack } from './RaceTrack.tsx'
 import { RulesButton, RulesDialog } from './RulesDialog.tsx'
 import { SoundButton } from './sound/SoundButton.tsx'
+import { useSound } from './sound/useSound.ts'
 import { BASE_ONLY, VariantContext } from './variants.ts'
+
+/** A refused play's notice (DESIGN.md 8, Refused plays). */
+interface Notice {
+  text: string
+  toward: 'up' | 'down'
+  /** Counts refusals, so the same refusal twice replays the fade. */
+  at: number
+}
 
 interface BoardProps {
   state: MatchState
@@ -93,6 +103,30 @@ export function Board({
   const hint = inert ? null : handNote(state, viewer)
   const rules = useRef<HTMLDialogElement>(null)
   const variantOf = useContext(VariantContext)
+  const sound = useSound()
+  // The notice is set by a tap that cannot act and cleared by OK or by the next change of state
+  // or selection, noticed during render.
+  const [notice, setNotice] = useState<Notice | null>(null)
+  const [noticeFor, setNoticeFor] = useState({ state, selection })
+  if (noticeFor.state !== state || noticeFor.selection !== selection) {
+    // The other player's moves leave a notice alone; the viewer's own move, or their turn
+    // arriving, clears it.
+    const theirs = currentPlayer(noticeFor.state) !== viewer && currentPlayer(state) !== viewer
+    setNoticeFor({ state, selection })
+    if (notice && !(theirs && noticeFor.selection === selection)) setNotice(null)
+  }
+  const refuse = (text: string, toward: 'up' | 'down') => {
+    setNotice((prev) => ({ text, toward, at: (prev?.at ?? 0) + 1 }))
+    sound.play('deflect')
+  }
+  // While a card waits for a car, a tap on any other car says why it is not a target.
+  const onOther = (owner: PlayerIndex) =>
+    selection.kind === 'none'
+      ? undefined
+      : (carId: string) => {
+          const why = whyNotTarget(viewer, selection, carId, owner)
+          if (why) refuse(why, 'up')
+        }
 
   const onCar = (_carId: string, intent: CarIntent) => {
     if (intent.kind === 'apply') {
@@ -180,6 +214,7 @@ export function Board({
           player={state.players[opponent]}
           name={names[opponent]}
           handCount={state.players[opponent].hand.length}
+          onOther={onOther(opponent)}
           size="sm"
           raceNumber={state.race.number}
         />
@@ -193,6 +228,7 @@ export function Board({
         intents={busy && options ? undefined : intents}
         selection={selection}
         onCar={onCar}
+        onOther={onOther(viewer)}
         size="sm"
         raceNumber={state.race.number}
       />
@@ -206,6 +242,17 @@ export function Board({
           {canUndo && !busy ? ' Undo takes back your last mod.' : ''}
         </p>
         {guide}
+        {notice && (
+          <Callout key={notice.at} tone="notice" toward={notice.toward} text={notice.text}>
+            <button
+              type="button"
+              className="button button--ghost button--small"
+              onClick={() => setNotice(null)}
+            >
+              OK
+            </button>
+          </Callout>
+        )}
         <div className="controls__buttons">
           {options
             ? options.map((action) => (
@@ -277,6 +324,9 @@ export function Board({
                   note={note}
                   selected={selection.kind !== 'none' && selection.modId === modId}
                   onClick={() => onMod(modId)}
+                  onRefuse={() =>
+                    refuse(whyNotPlayable(state, viewer, modId, selection, options, names), 'down')
+                  }
                 />
                 {count > 1 && <span className="hand__count">×{count}</span>}
               </div>

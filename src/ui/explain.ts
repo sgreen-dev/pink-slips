@@ -5,12 +5,13 @@ import {
   currentPlayer,
   TUNABLES,
   windowApplies,
+  type Action,
   type AdvanceBreakdown,
   type LogEntry,
   type MatchState,
   type PlayerIndex,
 } from '../engine/index.ts'
-import { modIntent } from './interaction.ts'
+import { modIntent, type Selection } from './interaction.ts'
 
 /**
  * Plain words for what the board otherwise leaves unsaid (DESIGN.md 8, Mod hints): why a card
@@ -69,19 +70,88 @@ export function blockedReason(
   }
 }
 
+const STAGING_NOTE = 'Cards play in the mod step, after staging and fuel.'
+const FUEL_NOTE = 'Cards play in the mod step, after fuel.'
+const ADVANCE_NOTE = 'The mod step is over this turn.'
+
 /** A note for the hand header on the viewer's own turn when cards cannot be played yet. */
 export function handNote(state: MatchState, viewer: PlayerIndex): string | null {
   if (currentPlayer(state) !== viewer) return null
-  if (state.phase.kind === 'staging') return 'Cards play in the mod step, after staging and fuel.'
+  if (state.phase.kind === 'staging') return STAGING_NOTE
   if (state.phase.kind !== 'turn') return null
   switch (state.turn.step) {
     case 'fuel':
-      return 'Cards play in the mod step, after fuel.'
+      return FUEL_NOTE
     case 'mods':
       return null
     case 'advance':
-      return 'The mod step is over this turn.'
+      return ADVANCE_NOTE
   }
+}
+
+/**
+ * The answer to a tap on a hand card that cannot be played (DESIGN.md 8, Refused plays): which
+ * card and why, in the words the hand header and the faded card use. A card or a Sponsor pick
+ * waiting for the player comes first, then whose turn it is, the phase, the step, and in the mod
+ * step the card's own reason.
+ */
+export function whyNotPlayable(
+  state: MatchState,
+  viewer: PlayerIndex,
+  modId: string,
+  selection: Selection,
+  options: readonly Action[] | null,
+  names: readonly [string, string],
+): string {
+  if (selection.kind !== 'none') {
+    const waiting = getMod(selection.modId).name
+    return `${waiting} is waiting for a car. Choose one with the pink outline, or Cancel.`
+  }
+  const option = options?.[0]
+  if (option) {
+    const waiting = 'modId' in option ? getMod(option.modId).name : 'Your card'
+    return `${waiting} is waiting for your pick. Choose a Part above, or Cancel.`
+  }
+  const lead = `${getMod(modId).name} cannot be played now.`
+  const acting = currentPlayer(state)
+  if (acting === null) return `${lead} The match is over.`
+  if (acting !== viewer) {
+    return `${lead} Waiting for ${names[acting]}; cards play in your own mod step.`
+  }
+  const { phase } = state
+  if (phase.kind === 'staging') return `${lead} ${STAGING_NOTE}`
+  if (phase.kind !== 'turn') return `${lead} Parts Thief first: choose a Part to give up.`
+  switch (state.turn.step) {
+    case 'fuel':
+      return `${lead} ${FUEL_NOTE}`
+    case 'advance':
+      return `${lead} ${ADVANCE_NOTE}`
+    case 'mods':
+      return `${lead} ${blockedReason(state, viewer, modId) ?? 'Not playable now.'}`
+  }
+}
+
+/**
+ * The answer to a tap on a car that is not a target for the card just picked: a Part or Tow
+ * Truck on the other garage's car, a car with no open slot, a car with no fuel to move, or the
+ * same car twice. Null with no selection, when every own car already answers a tap.
+ */
+export function whyNotTarget(
+  viewer: PlayerIndex,
+  selection: Selection,
+  carId: string,
+  owner: PlayerIndex,
+): string | null {
+  if (selection.kind === 'none') return null
+  const mod = getMod(selection.modId)
+  const car = getCar(carId)
+  if (mod.family === 'part') {
+    if (owner !== viewer) return `${mod.name} goes on your own cars.`
+    return `The ${car.name} has no open Part slot. Cars hold ${TUNABLES.partSlots} Parts, JDM ${TUNABLES.partSlotsJdm}.`
+  }
+  if (owner !== viewer) return `${mod.name} moves fuel between your own cars.`
+  if (selection.kind === 'towFrom') return 'Choose a different car to receive the fuel.'
+  return `The ${car.name} has no fuel to move.`
 }
 
 export interface LaneNote {

@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { apply, createMatch, currentPlayer, type MatchState } from '../engine/index.ts'
+import {
+  apply,
+  createMatch,
+  currentPlayer,
+  TUNABLES,
+  type Action,
+  type MatchState,
+} from '../engine/index.ts'
 import { scenario, starterConfig } from '../engine/test-helpers.ts'
-import { advanceSuffix, blockedReason, handNote, laneNotes } from './explain.ts'
+import {
+  advanceSuffix,
+  blockedReason,
+  handNote,
+  laneNotes,
+  whyNotPlayable,
+  whyNotTarget,
+} from './explain.ts'
 
 const CIVIC = 'honda-civic-si' // JDM
 const MUSTANG = 'ford-mustang-gt' // Muscle
@@ -195,5 +209,115 @@ describe('advance suffix', () => {
         finalFt: 787,
       }),
     ).toBe('base 500 ft, +50 ft type, +100 ft mods, +50% boost, −100 ft sabotage, ×0.9 wear')
+  })
+})
+
+describe('why a tap was refused', () => {
+  const NAMES = ['Player 1', 'Player 2'] as const
+  const none = { kind: 'none' } as const
+  const messages: string[] = []
+  const say = (text: string | null) => {
+    if (text) messages.push(text)
+    return text
+  }
+
+  it('explains a card that cannot be played, naming the card', () => {
+    const hand = board(['turbo-kit', 'nitrous-shot', 'sponsor'])
+    const part = { kind: 'mod', modId: 'turbo-kit' } as const
+    expect(say(whyNotPlayable(hand, 0, 'nitrous-shot', part, null, NAMES))).toBe(
+      'Turbo Kit is waiting for a car. Choose one with the pink outline, or Cancel.',
+    )
+    const options: Action[] = [
+      { type: 'playBoost', player: 0, modId: 'sponsor', targetModId: 'turbo-kit' },
+    ]
+    expect(say(whyNotPlayable(hand, 0, 'nitrous-shot', none, options, NAMES))).toBe(
+      'Sponsor is waiting for your pick. Choose a Part above, or Cancel.',
+    )
+    const theirs = withTurn(hand, { player: 1 })
+    expect(say(whyNotPlayable(theirs, 0, 'nitrous-shot', none, null, NAMES))).toBe(
+      'Nitrous Shot cannot be played now. Waiting for Player 2; cards play in your own mod step.',
+    )
+    const staging: MatchState = { ...hand, phase: { kind: 'staging', pending: [0, 1] } }
+    expect(say(whyNotPlayable(staging, 0, 'nitrous-shot', none, null, NAMES))).toContain(
+      'after staging and fuel',
+    )
+    expect(
+      say(whyNotPlayable(withTurn(hand, { step: 'fuel' }), 0, 'nitrous-shot', none, null, NAMES)),
+    ).toContain('after fuel')
+    expect(
+      say(
+        whyNotPlayable(withTurn(hand, { step: 'advance' }), 0, 'nitrous-shot', none, null, NAMES),
+      ),
+    ).toContain('The mod step is over this turn')
+    const thief = scenario({
+      players: [
+        { cars: [{ id: CIVIC, fuel: 1 }], hand: ['parts-thief'] },
+        { cars: [{ id: MIATA, fuel: 1, parts: ['turbo-kit', 'aero-package'] }], hand: ['redline'] },
+      ],
+    })
+    const paused = apply(thief, { type: 'playSabotage', player: 0, modId: 'parts-thief' })
+    expect(say(whyNotPlayable(paused, 1, 'redline', none, null, NAMES))).toBe(
+      'Redline cannot be played now. Parts Thief first: choose a Part to give up.',
+    )
+    expect(say(whyNotPlayable(paused, 0, 'parts-thief', none, null, NAMES))).toContain(
+      'Waiting for Player 2',
+    )
+    expect(
+      say(
+        whyNotPlayable(
+          withTurn(hand, { boostBlocked: true }),
+          0,
+          'nitrous-shot',
+          none,
+          null,
+          NAMES,
+        ),
+      ),
+    ).toBe('Nitrous Shot cannot be played now. Roadblock: no Boost this turn.')
+    const sabotaged = apply(board(['wheelspin', 'oil-slick']), {
+      type: 'playSabotage',
+      player: 0,
+      modId: 'wheelspin',
+    })
+    expect(say(whyNotPlayable(sabotaged, 0, 'oil-slick', none, null, NAMES))).toBe(
+      'Oil Slick cannot be played now. One Sabotage per turn, already played.',
+    )
+    const over: MatchState = { ...hand, phase: { kind: 'over', winner: 1 } }
+    expect(say(whyNotPlayable(over, 0, 'nitrous-shot', none, null, NAMES))).toContain(
+      'The match is over',
+    )
+  })
+
+  it('explains a car that is not a target for the picked card', () => {
+    const part = { kind: 'mod', modId: 'turbo-kit' } as const
+    expect(say(whyNotTarget(0, part, MIATA, 1))).toBe('Turbo Kit goes on your own cars.')
+    expect(say(whyNotTarget(0, part, MUSTANG, 0))).toBe(
+      `The Ford Mustang GT has no open Part slot. Cars hold ${TUNABLES.partSlots} Parts, JDM ${TUNABLES.partSlotsJdm}.`,
+    )
+    const tow = { kind: 'mod', modId: 'tow-truck' } as const
+    expect(say(whyNotTarget(0, tow, MIATA, 1))).toBe('Tow Truck moves fuel between your own cars.')
+    expect(say(whyNotTarget(0, tow, CIVIC, 0))).toBe('The Honda Civic Si has no fuel to move.')
+    const towFrom = { kind: 'towFrom', modId: 'tow-truck', fromCarId: MUSTANG } as const
+    expect(say(whyNotTarget(0, towFrom, MUSTANG, 0))).toBe(
+      'Choose a different car to receive the fuel.',
+    )
+    expect(say(whyNotTarget(0, towFrom, MIATA, 1))).toBe(
+      'Tow Truck moves fuel between your own cars.',
+    )
+    expect(whyNotTarget(0, none, MUSTANG, 0)).toBeNull()
+  })
+
+  it('reads easily from about age nine up', () => {
+    expect(messages.length).toBeGreaterThan(12)
+    for (const message of messages) {
+      expect(message.length, message).toBeLessThanOrEqual(240)
+      const sentences = message
+        .split(/[.!?:]\s+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+      for (const sentence of sentences) {
+        expect(sentence.split(/\s+/).length, sentence).toBeLessThanOrEqual(20)
+      }
+    }
   })
 })

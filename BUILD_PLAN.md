@@ -638,6 +638,31 @@
 
 ---
 
+## Phase 25 — Refused plays explained
+
+**Goal**: a tap on a hand card that cannot be played, or on a car that is not a valid target for the card just picked, answers with a notice that says which card and why, so the refusal teaches the rule, in every mode and on phones.
+
+**Design to record first** (`DESIGN.md` 8 and 9): the notice in the guide's box in the correction colour, its pointer, the wording shared with the hand header and the faded card, OK and the self-clearing, the deflect ping, and how the tap reaches the board.
+
+**Deliverables**
+
+- `src/ui/explain.ts`: `whyNotPlayable` and `whyNotTarget`
+- `src/ui/Callout.tsx`, the box the guide and the notice share; the guide rendering through it
+- `ModCard`'s `onRefuse` and `Garage`'s `onOther`, and the notice state in `Board.tsx` with the ping
+- The styles for the notice tone
+
+**Tests**
+
+- `whyNotPlayable` over a waiting selection, open Sponsor options, the other player's turn, staging, the Parts Thief choice, the fuel and advance steps, and the mod step's own reasons, each naming the card
+- `whyNotTarget` over a Part on the other garage's car, a car with no open slot, Tow Truck's source and destination, and no selection
+- Every message holds the guide's limits: sentences of twenty words or fewer, under 240 characters
+
+**Done when**: in a CPU match a tap on a faded card in the fuel step, in the mod step, and on the CPU's turn each shows its reason under the prompt, a wrong car during a Part pick does too, the notice clears on the next action, the phone column holds it, and the tests pass.
+
+**Prompt**: Do phase 25 of BUILD_PLAN.md.
+
+---
+
 ## Backlog
 
 Anything new goes here first and becomes a phase when picked up. Items sit in value order within their tier, judged by how many players feel them and how often; a new item goes to the tier that fits, at the end. Numbers never change, since the design and past commits refer to them. A finished item leaves its tier for the Done list at the end, with the phase and the commits that closed it.
@@ -652,6 +677,7 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 13. Race animation. On each advance the car slides along its lane over a short time instead of jumping, a played mod card flies from the hand to the table, and a sabotage lands on the opponent's car with a shake. All CSS transitions keyed off the log entries the race-end moment already reads, off under reduced motion, and never delaying an action. A section 8 addendum
 
 21. A use for surplus fuel. Fuel is never spent by advancing, one token must be placed every turn, and fuel stays on a car between races, so once every car in the garage sits at its cost each further token has nowhere to go; only Nitrous Shot and Fuel Dump spend it. Shapes considered: a pit stop action in the mod step, once per turn, spending 2 fuel above a car's cost to remove 1 wear (the recommendation: it uses the wear system that exists, makes a repair-or-fuel-the-bench choice, and sits behind a tunable cost); a burnout before advancing, up to 2 surplus fuel for +50 ft each (direct, but it shortens races and competes with Fuel Dump); a pit crew action, 2 surplus fuel to draw a card (quiet, least effect on pace); or new Boosts that convert fuel with no core rule. Whichever is chosen needs an engine action with a section 3 rule and test, a CPU rule, a tunable for its cost, and the sim's targets re-run. Tabled on 2026-09-04 for more thought
+22. Refused plays explained. A tap on a hand card that cannot be played, or on a car that is not a valid target for the picked card, shows a notice under the prompt saying which card and why, in the words the faded card and the hand header use, in every mode and on phones. Asked for on 2026-09-08
    *Why here:* Surplus fuel shows up in most matches, and a sink turns dead turns into decisions.
 
 ### Medium value: felt often by some players

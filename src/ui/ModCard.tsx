@@ -10,6 +10,8 @@ interface ModCardProps {
   playable?: boolean
   selected?: boolean
   onClick?: () => void
+  /** For a card that cannot be played: a tap explains why instead of doing nothing. */
+  onRefuse?: () => void
   /** Shown faded, such as a card the player does not own yet. */
   dimmed?: boolean
   /** Why the card cannot be played right now, shown on a faded card in the hand. */
@@ -26,6 +28,7 @@ export function ModCard({
   playable,
   selected,
   onClick,
+  onRefuse,
   dimmed,
   note,
   size = 'md',
@@ -86,8 +89,9 @@ export function ModCard({
         type="button"
         className={className}
         style={frameStyle}
-        onClick={onClick}
-        disabled={!playable}
+        onClick={playable ? onClick : onRefuse}
+        disabled={!playable && !onRefuse}
+        aria-disabled={playable ? undefined : true}
         aria-pressed={selected}
       >
         {body}

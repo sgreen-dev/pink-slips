@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
+import { Callout } from './Callout.tsx'
 import { guideSteps, type GuideStepId } from './guide.ts'
 
 interface GuideProps {
@@ -22,32 +23,20 @@ export function Guide({ step, onSkip }: GuideProps) {
     if (last !== null && !seen.includes(last)) setSeen([...seen, last])
   }
   const shown = step !== null && step !== 'finish' && !seen.includes(step) ? step : null
-  const box = useRef<HTMLElement | null>(null)
-  // A new step brings itself into view, which matters on a phone, where the board scrolls.
-  useEffect(() => {
-    const el = box.current
-    if (shown === null || !el || typeof el.scrollIntoView !== 'function') return
-    const reduced =
-      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
-    el.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' })
-  }, [shown])
   if (shown === null) return null
   const { text, toward } = guideSteps()[shown]
   return (
-    <aside ref={box} className={`guide guide--${toward}`} role="status">
-      <p className="guide__text">{text}</p>
-      <div className="guide__actions">
-        <button
-          type="button"
-          className="button button--ghost button--small"
-          onClick={() => setSeen([...seen, shown])}
-        >
-          OK
-        </button>
-        <button type="button" className="button button--ghost button--small" onClick={onSkip}>
-          Skip guide
-        </button>
-      </div>
-    </aside>
+    <Callout toward={toward === 'none' ? 'down' : toward} text={text}>
+      <button
+        type="button"
+        className="button button--ghost button--small"
+        onClick={() => setSeen([...seen, shown])}
+      >
+        OK
+      </button>
+      <button type="button" className="button button--ghost button--small" onClick={onSkip}>
+        Skip guide
+      </button>
+    </Callout>
   )
 }

@@ -12,6 +12,8 @@ interface GarageProps {
   intents?: Map<string, CarIntent>
   selection?: Selection
   onCar?: (carId: string, intent: CarIntent) => void
+  /** A tap on a car with no intent, so the board can say why it is not a target. */
+  onOther?: (carId: string) => void
   size?: CardSize
   /** Show the hand as a count only, for the opponent. */
   handCount?: number
@@ -25,6 +27,7 @@ export function Garage({
   intents,
   selection,
   onCar,
+  onOther,
   size = 'sm',
   handCount,
   raceNumber,
@@ -69,7 +72,13 @@ export function Garage({
               staged={player.stagedCarId === car.carId}
               target={intent !== undefined}
               selected={selected}
-              onClick={intent && onCar ? () => onCar(car.carId, intent) : undefined}
+              onClick={
+                intent && onCar
+                  ? () => onCar(car.carId, intent)
+                  : onOther
+                    ? () => onOther(car.carId)
+                    : undefined
+              }
             />
           )
         })}
