@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { scrollPageTop } from './scroll.ts'
 import { backdropUrl } from './artwork.ts'
 import { Backdrop } from './Backdrop.tsx'
 import { carNames, isEmptyTransfer, type Transfer } from '../collection/stakes.ts'
@@ -46,6 +47,10 @@ export function ResultScreen({
   // Packs still waiting, as reported by the pop-up; unknown until it closes.
   const [waiting, setWaiting] = useState<number | null>(null)
   const showPacks = packsEarned > 0 && !dismissed
+  // The screen opens at the top of the page, and returns there when the pop-up closes.
+  useEffect(() => {
+    scrollPageTop()
+  }, [showPacks])
   const closePacks = (remaining: number) => {
     setWaiting(remaining)
     setDismissed(true)

@@ -57,3 +57,14 @@ export function reveal(el: HTMLElement | null, done?: () => void): () => void {
   timer = setTimeout(onEnd, REVEAL_MS)
   return cancel
 }
+
+/** Opens the page at its top, at once: a new view has nothing to animate from. */
+export function scrollPageTop(): void {
+  if (typeof window === 'undefined' || typeof window.scrollTo !== 'function') return
+  if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: 'auto' })
+}
+
+/** Brings a scrolling panel back to its own top, at once. */
+export function scrollPanelTop(el: HTMLElement | null): void {
+  if (el && el.scrollTop > 0) el.scrollTop = 0
+}

@@ -1,4 +1,5 @@
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
+import { scrollPanelTop } from './scroll.ts'
 import { iconUrl } from './artwork.ts'
 import { copiesOwned, packCards, type Pack } from '../collection/collection.ts'
 import { loadCollection, type CollectionState } from '../collection/persist.ts'
@@ -36,6 +37,12 @@ export function PackDialog({ earned, onClose }: PackDialogProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose, remaining])
 
+  // Each pack opened brings the pop-up back to its own top.
+  const box = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    scrollPanelTop(box.current)
+  }, [opened])
+
   const open = async () => {
     const result = await openNext(account)
     if (!result) return
@@ -49,7 +56,13 @@ export function PackDialog({ earned, onClose }: PackDialogProps) {
   }
 
   return (
-    <div className="raceend" role="dialog" aria-modal="true" aria-labelledby="packs-title">
+    <div
+      className="raceend"
+      ref={box}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="packs-title"
+    >
       <div className="raceend__panel raceend__panel--wide">
         <p className="raceend__kicker">Packs</p>
         <h2 id="packs-title" className="raceend__title">

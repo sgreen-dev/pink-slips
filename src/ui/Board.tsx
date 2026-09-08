@@ -26,7 +26,7 @@ import { ModCard } from './ModCard.tsx'
 import { describeLogEntry } from './narrate.ts'
 import { RaceTrack } from './RaceTrack.tsx'
 import { RulesButton, RulesDialog } from './RulesDialog.tsx'
-import { reveal, scrollRowBack, TURN_END_RESET_MS } from './scroll.ts'
+import { reveal, scrollPageTop, scrollRowBack, TURN_END_RESET_MS } from './scroll.ts'
 import { SoundButton } from './sound/SoundButton.tsx'
 import { useSound } from './sound/useSound.ts'
 import { BASE_ONLY, VariantContext } from './variants.ts'
@@ -149,6 +149,12 @@ export function Board({
   const [revealing, setRevealing] = useState(false)
   const pending = useRef<(() => void) | null>(null)
   useEffect(() => () => pending.current?.(), [])
+  // Continue after a race opens the next race at the top of the page.
+  const wasFrozen = useRef(frozen !== null)
+  useEffect(() => {
+    if (wasFrozen.current && frozen === null) scrollPageTop()
+    wasFrozen.current = frozen !== null
+  }, [frozen])
   const act = (action: Action) => {
     if (action.type !== 'advance') {
       onAction(action)
