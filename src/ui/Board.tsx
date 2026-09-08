@@ -15,6 +15,7 @@ import {
   buttonActions,
   carIntents,
   handedOver,
+  opponentAdvanced,
   modIntent,
   prompt,
   turnSummary,
@@ -25,7 +26,7 @@ import { ModCard } from './ModCard.tsx'
 import { describeLogEntry } from './narrate.ts'
 import { RaceTrack } from './RaceTrack.tsx'
 import { RulesButton, RulesDialog } from './RulesDialog.tsx'
-import { scrollPageBack, scrollRowBack } from './scroll.ts'
+import { reveal, scrollRowBack, TURN_END_RESET_MS } from './scroll.ts'
 import { SoundButton } from './sound/SoundButton.tsx'
 import { useSound } from './sound/useSound.ts'
 import { BASE_ONLY, VariantContext } from './variants.ts'
@@ -117,18 +118,49 @@ export function Board({
     setNoticeFor({ state, selection })
     if (notice && !(theirs && noticeFor.selection === selection)) setNotice(null)
   }
-  // When the viewer's turn ends, the rows that were scrolled return to their start and the page
-  // to its top (DESIGN.md 8, Board order), so the next turn opens on the view the race began with.
-  const [turns, setTurns] = useState({ state, viewer, ended: 0 })
+  // The camera (DESIGN.md 8, Board order). The viewer's turns ended and the other player's
+  // advances are counted during render; each count drives one move below.
+  const [turns, setTurns] = useState({ state, viewer, ended: 0, advances: 0 })
   if (turns.state !== state || turns.viewer !== viewer) {
     const ended = handedOver(turns.state, state, turns.viewer) ? turns.ended + 1 : turns.ended
-    setTurns({ state, viewer, ended })
+    const advances = opponentAdvanced(turns.state, state, viewer)
+      ? turns.advances + 1
+      : turns.advances
+    setTurns({ state, viewer, ended, advances })
   }
   const hand = useRef<HTMLDivElement | null>(null)
+  const track = useRef<HTMLDivElement | null>(null)
+  // A turn's end: after a beat, the hand returns to its start and the track comes into view, so
+  // the other player's turn plays where it can be seen.
   useEffect(() => {
-    scrollRowBack(hand.current)
-    scrollPageBack()
+    const timer = setTimeout(() => {
+      scrollRowBack(hand.current)
+      reveal(track.current)
+    }, TURN_END_RESET_MS)
+    return () => clearTimeout(timer)
   }, [turns.ended])
+  // The other player's advance brings the track into view at once.
+  useEffect(() => {
+    if (turns.advances === 0) return
+    return reveal(track.current)
+  }, [turns.advances])
+  // An advance leads with the track: it is dispatched once the track is in view, and the buttons
+  // are held for that beat.
+  const [revealing, setRevealing] = useState(false)
+  const pending = useRef<(() => void) | null>(null)
+  useEffect(() => () => pending.current?.(), [])
+  const act = (action: Action) => {
+    if (action.type !== 'advance') {
+      onAction(action)
+      return
+    }
+    setRevealing(true)
+    pending.current = reveal(track.current, () => {
+      pending.current = null
+      setRevealing(false)
+      onAction(action)
+    })
+  }
   const refuse = (text: string, toward: 'up' | 'down') => {
     setNotice((prev) => ({ text, toward, at: (prev?.at ?? 0) + 1 }))
     sound.play('deflect')
@@ -235,7 +267,13 @@ export function Board({
         />
       </VariantContext>
 
-      <RaceTrack state={state} names={names} lanes={[opponent, viewer]} frozen={frozen} />
+      <RaceTrack
+        ref={track}
+        state={state}
+        names={names}
+        lanes={[opponent, viewer]}
+        frozen={frozen}
+      />
 
       <Garage
         player={me}
@@ -296,8 +334,8 @@ export function Board({
                   className={`button ${action.type === 'advance' ? 'button--primary' : ''} ${
                     live && !busy ? 'button--next' : ''
                   }`}
-                  onClick={() => onAction(action)}
-                  disabled={busy}
+                  onClick={() => act(action)}
+                  disabled={busy || revealing}
                 >
                   {buttonLabel(action)}
                 </button>

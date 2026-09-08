@@ -112,6 +112,18 @@ export function handedOver(before: MatchState, after: MatchState, viewer: Player
   return currentPlayer(before) === viewer && currentPlayer(after) !== viewer
 }
 
+/** True when the entries added since `before` include an advance by the other player. */
+export function opponentAdvanced(
+  before: MatchState,
+  after: MatchState,
+  viewer: PlayerIndex,
+): boolean {
+  if (after.log.length <= before.log.length) return false
+  return after.log
+    .slice(before.log.length)
+    .some((entry) => entry.kind === 'advance' && entry.player !== viewer)
+}
+
 /** The one-line instruction shown above the controls. */
 export function prompt(
   state: MatchState,

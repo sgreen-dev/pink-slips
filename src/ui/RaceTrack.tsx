@@ -1,3 +1,4 @@
+import type { Ref } from 'react'
 import { getCar } from '../data/cars.ts'
 import { TUNABLES, type MatchState, type PlayerIndex } from '../engine/index.ts'
 import { backdropUrl } from './artwork.ts'
@@ -11,12 +12,14 @@ interface RaceTrackProps {
   lanes: readonly [PlayerIndex, PlayerIndex]
   /** A race that just ended: the lanes show its finishing positions instead of the live state. */
   frozen?: RaceEnd | null
+  /** The board's handle on the track, for the camera. */
+  ref?: Ref<HTMLDivElement>
 }
 
 const MARKS = [0, 330, 660, 990, 1320]
 
 /** Two lanes seen from above. Markers slide toward the finish line at 1320 ft. */
-export function RaceTrack({ state, names, lanes, frozen }: RaceTrackProps) {
+export function RaceTrack({ state, names, lanes, frozen, ref }: RaceTrackProps) {
   const track = TUNABLES.trackLengthFt
   const strip = backdropUrl('track')
   const roadStyle = strip
@@ -27,7 +30,7 @@ export function RaceTrack({ state, names, lanes, frozen }: RaceTrackProps) {
       }
     : undefined
   return (
-    <div className="track" aria-label="Race track">
+    <div className="track" ref={ref} aria-label="Race track">
       <div className="track__marks">
         {MARKS.map((ft) => (
           <span key={ft} className="track__mark" style={{ left: `${(ft / track) * 100}%` }}>

@@ -8,6 +8,7 @@ import {
   handedOver,
   modIntent,
   NO_SELECTION,
+  opponentAdvanced,
   prompt,
   stagedFirst,
 } from './interaction.ts'
@@ -150,5 +151,13 @@ describe('stagedFirst', () => {
     expect(handedOver(mine, mine, 0)).toBe(false)
     expect(handedOver(theirs, mine, 0)).toBe(false)
     expect(handedOver(theirs, mine, 1)).toBe(true)
+  })
+  it('notices an advance by the other player', () => {
+    const before = apply(board([]), { type: 'endMods', player: 0 })
+    const after = apply(before, { type: 'advance', player: 0 })
+    expect(opponentAdvanced(before, after, 1)).toBe(true)
+    expect(opponentAdvanced(before, after, 0)).toBe(false)
+    expect(opponentAdvanced(before, before, 1)).toBe(false)
+    expect(opponentAdvanced(after, before, 1)).toBe(false)
   })
 })

@@ -9,7 +9,8 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 - Phase 25, refused plays explained: a tap on a hand card that cannot be played, or on a car that is not a valid target for the picked card, shows a notice under the prompt saying which card and why, with OK, clearing itself on the next action, with a deflect ping; the guide and the notice share one callout box. (9bd2052)
 - Phase 25 marked done in the build plan. (30879cd)
 - When the player's turn ends, any garage row or hand row that was scrolled on a phone returns to its start, so the next turn opens on the view the race began with. (17df473)
-- The page also returns to its top when the player's turn ends, if it was scrolled, so the whole view is the race-start one again. (the commit that added this line)
+- The page also returns to its top when the player's turn ends, if it was scrolled, so the whole view is the race-start one again. (2a53de6)
+- The camera: Advance brings the track into view before the move lands, the turn-end reset waits a beat and shows the track instead of the page top, and the other player's advance brings the track into view. (the commit that added this line)
 
 ## 2026-09-07
 

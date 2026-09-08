@@ -4,7 +4,7 @@ import { cardBackUrl } from './artwork.ts'
 import { CardBack } from './CardBack.tsx'
 import { CarCard, type CardSize } from './CarCard.tsx'
 import { stagedFirst, type CarIntent, type Selection } from './interaction.ts'
-import { scrollRowBack } from './scroll.ts'
+import { scrollRowBack, TURN_END_RESET_MS } from './scroll.ts'
 
 interface GarageProps {
   player: PlayerState
@@ -38,9 +38,14 @@ export function Garage({
 }: GarageProps) {
   const row = useRef<HTMLDivElement | null>(null)
   // The staged car leads the row; when it changes, a new race begins, or the viewer's turn ends,
-  // bring the row back to its start on a phone, where it scrolls (DESIGN.md 8, Board order).
+  // bring the row back to its start on a phone, where it scrolls (DESIGN.md 8, Board order). A
+  // turn's end waits the camera's beat, so the advance that ended it is seen first.
+  const ended = useRef(turnsEnded)
   useEffect(() => {
-    scrollRowBack(row.current)
+    const afterTurn = ended.current !== turnsEnded
+    ended.current = turnsEnded
+    const timer = setTimeout(() => scrollRowBack(row.current), afterTurn ? TURN_END_RESET_MS : 0)
+    return () => clearTimeout(timer)
   }, [player.stagedCarId, raceNumber, turnsEnded])
   return (
     <section className="garage">
