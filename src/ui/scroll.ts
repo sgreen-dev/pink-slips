@@ -8,3 +8,12 @@ export function scrollRowBack(el: HTMLElement | null): void {
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
   el.scrollTo({ left: 0, behavior: reduced ? 'auto' : 'smooth' })
 }
+
+/** Brings the page back to its top when it has been scrolled, the same way. */
+export function scrollPageBack(): void {
+  if (typeof window === 'undefined' || typeof window.scrollTo !== 'function') return
+  if (window.scrollY === 0) return
+  const reduced =
+    typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+  window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' })
+}

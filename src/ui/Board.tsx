@@ -25,7 +25,7 @@ import { ModCard } from './ModCard.tsx'
 import { describeLogEntry } from './narrate.ts'
 import { RaceTrack } from './RaceTrack.tsx'
 import { RulesButton, RulesDialog } from './RulesDialog.tsx'
-import { scrollRowBack } from './scroll.ts'
+import { scrollPageBack, scrollRowBack } from './scroll.ts'
 import { SoundButton } from './sound/SoundButton.tsx'
 import { useSound } from './sound/useSound.ts'
 import { BASE_ONLY, VariantContext } from './variants.ts'
@@ -117,8 +117,8 @@ export function Board({
     setNoticeFor({ state, selection })
     if (notice && !(theirs && noticeFor.selection === selection)) setNotice(null)
   }
-  // When the viewer's turn ends, the rows that were scrolled return to their start (DESIGN.md 8,
-  // Board order), so the next turn opens on the view the race began with.
+  // When the viewer's turn ends, the rows that were scrolled return to their start and the page
+  // to its top (DESIGN.md 8, Board order), so the next turn opens on the view the race began with.
   const [turns, setTurns] = useState({ state, viewer, ended: 0 })
   if (turns.state !== state || turns.viewer !== viewer) {
     const ended = handedOver(turns.state, state, turns.viewer) ? turns.ended + 1 : turns.ended
@@ -127,6 +127,7 @@ export function Board({
   const hand = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     scrollRowBack(hand.current)
+    scrollPageBack()
   }, [turns.ended])
   const refuse = (text: string, toward: 'up' | 'down') => {
     setNotice((prev) => ({ text, toward, at: (prev?.at ?? 0) + 1 }))
