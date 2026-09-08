@@ -44,7 +44,7 @@
 | 25 | Refused plays explained | done | 9bd2052 |
 | 26 | Rematch in the same room | done | 35ca95a |
 | 27 | Laps | done | 75242bb |
-| 28 | Loaner garages and the intro set | done | (this commit) |
+| 28 | Loaner garages and the intro set | done | d965d6e |
 
 ---
 
