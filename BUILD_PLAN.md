@@ -43,6 +43,7 @@
 | 24 | Guided first match | done | 3743945 |
 | 25 | Refused plays explained | done | 9bd2052 |
 | 26 | Rematch in the same room | done | 35ca95a |
+| 27 | Laps | done | 75242bb |
 
 ---
 
@@ -729,7 +730,6 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 13. Race animation. On each advance the car slides along its lane over a short time instead of jumping, a played mod card flies from the hand to the table, and a sabotage lands on the opponent's car with a shake. All CSS transitions keyed off the log entries the race-end moment already reads, off under reduced motion, and never delaying an action. A section 8 addendum
 
 21. A use for surplus fuel. Fuel is never spent by advancing, one token must be placed every turn, and fuel stays on a car between races, so once every car in the garage sits at its cost each further token has nowhere to go; only Nitrous Shot and Fuel Dump spend it. Shapes considered: a pit stop action in the mod step, once per turn, spending 2 fuel above a car's cost to remove 1 wear (the recommendation: it uses the wear system that exists, makes a repair-or-fuel-the-bench choice, and sits behind a tunable cost); a burnout before advancing, up to 2 surplus fuel for +50 ft each (direct, but it shortens races and competes with Fuel Dump); a pit crew action, 2 surplus fuel to draw a card (quiet, least effect on pace); or new Boosts that convert fuel with no core rule. Whichever is chosen needs an engine action with a section 3 rule and test, a CPU rule, a tunable for its cost, and the sim's targets re-run. Tabled on 2026-09-04 for more thought
-23. Laps. Once every car is owned, the player can take a lap: the collection returns to the starter set, the lap count rises, one keepsake car stays in a Chrome finish, packs hold an extra car per lap up to two, and the lap shows as a plate on the profile, the leaderboard, and online. Brainstormed and chosen on 2026-09-08
    *Why here:* Surplus fuel shows up in most matches, and a sink turns dead turns into decisions.
 
 ### Medium value: felt often by some players
@@ -770,4 +770,6 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 
 22. Refused plays explained. Phase 25, 2026-09-08 (9bd2052, 30879cd).
 
-14. Rematch in the same room, online, for friend matches played for no stakes. Phase 26, 2026-09-08 (35ca95a, the commit that marks it done).
+14. Rematch in the same room, online, for friend matches played for no stakes. Phase 26, 2026-09-08 (35ca95a, af9c762).
+
+23. Laps: complete the roster, keep a keepsake in Chrome, start over with bigger packs and a plate. Phase 27, 2026-09-08 (75242bb, the commit that marks it done).

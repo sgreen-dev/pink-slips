@@ -14,7 +14,8 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 - After a race, Continue opens the next race at the top of the page; the result screen opens at the top and returns there when the pack pop-up closes; the pop-up returns to its top with each pack opened. (0c00eeb)
 - Phase 26, rematch in the same room: after a friend match online, Play again asks the room for a rematch, the screen shows who has asked, and when both have the room starts a new match with the same garages, the seed advanced, and the first move swapped; ranked and stakes rooms keep New room. (35ca95a)
 - Phase 26 marked done in the build plan. (af9c762)
-- Phase 27, laps: once every car is owned, Take the lap returns the collection to the starters, keeps one keepsake in the new Chrome finish, makes later packs hold an extra car per lap up to two, and shows the lap as a plate on the collection, the profile, the leaderboard, and online; keepsakes never change hands under stakes. (the commit that added this line)
+- Phase 27, laps: once every car is owned, Take the lap returns the collection to the starters, keeps one keepsake in the new Chrome finish, makes later packs hold an extra car per lap up to two, and shows the lap as a plate on the collection, the profile, the leaderboard, and online; keepsakes never change hands under stakes. (75242bb)
+- Phase 27 marked done in the build plan. (the commit that added this line)
 
 ## 2026-09-07
 
