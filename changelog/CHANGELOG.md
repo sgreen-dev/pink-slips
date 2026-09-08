@@ -4,7 +4,8 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-08
 
-- Phase 24, guided first match: the first CPU match a browser plays shows a short guide, one step at a time under the prompt, stage a car, place fuel, play mods, advance, and the finish line in the banner, with OK and Skip guide, remembered under `pink-slips.guide.v1`; written to the rules dialog's reading level and held to its limits by a test. (the commit that added this line)
+- Phase 24, guided first match: the first CPU match a browser plays shows a short guide, one step at a time under the prompt, stage a car, place fuel, play mods, advance, and the finish line in the banner, with OK and Skip guide, remembered under `pink-slips.guide.v1`; written to the rules dialog's reading level and held to its limits by a test. (3743945)
+- Phase 24 marked done in the build plan. (the commit that added this line)
 
 ## 2026-09-07
 

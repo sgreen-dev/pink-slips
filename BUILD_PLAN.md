@@ -40,6 +40,7 @@
 | 22 | Owner artwork, part 2: backdrops, track, icons and tokens | done | 30e467d |
 | 23 | Owner-made sound effects | done | c2516f2 |
 | 20 | Stakes | done | 312f4d8 |
+| 24 | Guided first match | done | 3743945 |
 
 ---
 
@@ -648,7 +649,6 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 1. Trading duplicates, or converting them, once the collection has been live long enough to show how many duplicates players hold
    *Why here:* A full collection takes about 600 packs, so duplicates pile up early, and every pack after the first few dozen feels worse without it.
 10. Turn timer with forfeit, online. A ranked player who stops acting gets a visible countdown, and when it runs out the match is forfeited and reported as a normal result, so an opponent who walks away or never returns cannot hold a match open forever. The room keeps the deadline in its snapshot and a Durable Object alarm fires it; the timer pauses while a seat is disconnected only for a fixed grace, then counts down anyway. Needs a tunable for the turn length and the grace, a room test that a timed-out seat loses, a `DESIGN.md` section 13 line, and the countdown in the online bar
-12. Guided first match. The first CPU match a browser plays gets a short overlay that points at one thing at a time: stage a car, drop fuel, advance, watch the finish, continue. Dismissable at any step, never shown again once finished or skipped, and remembered in `localStorage`. Written to the same reading level as the rules dialog and tested for the same word limits. A section 9 addendum on how the overlay reads the board state
 13. Race animation. On each advance the car slides along its lane over a short time instead of jumping, a played mod card flies from the hand to the table, and a sabotage lands on the opponent's car with a shake. All CSS transitions keyed off the log entries the race-end moment already reads, off under reduced motion, and never delaying an action. A section 8 addendum
 
 21. A use for surplus fuel. Fuel is never spent by advancing, one token must be placed every turn, and fuel stays on a car between races, so once every car in the garage sits at its cost each further token has nowhere to go; only Nitrous Shot and Fuel Dump spend it. Shapes considered: a pit stop action in the mod step, once per turn, spending 2 fuel above a car's cost to remove 1 wear (the recommendation: it uses the wear system that exists, makes a repair-or-fuel-the-bench choice, and sits behind a tunable cost); a burnout before advancing, up to 2 surplus fuel for +50 ft each (direct, but it shortens races and competes with Fuel Dump); a pit crew action, 2 surplus fuel to draw a card (quiet, least effect on pace); or new Boosts that convert fuel with no core rule. Whichever is chosen needs an engine action with a section 3 rule and test, a CPU rule, a tunable for its cost, and the sim's targets re-run. Tabled on 2026-09-04 for more thought
@@ -688,3 +688,5 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 20. Music on phones started on the first tap most of the time but not every time. Resolved 2026-09-04: the tracks stream and start on the tap (5c1aa6a, 9c888b8).
 
 4. Stakes mode, in every mode but hotseat, with starter cars exempt. Phase 20, 2026-09-04 (312f4d8, the commit that marks it done).
+
+12. Guided first match, on phones and desktop. Phase 24, 2026-09-08 (3743945, the commit that marks it done).
