@@ -415,3 +415,74 @@ describe('stakes rooms', () => {
     expect(room.stakes).toBe(true)
   })
 })
+describe('rematch in the same room', () => {
+  const rematch = (c: FakeClient, others: FakeClient[]) =>
+    c.send(JSON.stringify({ type: 'rematch' }), others)
+
+  it('needs the match over, then both seats, and swaps the first move', () => {
+    const [room, a, b] = seated()
+    expect(rematch(a, [b])).toEqual([{ type: 'error', reason: REASONS.notOver }])
+    playOut(a, b, 11)
+    const first = (a.view as MatchState).firstPlayer
+    expect(room.takeResult()).not.toBeNull()
+    expect(rematch(a, [b])).toEqual([{ type: 'rematch', accepted: [true, false] }])
+    expect(b.received.at(-1)).toEqual({ type: 'rematch', accepted: [true, false] })
+    expect(isOver(b.view as MatchState)).not.toBeNull()
+    const replies = rematch(b, [a])
+    expect(replies[0]).toEqual({ type: 'rematch', accepted: [true, true] })
+    const fresh = b.view as MatchState
+    expect(isOver(fresh)).toBeNull()
+    expect(fresh.race.number).toBe(1)
+    expect(fresh.turn.number).toBe(1)
+    expect(fresh.firstPlayer).toBe(first === 0 ? 1 : 0)
+    expect(fresh.log.some((entry) => entry.kind === 'coinFlip')).toBe(false)
+    expect(a.received.at(-1)).toMatchObject({ type: 'state', names: ['Ann', 'Bo'] })
+    expect(room.takeResult()).toBeNull()
+    playOut(a, b, 13)
+    expect(room.takeResult()).not.toBeNull()
+    expect(room.snapshot().matches).toBe(2)
+  })
+
+  it('keeps a half-accepted offer in the snapshot and refuses ranked and stakes rooms', () => {
+    const [room, a, b] = seated()
+    playOut(a, b, 11)
+    rematch(a, [b])
+    const copy = new Room('ABCDEF', 7, room.snapshot())
+    expect(copy.snapshot().rematch).toEqual([true, false])
+
+    const ranked = new Room('RANKED', 7)
+    ranked.setup([
+      { ticket: 'tk-a', identity: { accountId: 'acct-a', name: 'Ann' } },
+      { ticket: 'tk-b', identity: { accountId: 'acct-b', name: 'Bo' } },
+    ])
+    const c = new FakeClient(ranked)
+    const d = new FakeClient(ranked)
+    c.send(JSON.stringify({ type: 'join', name: 'Ann', garage: garage(0), ticket: 'tk-a' }), [d])
+    d.send(JSON.stringify({ type: 'join', name: 'Bo', garage: garage(1), ticket: 'tk-b' }), [c])
+    playOut(c, d, 11)
+    expect(rematch(c, [d])).toEqual([{ type: 'error', reason: REASONS.noRematchRanked }])
+
+    const staked = new Room('STAKES', 7)
+    const e = new FakeClient(staked)
+    const f = new FakeClient(staked)
+    const joinFor = (
+      client: FakeClient,
+      index: number,
+      identity: { accountId: string; name: string },
+      others: FakeClient[],
+    ) => {
+      const raw = JSON.stringify({
+        type: 'join',
+        name: identity.name,
+        garage: garage(index),
+        stakes: true,
+      })
+      const message = parseClientMessage(raw) as ClientMessage
+      client.deliver(staked.handle(client.seat, message, newToken, identity), others)
+    }
+    joinFor(e, 0, { accountId: 'acct-a', name: 'Ann' }, [f])
+    joinFor(f, 1, { accountId: 'acct-b', name: 'Bo' }, [e])
+    playOut(e, f, 11)
+    expect(rematch(e, [f])).toEqual([{ type: 'error', reason: REASONS.noRematchStakes }])
+  })
+})

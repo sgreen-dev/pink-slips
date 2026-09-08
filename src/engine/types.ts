@@ -15,6 +15,8 @@ export interface PlayerConfig {
 
 export interface MatchConfig {
   players: readonly [PlayerConfig, PlayerConfig]
+  /** Set by a rematch (DESIGN.md 13): this player moves first and no coin is flipped for it. */
+  firstPlayer?: PlayerIndex
 }
 
 /** A car in a garage. Face up for the whole match. */

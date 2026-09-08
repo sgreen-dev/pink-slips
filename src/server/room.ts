@@ -54,6 +54,10 @@ export interface RoomSnapshot {
   history?: readonly { seat: PlayerIndex; state: MatchState }[]
   /** True when the room plays for stakes (DESIGN.md 12). */
   stakes?: boolean
+  /** Matches started in this room; a rematch adds one and advances the seed by it. */
+  matches?: number
+  /** Which seats have asked for a rematch of the finished match. */
+  rematch?: readonly [boolean, boolean]
 }
 
 export interface Outbound {
@@ -91,6 +95,10 @@ export const REASONS = {
   stakesOn: 'This room plays for stakes. Turn stakes on to join it.',
   stakesOff: 'This room does not play for stakes. Turn stakes off to join it.',
   stakesNeedsPlayer: 'Stakes need a signed-in player on both seats. Create a player first.',
+  notOver: 'The match is still running.',
+  noRematchRanked: 'A ranked match is not replayed in its room. Queue again.',
+  noRematchStakes:
+    'A stakes match is not replayed in its room, since cars changed hands. Make a new room.',
 } as const
 
 function isModPlay(action: Action): boolean {
@@ -108,6 +116,8 @@ export class Room {
   private reported: boolean
   private history: { seat: PlayerIndex; state: MatchState }[]
   private forStakes: boolean
+  private matches: number
+  private wants: [boolean, boolean]
   readonly code: string
   readonly seed: number
 
@@ -120,6 +130,8 @@ export class Room {
     this.reported = snapshot?.reported ?? false
     this.history = snapshot?.history ? [...snapshot.history] : []
     this.forStakes = snapshot?.stakes ?? false
+    this.matches = snapshot?.matches ?? (this.state ? 1 : 0)
+    this.wants = snapshot?.rematch ? [snapshot.rematch[0], snapshot.rematch[1]] : [false, false]
   }
 
   snapshot(): RoomSnapshot {
@@ -132,6 +144,8 @@ export class Room {
       reported: this.reported,
       history: [...this.history],
       stakes: this.forStakes,
+      matches: this.matches,
+      rematch: [this.wants[0], this.wants[1]],
     }
   }
 
@@ -207,6 +221,8 @@ export class Room {
         return this.undo(from)
       case 'concede':
         return this.concede(from)
+      case 'rematch':
+        return this.rematch(from)
     }
   }
 
@@ -259,6 +275,7 @@ export class Room {
     const [a, b] = this.seats
     if (a && b && !this.state) {
       this.state = createMatch({ players: [a.garage, b.garage] }, this.seed)
+      this.matches = 1
       out.push(...this.views())
     } else if (!this.state) {
       out.push({ to: null, message: { type: 'waiting' } })
@@ -309,6 +326,37 @@ export class Room {
     this.state = concede(state, from)
     this.history = []
     return this.views()
+  }
+
+  /**
+   * Another match in the same room (DESIGN.md 13): once both seats ask, the same garages race
+   * again with the seed advanced and the first move given to the other seat. A ranked room
+   * queues again instead, and a stakes room makes a new room, since its cars changed hands.
+   */
+  private rematch(from: PlayerIndex | null): Outbound[] {
+    if (from === null) return [fail(REASONS.notSeated)]
+    const state = this.state
+    if (!state) return [fail(REASONS.notStarted)]
+    if (state.phase.kind !== 'over') return [fail(REASONS.notOver)]
+    if (this.tickets) return [fail(REASONS.noRematchRanked)]
+    if (this.forStakes) return [fail(REASONS.noRematchStakes)]
+    this.wants[from] = true
+    const accepted: [boolean, boolean] = [this.wants[0], this.wants[1]]
+    const out: Outbound[] = ([0, 1] as const).map((seat) => ({
+      to: seat,
+      message: { type: 'rematch', accepted },
+    }))
+    const [a, b] = this.seats
+    if (!accepted[0] || !accepted[1] || !a || !b) return out
+    this.matches += 1
+    this.state = createMatch(
+      { players: [a.garage, b.garage], firstPlayer: otherSeat(state.firstPlayer) },
+      this.seed + this.matches - 1,
+    )
+    this.history = []
+    this.reported = false
+    this.wants = [false, false]
+    return [...out, ...this.views()]
   }
 
   /** Takes back the seat's last mod play of this step and shows both seats the result. */

@@ -147,8 +147,11 @@ export function createMatch(config: MatchConfig, seed: number): MatchState {
   validatePlayerConfig(config.players[1], 'Player 2')
   const [p0, rng1] = setupPlayer(config.players[0], seedRng(seed))
   const [p1, rng2] = setupPlayer(config.players[1], rng1)
-  const [heads, rng] = flipCoin(rng2)
-  const firstPlayer: PlayerIndex = heads ? 0 : 1
+  // A rematch names the first player (DESIGN.md 13); otherwise a coin flip decides.
+  const forced = config.firstPlayer
+  const flip = forced === undefined ? flipCoin(rng2) : null
+  const firstPlayer: PlayerIndex = forced ?? (flip?.[0] ? 0 : 1)
+  const rng = flip ? flip[1] : rng2
   return {
     players: [p0, p1],
     firstPlayer,
@@ -159,7 +162,16 @@ export function createMatch(config: MatchConfig, seed: number): MatchState {
     log: [
       { kind: 'draw', player: 0, count: p0.hand.length },
       { kind: 'draw', player: 1, count: p1.hand.length },
-      { kind: 'coinFlip', purpose: 'firstPlayer', heads, firstPlayer },
+      ...(flip
+        ? [
+            {
+              kind: 'coinFlip' as const,
+              purpose: 'firstPlayer' as const,
+              heads: flip[0],
+              firstPlayer,
+            },
+          ]
+        : []),
     ],
   }
 }

@@ -37,7 +37,13 @@ export interface ConcedeMessage {
   type: 'concede'
 }
 
-export type ClientMessage = JoinMessage | ResumeMessage | ActMessage | UndoMessage | ConcedeMessage
+/** Asks for another match in the same room once this one is over; both seats must ask. */
+export interface RematchMessage {
+  type: 'rematch'
+}
+
+export type ClientMessage =
+  JoinMessage | ResumeMessage | ActMessage | UndoMessage | ConcedeMessage | RematchMessage
 
 export interface WelcomeMessage {
   type: 'welcome'
@@ -91,6 +97,12 @@ export interface MatchedMessage {
   opponent: string
 }
 
+/** Who has asked for a rematch of the finished match, sent to both seats when it changes. */
+export interface RematchStateMessage {
+  type: 'rematch'
+  accepted: readonly [boolean, boolean]
+}
+
 export type ServerMessage =
   | WelcomeMessage
   | WaitingMessage
@@ -99,6 +111,7 @@ export type ServerMessage =
   | ErrorMessage
   | ResultMessage
   | MatchedMessage
+  | RematchStateMessage
 
 export { MAX_NAME_LENGTH }
 
@@ -167,6 +180,8 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
       return { type: 'undo' }
     case 'concede':
       return { type: 'concede' }
+    case 'rematch':
+      return { type: 'rematch' }
     default:
       return null
   }
@@ -192,6 +207,15 @@ export function parseServerMessage(raw: unknown): ServerMessage | null {
         : null
     case 'waiting':
       return { type: 'waiting' }
+    case 'rematch': {
+      const accepted = value['accepted']
+      return Array.isArray(accepted) &&
+        accepted.length === 2 &&
+        typeof accepted[0] === 'boolean' &&
+        typeof accepted[1] === 'boolean'
+        ? { type: 'rematch', accepted: [accepted[0], accepted[1]] }
+        : null
+    }
     case 'state':
       return isRecord(value['view']) && isStringArray(value['names']) && value['names'].length === 2
         ? {

@@ -21,6 +21,10 @@ interface ResultScreenProps {
   stakes?: Transfer | null
   /** Text on the first button; online play offers a new room instead of a rematch. */
   rematchLabel?: string
+  /** Online: the seat already asked for a rematch and waits for the other. */
+  rematchDisabled?: boolean
+  /** Online: the other seat asked for a rematch. */
+  rematchNote?: string | null
   onRematch: () => void
   onNewMatch: () => void
 }
@@ -38,6 +42,8 @@ export function ResultScreen({
   packsEarned,
   stakes = null,
   rematchLabel = 'Rematch',
+  rematchDisabled = false,
+  rematchNote = null,
   onRematch,
   onNewMatch,
 }: ResultScreenProps) {
@@ -120,6 +126,7 @@ export function ResultScreen({
             type="button"
             className="button button--primary button--big"
             onClick={onRematch}
+            disabled={rematchDisabled}
             autoFocus
           >
             {rematchLabel}
@@ -128,6 +135,7 @@ export function ResultScreen({
             New match
           </button>
         </div>
+        {rematchNote && <p className="result__note">{rematchNote}</p>}
       </main>
       {showPacks && <PackDialog earned={packsEarned} onClose={closePacks} />}
     </>

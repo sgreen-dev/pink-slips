@@ -368,7 +368,7 @@ A player may concede at any point of a started match, on or off turn, and the ot
 
 ### 3.6 Coin flips
 
-A coin flip is a 50/50 result from the engine's seeded random number generator. The Sports type identity forces the first flip a Sports car makes each race to heads.
+A coin flip is a 50/50 result from the engine's seeded random number generator. The first player of a match is the winner of a coin flip, except in a rematch (section 13), where the room names the first player and no flip is made. The Sports type identity forces the first flip a Sports car makes each race to heads.
 
 ---
 
@@ -665,6 +665,8 @@ The profile screen shows the name, rating, record, cards owned, and packs waitin
 
 **Concede** (phase 18). Online, Leave during a started match asks once, then concedes: the room applies the engine's concede for that seat, clears the take-back stack, sends both seats the finished state, and reports the result as usual, so the opponent's screen ends at once and ratings follow. Packs follow only when at least one race reached the line, so two friends cannot farm packs by conceding back and forth. In the lobby, before the match starts, Leave just leaves.
 
-**Not yet**: spectators, a rematch inside the same room, trading, a filter on player names, and linking an outside sign-in as a second way to recover a player.
+**Rematch** (phase 26). After a friend match played for no stakes, the result screen's Play again asks the room for a rematch. The room tells both seats who has asked, so the screen reads "Waiting for X" on the seat that asked and "X wants to play again." on the other. When both have asked, the room starts a new match in the same room: the same garages and names, the seed advanced by one per match, the first move given to the seat that did not have it (the engine's `MatchConfig.firstPlayer`, which skips the coin flip), the take-back stack and the result latch cleared, and both seats get fresh views, so the board returns without leaving the room. The new match is reported at its end like any other. A ranked room refuses, since Play again there queues again, and a stakes room refuses, since its cars changed hands and the same garages would race a car the loser no longer owns; both keep New room. The saved seat now outlives the result, so a refresh during the offer rejoins the room; Leave, New room, and New match clear it.
+
+**Not yet**: spectators, trading, a filter on player names, and linking an outside sign-in as a second way to recover a player.
 
 **Stakes online** (phase 20). Both seats must be signed in with stakes on. The ranked queue carries each player's toggle and pairs a stakes player only with another stakes player; the room the queue sets up is marked for stakes. In a friend room the first player to join sets the room's stakes from their toggle; a joiner whose toggle differs is refused with a reason that names the setting, and a guest can neither open nor join a stakes room. When the match ends the room computes each seat's transfer from the pink slips in its own state, drops starter cars, and hands both transfers to the directory with the result; the directory applies them to the two accounts, and the result message tells each seat what it kept and what it lost. The client's toggle is consent only; the cars that move are the room's reading of the match.

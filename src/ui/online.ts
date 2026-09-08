@@ -1,3 +1,4 @@
+import { isOver } from '../engine/index.ts'
 import type { Action, MatchState, PlayerConfig, PlayerIndex } from '../engine/index.ts'
 import {
   isRoomCode,
@@ -201,6 +202,11 @@ export class RoomClient {
     if (this.open && this.socket) this.socket.send(JSON.stringify({ type: 'undo' }))
   }
 
+  /** Asks for another match in the same room once this one is over (DESIGN.md 13). */
+  rematch(): void {
+    if (this.open && this.socket) this.socket.send(JSON.stringify({ type: 'rematch' }))
+  }
+
   /** Stops the client for good; the room sees the socket close. */
   close(): void {
     this.stopped = true
@@ -249,6 +255,8 @@ export interface OnlineSession {
   error: string | null
   /** What the room said the seat earned, once the match ended. */
   result: ResultMessage | null
+  /** Which seats have asked for a rematch of the finished match. */
+  rematch: readonly [boolean, boolean]
 }
 
 export type OnlineEvent =
@@ -270,6 +278,7 @@ export function startOnline(code: string, name: string): OnlineSession {
     waiting: false,
     error: null,
     result: null,
+    rematch: [false, false],
   }
 }
 
@@ -306,11 +315,24 @@ function onMessage(session: OnlineSession, message: ServerMessage): OnlineSessio
       return { ...session, error: message.reason }
     case 'result':
       return { ...session, result: message }
+    case 'rematch':
+      return { ...session, rematch: message.accepted }
     case 'matched':
       return session
     case 'state': {
       const next = message.view
       const base = { ...session, names: message.names, waiting: false, error: null }
+      // A running match after a result is a rematch: the finished match's leftovers go.
+      if (session.result !== null && isOver(next) === null) {
+        return {
+          ...base,
+          view: next,
+          raceEnd: null,
+          held: null,
+          result: null,
+          rematch: [false, false],
+        }
+      }
       if (session.raceEnd !== null) return { ...base, held: next }
       const raceEnd = session.view === null ? null : raceEndBetween(session.view, next)
       return { ...base, view: next, raceEnd }

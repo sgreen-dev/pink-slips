@@ -16,6 +16,8 @@ import { parseServerMessage, type ServerMessage } from '../src/protocol/messages
 const endpoint = (process.argv[2] ?? 'http://localhost:8787').replace(/\/+$/, '')
 /** With --stakes both players queue for stakes and each side's transfer is printed. */
 const stakes = process.argv.includes('--stakes')
+/** With --rematch the two players share a friend room, play a match and its rematch, and the first move must swap. */
+const rematch = process.argv.includes('--rematch')
 const socketBase = endpoint.replace(/^http/, 'ws')
 
 interface Player {
@@ -65,10 +67,18 @@ interface Outcome {
   packs: number | null
   rating: { before: number; after: number } | null
   winner: PlayerIndex | null
+  /** The first player of each match played, in order. */
+  firsts: PlayerIndex[]
 }
 
 /** Joins the room with the ticket and plays every turn of its seat from its own view. */
-function play(player: Player, code: string, ticket: string, seed: number): Promise<Outcome> {
+function play(
+  player: Player,
+  code: string,
+  ticket: string | undefined,
+  seed: number,
+  matches = 1,
+): Promise<Outcome> {
   const starter = STARTERS[seed % STARTERS.length]
   if (!starter) throw new Error('No starter garage')
   return new Promise((resolve, reject) => {
@@ -77,9 +87,11 @@ function play(player: Player, code: string, ticket: string, seed: number): Promi
     )
     let seat: PlayerIndex | null = null
     let winner: PlayerIndex | null = null
+    let results = 0
+    const firsts: PlayerIndex[] = []
     const timer = setTimeout(
       () => reject(new Error(`${player.name}: match took too long`)),
-      120_000,
+      120_000 * matches,
     )
     ws.addEventListener('open', () => {
       const garage = { garage: starter.cars, deck: starter.deck }
@@ -90,6 +102,7 @@ function play(player: Player, code: string, ticket: string, seed: number): Promi
       if (message.type === 'welcome') seat = message.seat
       if (message.type === 'state' && seat !== null) {
         const view: MatchState = message.view
+        if (firsts.length === results) firsts.push(view.firstPlayer)
         winner = isOver(view)
         if (winner !== null) return
         if (currentPlayer(view) !== seat) return
@@ -98,9 +111,14 @@ function play(player: Player, code: string, ticket: string, seed: number): Promi
       }
       if (message.type === 'result' && seat !== null) {
         if (stakes) console.log(`${player.name}: stakes ${JSON.stringify(message.stakes)}`)
+        results += 1
+        if (results < matches) {
+          ws.send(JSON.stringify({ type: 'rematch' }))
+          return
+        }
         clearTimeout(timer)
         ws.close()
-        resolve({ seat, packs: message.packsEarned, rating: message.rating, winner })
+        resolve({ seat, packs: message.packsEarned, rating: message.rating, winner, firsts })
       }
     })
     ws.addEventListener('error', () => reject(new Error(`${player.name}: room socket failed`)))
@@ -114,6 +132,28 @@ async function main(): Promise<void> {
     createPlayer(`Smoke Bo ${stamp}`),
   ])
   console.log(`Players made: ${ann.name} and ${bo.name}, rating ${ann.rating} each`)
+  if (rematch) {
+    const made = (await (await fetch(`${endpoint}/new`)).json()) as { code?: string }
+    if (!made.code) throw new Error('Could not make a room')
+    console.log(`Friend room ${made.code}: a match and its rematch`)
+    const [outA, outB] = await Promise.all([
+      play(ann, made.code, undefined, 3, 2),
+      play(bo, made.code, undefined, 5, 2),
+    ])
+    for (const [player, out] of [
+      [ann, outA],
+      [bo, outB],
+    ] as const) {
+      console.log(
+        `${player.name} (seat ${out.seat}): first moves ${out.firsts.join(' then ')}, ${out.packs} packs after the rematch`,
+      )
+      if (out.firsts.length !== 2 || out.firsts[0] === out.firsts[1]) {
+        throw new Error('The rematch did not swap the first move')
+      }
+    }
+    console.log('Rematch smoke check passed')
+    return
+  }
   const [matchA, matchB] = await Promise.all([queue(ann), queue(bo)])
   if (matchA.code !== matchB.code) throw new Error('The two players were not paired together')
   console.log(`Paired in room ${matchA.code}: ${ann.name} against ${matchA.opponent}`)

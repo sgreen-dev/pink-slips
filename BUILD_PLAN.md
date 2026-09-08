@@ -664,6 +664,31 @@
 
 ---
 
+## Phase 26 — Rematch in the same room
+
+**Goal**: after a friend match online, both seats can ask for another match in the same room, and when both have, the room starts it with the same garages, the seed advanced, and the first move swapped.
+
+**Design to record first** (`DESIGN.md` 3 and 13): the engine's named first player, the rematch message both ways, the room's record of who asked, the seed and first-move rules, the ranked and stakes refusals, and the seat record's lifetime.
+
+**Deliverables**
+
+- `MatchConfig.firstPlayer` in the engine, skipping the flip and its log entry
+- The `rematch` client message and the room's `rematch` state message; the room's `rematch` handling with its two refusals and the per-match result latch
+- `RoomClient.rematch`, the session's accepted flags and the fresh-match reset, the result screen's Play again states
+- The smoke script's `--rematch` run against a friend room
+
+**Tests**
+
+- The engine gives the named player the first move with no coin flip
+- The room refuses before the end, in a ranked room, and in a stakes room; one seat's ask reaches both; the second ask starts a fresh match with the first move swapped and the same names, and its result is taken again; a half-accepted offer survives the snapshot
+- The client parses both messages, tracks who accepted, and starts over when a fresh match follows a result
+
+**Done when**: the smoke run plays a friend match and its rematch through the live service with the first move swapped and two results each, and the tests pass.
+
+**Prompt**: Do phase 26 of BUILD_PLAN.md.
+
+---
+
 ## Backlog
 
 Anything new goes here first and becomes a phase when picked up. Items sit in value order within their tier, judged by how many players feel them and how often; a new item goes to the tier that fits, at the end. Numbers never change, since the design and past commits refer to them. A finished item leaves its tier for the Done list at the end, with the phase and the commits that closed it.

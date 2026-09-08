@@ -47,7 +47,7 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
   const [selection, setSelection] = useState<Selection>(NO_SELECTION)
   const [options, setOptions] = useState<Action[] | null>(null)
   const [variantOf] = useState(() => lookupFrom(loadCollection().variants))
-  const recorded = useRef(false)
+  const [recorded, setRecorded] = useState(false)
   const [earned, setEarned] = useState(0)
   const [note, setNote] = useState<string | null>(null)
   const [settled, setSettled] = useState<Transfer | null>(null)
@@ -92,16 +92,26 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
   // At the end, the room says what the account earned; a guest keeps the local rule.
   const winner = view === null ? null : isOver(view)
   const result = session.result
+  // A rematch: the finished match's bookkeeping starts over, noticed during render.
+  const [wasOver, setWasOver] = useState(winner !== null)
+  if ((winner !== null) !== wasOver) {
+    setWasOver(winner !== null)
+    if (winner === null) {
+      setRecorded(false)
+      setEarned(0)
+      setNote(null)
+      setSettled(null)
+    }
+  }
   useEffect(() => {
-    if (winner === null || seat === null || recorded.current) return
+    if (winner === null || seat === null || recorded) return
     const settle = (
       packs: number | null,
       rating: { before: number; after: number } | null,
       stakes: Transfer | null = null,
     ) => {
-      recorded.current = true
+      setRecorded(true)
       setSettled(stakes)
-      clearOnlineSeat()
       // One count per match: the first seat reports it.
       if (seat === 0) void recordMatch()
       if (packs === null || !account) {
@@ -124,10 +134,19 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
     }
     const timer = setTimeout(() => settle(null, null), RESULT_GRACE_MS)
     return () => clearTimeout(timer)
-  }, [winner, seat, result, account])
+  }, [winner, seat, result, account, recorded])
 
   const opponent: PlayerIndex = seat === 0 ? 1 : 0
   const opponentName = session.names[opponent]
+  // The saved seat outlives the result so a refresh during a rematch offer rejoins; leaving clears it.
+  const leaveRoom = () => {
+    clearOnlineSeat()
+    onLeave()
+  }
+  const anotherRoom = () => {
+    clearOnlineSeat()
+    onAgain()
+  }
   const headline = (player: PlayerIndex) =>
     player === seat ? 'You win' : `${session.names[player]} wins`
 
@@ -208,9 +227,26 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
           note={note}
           packsEarned={earned}
           stakes={entry.stakes ? (settled ?? EMPTY_TRANSFER) : null}
-          rematchLabel={entry.ticket ? 'Play again' : 'New room'}
-          onRematch={onAgain}
-          onNewMatch={onLeave}
+          rematchLabel={
+            entry.ticket
+              ? 'Play again'
+              : !entry.stakes
+                ? seat !== null && session.rematch[seat]
+                  ? `Waiting for ${opponentName}`
+                  : 'Play again'
+                : 'New room'
+          }
+          rematchDisabled={!entry.ticket && !entry.stakes && seat !== null && session.rematch[seat]}
+          rematchNote={
+            !entry.ticket &&
+            !entry.stakes &&
+            session.rematch[opponent] &&
+            !(seat !== null && session.rematch[seat])
+              ? `${opponentName} wants to play again.`
+              : null
+          }
+          onRematch={!entry.ticket && !entry.stakes ? () => client.current?.rematch() : anotherRoom}
+          onNewMatch={leaveRoom}
         />
       </VariantContext>
     )
