@@ -185,7 +185,7 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
             Play for stakes
           </label>
           <span className="stakes__note">
-            Captured cars change hands for real, both ways; starter cars never do. Both players need
+            Captured cars change hands for real, both ways; loaner cars never do. Both players need
             it on.
           </span>
         </div>

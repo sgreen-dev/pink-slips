@@ -194,7 +194,7 @@ export function StartScreen({
           </label>
           <span className="stakes__note">
             {stakesAllowed
-              ? 'Captured cars change hands for real, both ways. Starter cars never do.'
+              ? 'Captured cars change hands for real, both ways. Loaner cars never do.'
               : 'Stakes need the Street or Pro CPU.'}
           </span>
         </div>

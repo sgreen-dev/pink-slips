@@ -153,7 +153,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         {complete && (
           <div className="collection__lap">
             <p>
-              Every car is yours. Take the lap: your collection returns to the starter set, you keep
+              Every car is yours. Take the lap: your collection returns to the intro set, you keep
               one car in Chrome, and packs hold an extra car from then on, up to two. Custom garages
               that need cars you give up are removed.
             </p>

@@ -94,7 +94,7 @@ export function ResultScreen({
           <section className="result__stakes">
             <h2>Stakes</h2>
             {isEmptyTransfer(stakes) ? (
-              <p>Nothing changed hands. Starter cars never do.</p>
+              <p>Nothing changed hands. Loaner cars never do.</p>
             ) : (
               <>
                 {stakes.gained.length > 0 && <p>You keep {carNames(stakes.gained)}.</p>}

@@ -273,7 +273,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
                   onClick={() => load(option)}
                 >
                   {option.name}
-                  {option.custom ? '' : ' (starter)'}
+                  {option.custom ? '' : ' (loaner)'}
                 </button>
               ))}
             </div>
