@@ -41,6 +41,7 @@
 | 23 | Owner-made sound effects | done | c2516f2 |
 | 20 | Stakes | done | 312f4d8 |
 | 24 | Guided first match | done | 3743945 |
+| 25 | Refused plays explained | done | 9bd2052 |
 
 ---
 
@@ -677,7 +678,6 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 13. Race animation. On each advance the car slides along its lane over a short time instead of jumping, a played mod card flies from the hand to the table, and a sabotage lands on the opponent's car with a shake. All CSS transitions keyed off the log entries the race-end moment already reads, off under reduced motion, and never delaying an action. A section 8 addendum
 
 21. A use for surplus fuel. Fuel is never spent by advancing, one token must be placed every turn, and fuel stays on a car between races, so once every car in the garage sits at its cost each further token has nowhere to go; only Nitrous Shot and Fuel Dump spend it. Shapes considered: a pit stop action in the mod step, once per turn, spending 2 fuel above a car's cost to remove 1 wear (the recommendation: it uses the wear system that exists, makes a repair-or-fuel-the-bench choice, and sits behind a tunable cost); a burnout before advancing, up to 2 surplus fuel for +50 ft each (direct, but it shortens races and competes with Fuel Dump); a pit crew action, 2 surplus fuel to draw a card (quiet, least effect on pace); or new Boosts that convert fuel with no core rule. Whichever is chosen needs an engine action with a section 3 rule and test, a CPU rule, a tunable for its cost, and the sim's targets re-run. Tabled on 2026-09-04 for more thought
-22. Refused plays explained. A tap on a hand card that cannot be played, or on a car that is not a valid target for the picked card, shows a notice under the prompt saying which card and why, in the words the faded card and the hand header use, in every mode and on phones. Asked for on 2026-09-08
    *Why here:* Surplus fuel shows up in most matches, and a sink turns dead turns into decisions.
 
 ### Medium value: felt often by some players
@@ -715,4 +715,6 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 
 4. Stakes mode, in every mode but hotseat, with starter cars exempt. Phase 20, 2026-09-04 (312f4d8, the commit that marks it done).
 
-12. Guided first match, on phones and desktop. Phase 24, 2026-09-08 (3743945, the commit that marks it done).
+12. Guided first match, on phones and desktop. Phase 24, 2026-09-08 (3743945, a73be60).
+
+22. Refused plays explained. Phase 25, 2026-09-08 (9bd2052, the commit that marks it done).
