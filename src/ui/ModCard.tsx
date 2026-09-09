@@ -104,7 +104,7 @@ export function ModCard({
         <button
           type="button"
           className="mod__info"
-          aria-label={`Details for ${mod.name}`}
+          aria-label={dimmed ? `Details for ${mod.name}, not owned` : `Details for ${mod.name}`}
           onClick={() => openDetail({ kind: 'mod', id: modId })}
         >
           i
@@ -118,7 +118,7 @@ export function ModCard({
         type="button"
         className={`${className} mod--detail`}
         style={frameStyle}
-        aria-label={`Details for ${mod.name}`}
+        aria-label={dimmed ? `Details for ${mod.name}, not owned` : `Details for ${mod.name}`}
         onClick={() => openDetail({ kind: 'mod', id: modId })}
       >
         {body}

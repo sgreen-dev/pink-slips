@@ -227,7 +227,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         </button>
       </header>
 
-      <section className="collection__packs" aria-live="polite">
+      <section className="collection__packs">
         {rebased && (
           <div className="collection__notice">
             <p>
@@ -267,10 +267,22 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
           Finishing a match earns {packsPerMatch} pack. Beating the CPU earns {packsPerCpuWin}. A
           pack holds {packCarCount(state.laps)} cars and {TUNABLES.collection.packMods} mods.
         </p>
-        {packError && <p className="builder__notice">{packError}</p>}
+        {packError && (
+          <p className="builder__notice" role="status">
+            {packError}
+          </p>
+        )}
         {/* Outside the lap panel below, which unmounts the moment the lap is taken. */}
-        {lapError && <p className="builder__notice">{lapError}</p>}
-        {opened && <PackReveal pack={opened.pack} fresh={opened.fresh} />}
+        {lapError && (
+          <p className="builder__notice" role="status">
+            {lapError}
+          </p>
+        )}
+        {/* Only what changes in answer to something the player did is announced, which is the
+            pack that just opened and the lines under the controls. */}
+        <div aria-live="polite">
+          {opened && <PackReveal pack={opened.pack} fresh={opened.fresh} />}
+        </div>
         {(spareCount > 0 || state.credits > 0) && (
           <div className="collection__scrap">
             {/* Credits sit beside the controls that earn and spend them, not up in the summary. */}
@@ -329,8 +341,16 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
                   Scrap {spareCount} spare {spareCount === 1 ? 'card' : 'cards'}
                 </button>
               ))}
-            {scrapError && <p className="builder__notice">{scrapError}</p>}
-            {boughtNote && <p className="builder__hint">{boughtNote}</p>}
+            {scrapError && (
+              <p className="builder__notice" role="status">
+                {scrapError}
+              </p>
+            )}
+            {boughtNote && (
+              <p className="builder__hint" role="status">
+                {boughtNote}
+              </p>
+            )}
           </div>
         )}
         {complete && (
@@ -378,11 +398,13 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
       </section>
 
       <section className="builder__browse">
-        <div className="builder__tabs" role="tablist">
+        {/* Two buttons that swap a grid, not a tab widget: there is no tabpanel, no
+              aria-controls and no arrow-key movement, so announcing one would be a promise the
+              markup does not keep. */}
+        <div className="builder__tabs" role="group" aria-label="Show">
           <button
             type="button"
-            role="tab"
-            aria-selected={tab === 'cars'}
+            aria-pressed={tab === 'cars'}
             className={`button ${tab === 'cars' ? 'button--on' : ''}`}
             onClick={() => setTab('cars')}
           >
@@ -390,8 +412,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected={tab === 'mods'}
+            aria-pressed={tab === 'mods'}
             className={`button ${tab === 'mods' ? 'button--on' : ''}`}
             onClick={() => setTab('mods')}
           >
