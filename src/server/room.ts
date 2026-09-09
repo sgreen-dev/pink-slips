@@ -3,9 +3,11 @@ import {
   concede,
   createMatch,
   currentPlayer,
+  forfeit,
   isLegal,
   isOver,
   redact,
+  TUNABLES,
   type Action,
   type MatchState,
   type PlayerConfig,
@@ -60,6 +62,15 @@ export interface RoomSnapshot {
   matches?: number
   /** Which seats have asked for a rematch of the finished match. */
   rematch?: readonly [boolean, boolean]
+  /**
+   * When the seat on turn forfeits, in epoch ms, or null when nothing is timed (DESIGN.md 13).
+   * Absolute so it survives a rebuild; the wire carries a remainder instead.
+   */
+  deadline?: number | null
+  /** When the seat on turn dropped, while the countdown is paused for it. */
+  pausedAt?: number | null
+  /** Pause credit left this turn, so reconnecting on a loop cannot stall forever. */
+  graceLeft?: number
 }
 
 export interface Outbound {
@@ -74,7 +85,7 @@ export interface RoomResult {
   winner: SeatIdentity | null
   loser: SeatIdentity | null
   winnerSeat: PlayerIndex
-  /** True when the match ended by a concede rather than three pink slips. */
+  /** True when the match ended by a concede or a timeout rather than three pink slips. */
   conceded: boolean
   /** Races that reached the line, so a match given up before any race earns nothing. */
   racesPlayed: number
@@ -120,10 +131,15 @@ export class Room {
   private forStakes: boolean
   private matches: number
   private wants: [boolean, boolean]
+  private deadline: number | null
+  private pausedAt: number | null
+  private graceLeft: number
+  private readonly t: typeof TUNABLES
   readonly code: string
   readonly seed: number
 
-  constructor(code: string, seed: number, snapshot?: RoomSnapshot) {
+  constructor(code: string, seed: number, snapshot?: RoomSnapshot, t: typeof TUNABLES = TUNABLES) {
+    this.t = t
     this.code = snapshot?.code ?? code
     this.seed = snapshot?.seed ?? seed
     this.seats = snapshot ? [snapshot.seats[0], snapshot.seats[1]] : [null, null]
@@ -134,6 +150,9 @@ export class Room {
     this.forStakes = snapshot?.stakes ?? false
     this.matches = snapshot?.matches ?? (this.state ? 1 : 0)
     this.wants = snapshot?.rematch ? [snapshot.rematch[0], snapshot.rematch[1]] : [false, false]
+    this.deadline = snapshot?.deadline ?? null
+    this.pausedAt = snapshot?.pausedAt ?? null
+    this.graceLeft = snapshot?.graceLeft ?? t.online.disconnectGraceMs
   }
 
   snapshot(): RoomSnapshot {
@@ -148,6 +167,9 @@ export class Room {
       stakes: this.forStakes,
       matches: this.matches,
       rematch: [this.wants[0], this.wants[1]],
+      deadline: this.deadline,
+      pausedAt: this.pausedAt,
+      graceLeft: this.graceLeft,
     }
   }
 
@@ -186,8 +208,66 @@ export class Room {
     return [this.seats[0]?.identity?.laps ?? 0, this.seats[1]?.identity?.laps ?? 0]
   }
 
+  /**
+   * The countdown (DESIGN.md 13). Only a ranked room is timed: a friend match is casual and
+   * waiting for someone to come back to it is the point. Null once the match is over.
+   */
+  private timed(): boolean {
+    return this.tickets !== null && this.state !== null && this.state.phase.kind !== 'over'
+  }
+
+  /** Starts the seat on turn's clock again, with a fresh pause allowance for the new turn. */
+  private armDeadline(now: number): void {
+    if (!this.timed()) {
+      this.deadline = null
+      this.pausedAt = null
+      return
+    }
+    const seat = currentPlayer(this.state as MatchState)
+    this.deadline = now + this.t.online.turnLimitMs
+    this.graceLeft = this.t.online.disconnectGraceMs
+    this.pausedAt = seat !== null && this.seats[seat]?.connected === false ? now : null
+  }
+
+  /**
+   * How long the seat on turn has left, or null when nothing is timed. A pause adds back the
+   * time spent disconnected, but only as far as the turn's remaining allowance.
+   */
+  msLeft(now: number): number | null {
+    if (this.deadline === null) return null
+    const credit = this.pausedAt === null ? 0 : Math.min(now - this.pausedAt, this.graceLeft)
+    return Math.max(0, this.deadline + credit - now)
+  }
+
+  /**
+   * When the adapter should wake the room, or null when nothing is timed. While a seat is
+   * paused this is the latest the clock could run out, since the allowance is capped.
+   */
+  alarmAt(): number | null {
+    if (this.deadline === null) return null
+    return this.deadline + (this.pausedAt === null ? 0 : this.graceLeft)
+  }
+
+  /**
+   * The clock ran out: the seat on turn forfeits and the other seat wins, reported like any
+   * other result. Nothing happens while time is left, so a late alarm is harmless.
+   */
+  timeout(now: number): Outbound[] {
+    const state = this.state
+    if (!state || !this.timed()) return []
+    const left = this.msLeft(now)
+    if (left === null || left > 0) return []
+    const seat = currentPlayer(state)
+    if (seat === null) return []
+    this.state = forfeit(state, seat)
+    this.history = []
+    this.deadline = null
+    this.pausedAt = null
+    return this.views(now)
+  }
+
   /** Both seats' current views, or nothing before the match starts. */
-  private views(): Outbound[] {
+  private views(now: number): Outbound[] {
     const state = this.state
     if (!state) return []
     return ([0, 1] as const).map((seat) => ({
@@ -197,6 +277,7 @@ export class Room {
         view: redact(state, seat),
         names: this.names(),
         plates: this.plates(),
+        turnMsLeft: this.msLeft(now),
       },
     }))
   }
@@ -221,20 +302,21 @@ export class Room {
     message: ClientMessage,
     newToken: () => string,
     identity: SeatIdentity | null = null,
+    now: number = Date.now(),
   ): Outbound[] {
     switch (message.type) {
       case 'join':
-        return this.join(from, message, newToken, identity)
+        return this.join(from, message, newToken, identity, now)
       case 'resume':
-        return this.resume(message.token)
+        return this.resume(message.token, now)
       case 'act':
-        return this.act(from, message.action)
+        return this.act(from, message.action, now)
       case 'undo':
-        return this.undo(from)
+        return this.undo(from, now)
       case 'concede':
-        return this.concede(from)
+        return this.concede(from, now)
       case 'rematch':
-        return this.rematch(from)
+        return this.rematch(from, now)
     }
   }
 
@@ -243,6 +325,7 @@ export class Room {
     message: { name: string; garage: PlayerConfig; ticket?: string; stakes?: boolean },
     newToken: () => string,
     identity: SeatIdentity | null,
+    now: number,
   ): Outbound[] {
     if (from !== null) return [fail(REASONS.alreadySeated)]
     let seat: PlayerIndex
@@ -288,18 +371,26 @@ export class Room {
     if (a && b && !this.state) {
       this.state = createMatch({ players: [a.garage, b.garage] }, this.seed)
       this.matches = 1
-      out.push(...this.views())
+      this.armDeadline(now)
+      out.push(...this.views(now))
     } else if (!this.state) {
       out.push({ to: null, message: { type: 'waiting' } })
     }
     return out
   }
 
-  private resume(token: string): Outbound[] {
+  private resume(token: string, now: number): Outbound[] {
     const seat = this.seatOf(token)
     if (seat === null) return [fail(REASONS.unknownToken)]
     const held = this.seats[seat]
     if (held) this.seats[seat] = { ...held, connected: true }
+    // Coming back gives the paused time back, up to the turn's allowance, then the clock runs.
+    if (this.pausedAt !== null && currentPlayer(this.state as MatchState) === seat) {
+      const credit = Math.min(now - this.pausedAt, this.graceLeft)
+      if (this.deadline !== null) this.deadline += credit
+      this.graceLeft -= credit
+      this.pausedAt = null
+    }
     const out: Outbound[] = [
       { to: null, message: { type: 'welcome', code: this.code, seat, token } },
       this.presenceFor(otherSeat(seat)),
@@ -313,6 +404,7 @@ export class Room {
           view: redact(this.state, seat),
           names: this.names(),
           plates: this.plates(),
+          turnMsLeft: this.msLeft(now),
         },
       })
     } else {
@@ -321,7 +413,7 @@ export class Room {
     return out
   }
 
-  private act(from: PlayerIndex | null, action: Action): Outbound[] {
+  private act(from: PlayerIndex | null, action: Action, now: number): Outbound[] {
     if (from === null) return [fail(REASONS.notSeated)]
     const state = this.state
     if (!state) return [fail(REASONS.notStarted)]
@@ -331,18 +423,21 @@ export class Room {
     const keep = isModPlay(action) && state.phase.kind === 'turn' && state.turn.step === 'mods'
     this.history = keep ? [...this.history, { seat: from, state }] : []
     this.state = apply(state, action)
-    return this.views()
+    this.armDeadline(now)
+    return this.views(now)
   }
 
   /** The seat gives the match up: the other seat wins, and both see the finished state. */
-  private concede(from: PlayerIndex | null): Outbound[] {
+  private concede(from: PlayerIndex | null, now: number): Outbound[] {
     if (from === null) return [fail(REASONS.notSeated)]
     const state = this.state
     if (!state) return [fail(REASONS.notStarted)]
     if (state.phase.kind === 'over') return [fail(REASONS.over)]
     this.state = concede(state, from)
     this.history = []
-    return this.views()
+    this.deadline = null
+    this.pausedAt = null
+    return this.views(now)
   }
 
   /**
@@ -350,7 +445,7 @@ export class Room {
    * again with the seed advanced and the first move given to the other seat. A ranked room
    * queues again instead, and a stakes room makes a new room, since its cars changed hands.
    */
-  private rematch(from: PlayerIndex | null): Outbound[] {
+  private rematch(from: PlayerIndex | null, now: number): Outbound[] {
     if (from === null) return [fail(REASONS.notSeated)]
     const state = this.state
     if (!state) return [fail(REASONS.notStarted)]
@@ -373,11 +468,12 @@ export class Room {
     this.history = []
     this.reported = false
     this.wants = [false, false]
-    return [...out, ...this.views()]
+    this.armDeadline(now)
+    return [...out, ...this.views(now)]
   }
 
   /** Takes back the seat's last mod play of this step and shows both seats the result. */
-  private undo(from: PlayerIndex | null): Outbound[] {
+  private undo(from: PlayerIndex | null, now: number): Outbound[] {
     if (from === null) return [fail(REASONS.notSeated)]
     const state = this.state
     if (!state) return [fail(REASONS.notStarted)]
@@ -388,14 +484,22 @@ export class Room {
     }
     this.history = this.history.slice(0, -1)
     this.state = last.state
-    return this.views()
+    return this.views(now)
   }
 
   /** A socket for the seat closed and no other socket holds it. */
-  disconnect(seat: PlayerIndex): Outbound[] {
+  disconnect(seat: PlayerIndex, now: number = Date.now()): Outbound[] {
     const held = this.seats[seat]
     if (!held) return []
     this.seats[seat] = { ...held, connected: false }
+    // The seat on turn stops the clock, but only until its allowance runs out.
+    if (
+      this.pausedAt === null &&
+      this.timed() &&
+      currentPlayer(this.state as MatchState) === seat
+    ) {
+      this.pausedAt = now
+    }
     return [this.presenceFor(otherSeat(seat))]
   }
 
@@ -413,7 +517,7 @@ export class Room {
       winner: this.seats[winner]?.identity ?? null,
       loser: this.seats[otherSeat(winner)]?.identity ?? null,
       winnerSeat: winner,
-      conceded: this.state.log.at(-1)?.kind === 'concede',
+      conceded: ['concede', 'timeout'].includes(this.state.log.at(-1)?.kind ?? ''),
       racesPlayed: this.state.players[0].pinkSlips.length + this.state.players[1].pinkSlips.length,
       transfers: this.forStakes ? stakesTransfer(this.state) : null,
     }

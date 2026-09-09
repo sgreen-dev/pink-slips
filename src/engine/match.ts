@@ -411,6 +411,18 @@ export function concede(state: MatchState, player: PlayerIndex): MatchState {
   return withLog(next, { kind: 'concede', player })
 }
 
+/**
+ * Ends the match the way a concede does, but because the player ran out of turn time online
+ * (DESIGN.md 13). A separate log entry so the result screen can say which happened. Not a legal
+ * action: only the room calls it, from its alarm. An over match is returned unchanged.
+ */
+export function forfeit(state: MatchState, player: PlayerIndex): MatchState {
+  if (state.phase.kind === 'over') return state
+  const winner = otherPlayer(player)
+  const next: MatchState = { ...state, phase: { kind: 'over', winner } }
+  return withLog(next, { kind: 'timeout', player })
+}
+
 /** Draws up to `count` cards, reshuffling the discard pile into the deck when it runs out. */
 function drawCards(
   player: PlayerState,

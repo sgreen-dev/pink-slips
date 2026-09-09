@@ -16,6 +16,7 @@ import {
   saveOnlineSeat,
   socketUrl,
   startOnline,
+  secondsLeft,
 } from './online.ts'
 import type { OnlineEntry } from './OnlineScreen.tsx'
 import { RaceEndBanner } from './RaceEndBanner.tsx'
@@ -34,6 +35,10 @@ interface OnlineMatchProps {
 
 /** How long to wait for the room's result message after the final state before going local. */
 const RESULT_GRACE_MS = 3000
+
+/** How often the turn clock redraws, and when it starts warning. Screen timings, not rules. */
+const CLOCK_TICK_MS = 1000
+const CLOCK_URGENT_S = 15
 
 /**
  * One online match as one seat sees it. The room holds the match; this screen sends actions
@@ -56,12 +61,31 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
   const [conceding, setConceding] = useState(false)
   // Mod plays sent this step and not yet taken back; the room is the judge, this only shows the button.
   const [undoable, setUndoable] = useState(0)
+  // The turn clock (DESIGN.md 13): the room sends what is left, the screen anchors it to its own
+  // clock and redraws each second, recomputing from the anchor so a throttled tab is not stale.
+  const [clockNow, setClockNow] = useState(0)
   const onContinue = useCallback(() => dispatch({ type: 'continue' }), [])
   const accountToken = account?.token ?? null
 
+  // Redraw once a second while something is counting, and stop when nothing is. The end itself
+  // was anchored to this screen's clock when the frame arrived, so only "now" moves here.
+  const clockEndsAt = session.turnEndsAt
+  useEffect(() => {
+    if (clockEndsAt === null) return
+    const tick = () => setClockNow(Date.now())
+    // A first tick on the next turn of the loop, so a clock that has just started is not drawn
+    // a second stale, then once a second after that.
+    const first = setTimeout(tick, 0)
+    const timer = setInterval(tick, CLOCK_TICK_MS)
+    return () => {
+      clearTimeout(first)
+      clearInterval(timer)
+    }
+  }, [clockEndsAt])
+
   useEffect(() => {
     const room = new RoomClient(socketUrl(endpoint, entry.code, accountToken), {
-      onMessage: (message) => dispatch({ type: 'message', message }),
+      onMessage: (message) => dispatch({ type: 'message', message, at: Date.now() }),
       onStatus: (status) => dispatch({ type: 'status', status }),
     })
     client.current = room
@@ -272,6 +296,8 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
   const yourTurn = currentPlayer(view) === seat
   const canUndo =
     undoable > 0 && yourTurn && view.phase.kind === 'turn' && view.turn.step === 'mods'
+  // Nothing is drawn until the first tick gives a real now, so the clock never shows a stale one.
+  const left = clockNow === 0 ? null : secondsLeft(clockEndsAt, clockNow)
   const warn = session.status !== 'open' || !session.opponentConnected || session.error !== null
   const line =
     session.status !== 'open'
@@ -289,6 +315,14 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
         <span className={warn ? 'online__bar--warn' : ''} role="status">
           {conceding ? 'Concede this match? Your opponent wins it.' : line}
         </span>
+        {left !== null && (
+          <span
+            className={`online__bar__clock${left <= CLOCK_URGENT_S ? ' online__bar__clock--urgent' : ''}`}
+            aria-hidden="true"
+          >
+            {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}
+          </span>
+        )}
         {conceding ? (
           <>
             <button

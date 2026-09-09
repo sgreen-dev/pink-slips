@@ -3,6 +3,7 @@ export type { AdvanceBreakdown, AdvanceInput } from './advance.ts'
 export {
   apply,
   concede,
+  forfeit,
   createMatch,
   currentPlayer,
   fuelCost,

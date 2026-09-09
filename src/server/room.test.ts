@@ -9,6 +9,7 @@ import {
   type MatchState,
   type PlayerIndex,
 } from '../engine/index.ts'
+import { TUNABLES } from '../engine/index.ts'
 import { parseClientMessage, type ClientMessage, type ServerMessage } from '../protocol/messages.ts'
 import { REASONS, Room, type Outbound, type Ticket } from './room.ts'
 
@@ -33,10 +34,10 @@ class FakeClient {
   }
 
   /** Sends a raw message the way a socket would, delivering the replies to the right client. */
-  send(raw: string, others: FakeClient[]): ServerMessage[] {
+  send(raw: string, others: FakeClient[], now?: number): ServerMessage[] {
     const message = parseClientMessage(raw)
     if (!message) throw new Error(`Malformed: ${raw}`)
-    const out = this.room.handle(this.seat, message, newToken)
+    const out = this.room.handle(this.seat, message, newToken, null, now ?? Date.now())
     this.deliver(out, others)
     return out.filter((o) => o.to === null || o.to === this.seat).map((o) => o.message)
   }
@@ -500,5 +501,108 @@ describe('plates', () => {
     b.deliver(room.handle(b.seat, joinRaw('Bo'), newToken, null), [a])
     expect(a.received.at(-1)).toMatchObject({ type: 'state', plates: [3, 0] })
     expect(b.received.at(-1)).toMatchObject({ type: 'state', plates: [3, 0] })
+  })
+})
+
+describe('the turn clock', () => {
+  const LIMIT = TUNABLES.online.turnLimitMs
+  const GRACE = TUNABLES.online.disconnectGraceMs
+  const T0 = 1_000_000
+
+  /** A ranked room with both seats joined at T0, so the clock is running. */
+  function ranked(): [Room, FakeClient, FakeClient] {
+    const room = new Room('TIMED', 5)
+    room.setup([
+      { ticket: 'tk-a', identity: { accountId: 'acct-a', name: 'Ann' } },
+      { ticket: 'tk-b', identity: { accountId: 'acct-b', name: 'Bo' } },
+    ])
+    const a = new FakeClient(room)
+    const b = new FakeClient(room)
+    a.send(
+      JSON.stringify({ type: 'join', name: 'Ann', garage: garage(0), ticket: 'tk-a' }),
+      [b],
+      T0,
+    )
+    b.send(JSON.stringify({ type: 'join', name: 'Bo', garage: garage(1), ticket: 'tk-b' }), [a], T0)
+    return [room, a, b]
+  }
+
+  it('runs in a ranked room and not in a friend room', () => {
+    const [ranked_] = ranked()
+    expect(ranked_.msLeft(T0)).toBe(LIMIT)
+    expect(ranked_.alarmAt()).toBe(T0 + LIMIT)
+
+    const [friend] = seated()
+    expect(friend.msLeft(T0)).toBeNull()
+    expect(friend.alarmAt()).toBeNull()
+    expect(friend.timeout(T0 + LIMIT * 10)).toEqual([])
+  })
+
+  it('sends the remainder to both seats and does nothing while time is left', () => {
+    const [room, a] = ranked()
+    const view = a.received.filter((m) => m.type === 'state').at(-1)
+    expect(view?.type === 'state' && view.turnMsLeft).toBe(LIMIT)
+    expect(room.timeout(T0 + LIMIT - 1)).toEqual([])
+    expect(isOver(a.view as MatchState)).toBeNull()
+  })
+
+  it('forfeits the seat on turn when the clock runs out, and reports it as a normal result', () => {
+    const [room, a, b] = ranked()
+    const onTurn = currentPlayer(a.view as MatchState) as PlayerIndex
+    const out = room.timeout(T0 + LIMIT)
+    // An alarm has no sender, so every message must be addressed to a seat.
+    expect(out.every((item) => item.to !== null)).toBe(true)
+    a.deliver(out, [b])
+    b.deliver(out, [a])
+    expect(isOver(a.view as MatchState)).toBe(onTurn === 0 ? 1 : 0)
+    expect((a.view as MatchState).log.at(-1)).toEqual({ kind: 'timeout', player: onTurn })
+    const result = room.takeResult()
+    expect(result?.ranked).toBe(true)
+    expect(result?.winnerSeat).toBe(onTurn === 0 ? 1 : 0)
+    expect(result?.conceded).toBe(true)
+    expect(result?.racesPlayed).toBe(0)
+    // The clock stops once the match is over, so the alarm has nothing left to serve.
+    expect(room.alarmAt()).toBeNull()
+    expect(room.timeout(T0 + LIMIT * 5)).toEqual([])
+  })
+
+  it('pauses for a disconnected seat, then counts down anyway', () => {
+    const [room, a] = ranked()
+    const onTurn = currentPlayer(a.view as MatchState) as PlayerIndex
+    const dropped = T0 + 10_000
+    room.disconnect(onTurn, dropped)
+    // Frozen while the allowance lasts.
+    expect(room.msLeft(dropped)).toBe(LIMIT - 10_000)
+    expect(room.msLeft(dropped + GRACE)).toBe(LIMIT - 10_000)
+    expect(room.alarmAt()).toBe(T0 + LIMIT + GRACE)
+    // Past the allowance it runs again, and it does run out.
+    expect(room.msLeft(dropped + GRACE + 20_000)).toBe(LIMIT - 30_000)
+    expect(room.msLeft(dropped + GRACE + LIMIT)).toBe(0)
+    expect(room.timeout(dropped + GRACE + LIMIT)).not.toEqual([])
+  })
+
+  it('caps the pause allowance per turn however many times a seat drops', () => {
+    const [room, a, b] = ranked()
+    const onTurn = currentPlayer(a.view as MatchState) as PlayerIndex
+    const token = (onTurn === 0 ? a : b).token as string
+    expect(token).toBeTruthy()
+    // Drop and come back well inside the allowance: the deadline moves out by the pause.
+    room.disconnect(onTurn, T0 + 5_000)
+    const backAt = T0 + 5_000 + 1_000
+    room.handle(null, { type: 'resume', token }, newToken, null, backAt)
+    expect(room.msLeft(backAt)).toBe(LIMIT - 5_000)
+    // Drop again and stay away: the credit already spent is gone, so the total is still capped
+    // at one allowance and the clock runs out on time rather than being held open by dropping.
+    room.disconnect(onTurn, backAt)
+    expect(room.msLeft(backAt + GRACE * 3)).toBe(LIMIT - 5_000 - GRACE * 3 + (GRACE - 1_000))
+    expect(room.alarmAt()).toBe(T0 + LIMIT + GRACE)
+  })
+
+  it('keeps the clock across a snapshot rebuild', () => {
+    const [room] = ranked()
+    const copy = new Room('ignored', 0, room.snapshot())
+    expect(copy.msLeft(T0)).toBe(LIMIT)
+    expect(copy.alarmAt()).toBe(room.alarmAt())
+    expect(copy.snapshot()).toEqual(room.snapshot())
   })
 })

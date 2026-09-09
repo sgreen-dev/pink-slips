@@ -50,6 +50,8 @@ export function describeLogEntry(entry: LogEntry, names: readonly [string, strin
       return `${names[entry.winner]} wins the match with three pink slips.`
     case 'concede':
       return `${names[entry.player]} concedes. ${names[entry.player === 0 ? 1 : 0]} wins the match.`
+    case 'timeout':
+      return `${names[entry.player]} ran out of time. ${names[entry.player === 0 ? 1 : 0]} wins the match.`
   }
   return null
 }

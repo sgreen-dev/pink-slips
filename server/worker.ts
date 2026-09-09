@@ -486,7 +486,7 @@ export class MatchRoom extends DurableObject<Env> {
     const room = this.room
     if (!room) return
     const held = attachment(ws)
-    const out = room.handle(held.seat, message, randomToken, held.identity)
+    const out = room.handle(held.seat, message, randomToken, held.identity, Date.now())
     for (const item of out) {
       if (item.to === null && item.message.type === 'welcome') {
         ws.serializeAttachment({ ...held, seat: item.message.seat } satisfies Attachment)
@@ -555,8 +555,21 @@ export class MatchRoom extends DurableObject<Env> {
   }
 
   override async alarm(): Promise<void> {
-    await this.ctx.storage.deleteAll()
-    this.room = null
+    const now = Date.now()
+    const expiresAt = (await this.ctx.storage.get<number>('expiresAt')) ?? 0
+    if (!this.room || now >= expiresAt) {
+      await this.ctx.storage.deleteAll()
+      this.room = null
+      return
+    }
+    // The turn clock ran out: forfeit the seat on turn and report it like any other result.
+    // Every message a timeout makes is addressed to a seat, since there is no sender here.
+    const out = this.room.timeout(now)
+    for (const item of out) {
+      if (item.to !== null) this.broadcast(item.to, item.message)
+    }
+    await this.report(this.room)
+    await this.persist()
   }
 
   private async dropped(ws: WebSocket): Promise<void> {
@@ -566,7 +579,7 @@ export class MatchRoom extends DurableObject<Env> {
       .getWebSockets()
       .some((socket) => socket !== ws && attachment(socket).seat === seat)
     if (stillHeld) return
-    const out = this.room.disconnect(seat)
+    const out = this.room.disconnect(seat, Date.now())
     for (const item of out) {
       for (const socket of this.ctx.getWebSockets()) {
         if (socket !== ws && attachment(socket).seat === item.to) send(socket, item.message)
@@ -575,9 +588,17 @@ export class MatchRoom extends DurableObject<Env> {
     await this.persist()
   }
 
+  /**
+   * Writes the room and arms the one alarm a Durable Object has. The room forgets itself a day
+   * after its last message, and a ranked seat forfeits when its turn clock runs out, so the
+   * alarm is set to whichever comes first and the handler decides which one is due.
+   */
   private async persist(): Promise<void> {
     if (!this.room) return
+    const expiresAt = Date.now() + ROOM_TTL_MS
     await this.ctx.storage.put('room', this.room.snapshot())
-    await this.ctx.storage.setAlarm(Date.now() + ROOM_TTL_MS)
+    await this.ctx.storage.put('expiresAt', expiresAt)
+    const deadline = this.room.alarmAt()
+    await this.ctx.storage.setAlarm(deadline === null ? expiresAt : Math.min(expiresAt, deadline))
   }
 }

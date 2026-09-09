@@ -259,10 +259,16 @@ export interface OnlineSession {
   rematch: readonly [boolean, boolean]
   /** Each seat's laps for its plate, zero for a guest. */
   plates: readonly [number, number]
+  /**
+   * When the seat on turn runs out, on this screen's clock, or null when nothing is timed
+   * (DESIGN.md 13). The room sends a remainder and it is anchored as the frame arrives, so a
+   * client clock that is off by minutes still counts down correctly.
+   */
+  turnEndsAt: number | null
 }
 
 export type OnlineEvent =
-  | { type: 'message'; message: ServerMessage }
+  | { type: 'message'; message: ServerMessage; at: number }
   | { type: 'status'; status: Status }
   | { type: 'continue' }
 
@@ -282,6 +288,7 @@ export function startOnline(code: string, name: string): OnlineSession {
     result: null,
     rematch: [false, false],
     plates: [0, 0],
+    turnEndsAt: null,
   }
 }
 
@@ -296,11 +303,11 @@ export function reduceOnline(session: OnlineSession, event: OnlineEvent): Online
       return { ...session, view: held, held: null, raceEnd: raceEndBetween(view, held) }
     }
     case 'message':
-      return onMessage(session, event.message)
+      return onMessage(session, event.message, event.at)
   }
 }
 
-function onMessage(session: OnlineSession, message: ServerMessage): OnlineSession {
+function onMessage(session: OnlineSession, message: ServerMessage, at: number): OnlineSession {
   switch (message.type) {
     case 'welcome':
       return {
@@ -328,6 +335,7 @@ function onMessage(session: OnlineSession, message: ServerMessage): OnlineSessio
         ...session,
         names: message.names,
         plates: message.plates,
+        turnEndsAt: message.turnMsLeft === null ? null : at + message.turnMsLeft,
         waiting: false,
         error: null,
       }
@@ -347,4 +355,14 @@ function onMessage(session: OnlineSession, message: ServerMessage): OnlineSessio
       return { ...base, view: next, raceEnd }
     }
   }
+}
+
+/**
+ * Whole seconds left on the turn clock, or null when nothing is timed (DESIGN.md 13). The end
+ * is the screen's own anchor rather than a time from the room, so a client clock that is off by
+ * minutes still counts down correctly. `now` is passed in so this stays pure.
+ */
+export function secondsLeft(endsAt: number | null, now: number): number | null {
+  if (endsAt === null) return null
+  return Math.max(0, Math.ceil((endsAt - now) / 1000))
 }

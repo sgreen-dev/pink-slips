@@ -67,9 +67,11 @@ export function ResultScreen({
         <Backdrop image={backdropUrl('result')} />
         <h1 className="result__title">{title}</h1>
         <p className="result__sub">
-          {state.log.some((entry) => entry.kind === 'concede')
-            ? `${names[loser]} conceded in turn ${Math.ceil(state.turn.number / 2)}.`
-            : `Three pink slips in ${Math.ceil(state.turn.number / 2)} turns.`}
+          {state.log.some((entry) => entry.kind === 'timeout')
+            ? `${names[loser]} ran out of time in turn ${Math.ceil(state.turn.number / 2)}.`
+            : state.log.some((entry) => entry.kind === 'concede')
+              ? `${names[loser]} conceded in turn ${Math.ceil(state.turn.number / 2)}.`
+              : `Three pink slips in ${Math.ceil(state.turn.number / 2)} turns.`}
         </p>
         {note && <p className="result__note">{note}</p>}
         {packsEarned > 0 && (

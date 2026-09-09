@@ -1541,6 +1541,15 @@ h2 {
 .online__bar--warn {
   color: var(--pink);
 }
+.online__bar__clock {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.online__bar__clock--urgent {
+  color: var(--pink);
+  animation: prompt-glow 1.2s ease-in-out infinite;
+}
 .start__pickers--one {
   grid-template-columns: 1fr;
   max-width: 34rem;
@@ -1819,7 +1828,8 @@ h2 {
 @media (prefers-reduced-motion: reduce) {
   .controls__prompt--live,
   .button--next,
-  .guide {
+  .guide,
+  .online__bar__clock--urgent {
     animation: none;
   }
 }

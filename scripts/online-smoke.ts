@@ -18,6 +18,11 @@ const endpoint = (process.argv[2] ?? 'http://localhost:8787').replace(/\/+$/, ''
 const stakes = process.argv.includes('--stakes')
 /** With --rematch the two players share a friend room, play a match and its rematch, and the first move must swap. */
 const rematch = process.argv.includes('--rematch')
+/**
+ * With --timeout one ranked player joins and never acts, and must lose on the turn clock. Set
+ * online.turnLimitMs low in src/engine/tunables.ts before running it, or the wait is the real one.
+ */
+const timeout = process.argv.includes('--timeout')
 const socketBase = endpoint.replace(/^http/, 'ws')
 
 interface Player {
@@ -78,6 +83,7 @@ function play(
   ticket: string | undefined,
   seed: number,
   matches = 1,
+  silent = false,
 ): Promise<Outcome> {
   const starter = STARTERS[seed % STARTERS.length]
   if (!starter) throw new Error('No starter garage')
@@ -106,6 +112,8 @@ function play(
         winner = isOver(view)
         if (winner !== null) return
         if (currentPlayer(view) !== seat) return
+        // The walk-away side joins, watches, and never acts, so its clock runs out.
+        if (silent) return
         const action = chooseAction(view, seat, seed)
         ws.send(JSON.stringify({ type: 'act', action }))
       }
@@ -152,6 +160,29 @@ async function main(): Promise<void> {
       }
     }
     console.log('Rematch smoke check passed')
+    return
+  }
+  if (timeout) {
+    const [tA, tB] = await Promise.all([queue(ann), queue(bo)])
+    if (tA.code !== tB.code) throw new Error('The two players were not paired together')
+    console.log(`Paired in room ${tA.code}: ${bo.name} will stop acting`)
+    const [outA, outB] = await Promise.all([
+      play(ann, tA.code, tA.ticket, 3),
+      play(bo, tB.code, tB.ticket, 5, 1, true),
+    ])
+    for (const [player, out] of [
+      [ann, outA],
+      [bo, outB],
+    ] as const) {
+      const won = out.winner === out.seat ? 'won' : 'lost'
+      const rating = out.rating ? `${out.rating.before} to ${out.rating.after}` : 'unchanged'
+      console.log(`${player.name} (seat ${out.seat}) ${won} on the clock: rating ${rating}`)
+    }
+    if (outB.winner === outB.seat) throw new Error('The silent player did not forfeit')
+    if (!outA.rating || outA.rating.after === outA.rating.before) {
+      throw new Error('A forfeit did not move the ratings')
+    }
+    console.log('Turn timer smoke check passed')
     return
   }
   const [matchA, matchB] = await Promise.all([queue(ann), queue(bo)])

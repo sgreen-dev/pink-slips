@@ -16,6 +16,7 @@ import {
   roomLink,
   saveOnlineSeat,
   socketUrl,
+  secondsLeft,
   startOnline,
   type SocketLike,
   type Status,
@@ -170,7 +171,7 @@ describe('the online session', () => {
   it('follows the room through joining, playing, a race end, and the held view', () => {
     let session = startOnline('ABC234', 'Ann')
     const send = (message: ServerMessage) => {
-      session = reduceOnline(session, { type: 'message', message })
+      session = reduceOnline(session, { type: 'message', message, at: 0 })
     }
     send({ type: 'welcome', code: 'ABC234', seat: 0, token: 'T' })
     send({ type: 'waiting' })
@@ -181,18 +182,18 @@ describe('the online session', () => {
     // Views straight from the engine, redacted the way the room does it.
     let state = createMatch(starterConfig(0, 1), 11)
     const names = ['Ann', 'Bo'] as const
-    send({ type: 'state', view: redact(state, 0), names, plates: [0, 0] })
+    send({ type: 'state', view: redact(state, 0), names, plates: [0, 0], turnMsLeft: null })
     expect(session).toMatchObject({ waiting: false, error: null, raceEnd: null, names })
     expect(session.view?.players[1].hand.every((id) => id === '?')).toBe(true)
     for (let i = 0; i < 400 && session.raceEnd === null; i++) {
       state = playOutRandomly(state, 100 + i, 1)
-      send({ type: 'state', view: redact(state, 0), names, plates: [0, 0] })
+      send({ type: 'state', view: redact(state, 0), names, plates: [0, 0], turnMsLeft: null })
     }
     expect(session.raceEnd).not.toBeNull()
     const shown = session.view
     // Views that arrive during the banner are held, then applied on continue.
     state = playOutRandomly(state, 999, 1)
-    send({ type: 'state', view: redact(state, 0), names, plates: [0, 0] })
+    send({ type: 'state', view: redact(state, 0), names, plates: [0, 0], turnMsLeft: null })
     expect(session.view).toBe(shown)
     expect(session.held).not.toBeNull()
     session = reduceOnline(session, { type: 'continue' })
@@ -209,5 +210,33 @@ describe('the online session', () => {
   it('earns packs online the way a CPU match does', () => {
     expect(packsEarned('online', true)).toBe(packsEarned('cpu', true))
     expect(packsEarned('online', false)).toBe(packsEarned('hotseat', false))
+  })
+})
+
+describe('the turn clock', () => {
+  it('counts whole seconds down from the screen anchor and stops at zero', () => {
+    const end = 10_000
+    expect(secondsLeft(end, end - 42_000)).toBe(42)
+    // Part seconds round up, so the last second shows until it is gone.
+    expect(secondsLeft(end, end - 1)).toBe(1)
+    expect(secondsLeft(end, end)).toBe(0)
+    expect(secondsLeft(end, end + 5_000)).toBe(0)
+  })
+
+  it('shows nothing when the room is not timing the turn', () => {
+    expect(secondsLeft(null, 1_000)).toBeNull()
+  })
+
+  it('carries the room remainder onto the session, even behind a race-end banner', () => {
+    const view = createMatch(starterConfig(0, 1), 4)
+    let session = startOnline('ABCDEF', 'Ann')
+    session = reduceOnline(session, {
+      type: 'message',
+      at: 5_000,
+      message: { type: 'state', view, names: ['Ann', 'Bo'], plates: [0, 0], turnMsLeft: 60_000 },
+    })
+    // Anchored as the frame arrived, so a skewed client clock cannot shift the countdown.
+    expect(session.turnEndsAt).toBe(65_000)
+    expect(secondsLeft(session.turnEndsAt, 5_000)).toBe(60)
   })
 })

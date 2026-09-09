@@ -5,6 +5,7 @@ import { STARTERS } from '../data/starters.ts'
 import {
   apply,
   concede,
+  forfeit,
   createMatch,
   currentPlayer,
   fuelCost,
@@ -482,6 +483,20 @@ describe('3.5 concede', () => {
     const over = concede(createMatch({ players: [...config().players] }, 6), 1)
     expect(concede(over, 0)).toBe(over)
     expect(isOver(over)).toBe(0)
+  })
+
+  it('forfeits the same way but says the player ran out of time (DESIGN.md 13)', () => {
+    const state = createMatch({ players: [...config().players] }, 5)
+    for (const player of [0, 1] as const) {
+      const after = forfeit(state, player)
+      expect(isOver(after)).toBe(otherPlayer(player))
+      expect(after.phase).toEqual({ kind: 'over', winner: otherPlayer(player) })
+      // A separate entry, so the result screen can tell a walk-away from a give-up.
+      expect(after.log.at(-1)).toEqual({ kind: 'timeout', player })
+      expect(legalActions(after, player)).toEqual([])
+    }
+    const over = forfeit(state, 1)
+    expect(forfeit(over, 0)).toBe(over)
   })
 })
 

@@ -45,6 +45,7 @@
 | 26 | Rematch in the same room | done | 35ca95a |
 | 27 | Laps | done | 75242bb |
 | 28 | Loaner garages and the intro set | done | d965d6e |
+| 29 | Turn timer with forfeit, online | done | (this commit) |
 
 ---
 
@@ -743,6 +744,33 @@
 
 ---
 
+## Phase 29 — Turn timer with forfeit, online
+
+**Goal**: a ranked seat that stops acting loses on the clock, so an opponent who walks away cannot hold a match open forever.
+
+**Design to record first** (`DESIGN.md` 13): the clock and what restarts it, the ranked-only rule, the absolute deadline against the remainder on the wire, the disconnect allowance, the separate `timeout` log entry, and the one-alarm multiplexing.
+
+**Deliverables**
+
+- `src/engine/`: `forfeit` beside `concede` with a `timeout` log entry, exported; the two `online` tunables
+- `src/server/room.ts`: the deadline, pause stamp and allowance in the snapshot, `now` threaded through `handle`, `act`, `resume`, `disconnect`, and `msLeft` / `alarmAt` / `timeout` for the adapter
+- `server/worker.ts`: the alarm serving whichever of the room's expiry and the turn deadline comes first, and the timeout path that broadcasts, reports and re-arms
+- `src/protocol/messages.ts`: `turnMsLeft` on the `state` message with a tolerant guard
+- `src/ui/`: `turnMsLeft` on the session, the pure `secondsLeft`, the clock in the online bar with its urgent state, and the result screen's timeout wording
+- `scripts/online-smoke.ts`: a `--timeout` run where one player never acts
+
+**Tests**
+
+- The engine rule: a forfeit ends the match like a concede but logs a timeout
+- The room: timed only when ranked, the remainder on both views, nothing while time is left, the seat on turn forfeits and reports ranked, the pause freezes then runs on, the allowance is capped per turn, and the clock survives a snapshot rebuild
+- The protocol guard defaulting to no clock, and `secondsLeft` against a fixed now
+
+**Done when**: a ranked match shows a countdown that restarts on each action, a silent player loses on the clock with ratings moving, a friend room shows no clock, and the tests pass.
+
+**Prompt**: Do phase 29 of BUILD_PLAN.md.
+
+---
+
 ## Backlog
 
 Anything new goes here first and becomes a phase when picked up. Items sit in value order within their tier, judged by how many players feel them and how often; a new item goes to the tier that fits, at the end. Numbers never change, since the design and past commits refer to them. A finished item leaves its tier for the Done list at the end, with the phase and the commits that closed it.
@@ -753,7 +781,6 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
    *Why here:* A public leaderboard for an audience that includes kids; one bad name is seen by everyone.
 1. Trading duplicates, or converting them, once the collection has been live long enough to show how many duplicates players hold
    *Why here:* A full collection takes about 600 packs, so duplicates pile up early, and every pack after the first few dozen feels worse without it.
-10. Turn timer with forfeit, online. A ranked player who stops acting gets a visible countdown, and when it runs out the match is forfeited and reported as a normal result, so an opponent who walks away or never returns cannot hold a match open forever. The room keeps the deadline in its snapshot and a Durable Object alarm fires it; the timer pauses while a seat is disconnected only for a fixed grace, then counts down anyway. Needs a tunable for the turn length and the grace, a room test that a timed-out seat loses, a `DESIGN.md` section 13 line, and the countdown in the online bar
 13. Race animation. On each advance the car slides along its lane over a short time instead of jumping, a played mod card flies from the hand to the table, and a sabotage lands on the opponent's car with a shake. All CSS transitions keyed off the log entries the race-end moment already reads, off under reduced motion, and never delaying an action. A section 8 addendum
 
 21. A use for surplus fuel. Fuel is never spent by advancing, one token must be placed every turn, and fuel stays on a car between races, so once every car in the garage sits at its cost each further token has nowhere to go; only Nitrous Shot and Fuel Dump spend it. Shapes considered: a pit stop action in the mod step, once per turn, spending 2 fuel above a car's cost to remove 1 wear (the recommendation: it uses the wear system that exists, makes a repair-or-fuel-the-bench choice, and sits behind a tunable cost); a burnout before advancing, up to 2 surplus fuel for +50 ft each (direct, but it shortens races and competes with Fuel Dump); a pit crew action, 2 surplus fuel to draw a card (quiet, least effect on pace); or new Boosts that convert fuel with no core rule. Whichever is chosen needs an engine action with a section 3 rule and test, a CPU rule, a tunable for its cost, and the sim's targets re-run. Tabled on 2026-09-04 for more thought
@@ -800,3 +827,5 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 14. Rematch in the same room, online, for friend matches played for no stakes. Phase 26, 2026-09-08 (35ca95a, af9c762).
 
 23. Laps: complete the roster, keep a keepsake in Chrome, start over with bigger packs and a plate. Phase 27, 2026-09-08 (75242bb, the commit that marks it done).
+
+10. Turn timer with forfeit, online. Phase 29, 2026-09-09 (the commit that closed it).

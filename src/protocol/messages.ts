@@ -64,6 +64,12 @@ export interface StateMessage {
   names: readonly [string, string]
   /** Each seat's laps for its plate, zero for a guest (DESIGN.md 12). */
   plates: readonly [number, number]
+  /**
+   * Milliseconds left for the seat on turn before it forfeits, or null when nothing is timed
+   * (DESIGN.md 13). A remainder rather than a deadline, so a client clock that is off by
+   * minutes still counts down correctly from when the frame arrived.
+   */
+  turnMsLeft: number | null
 }
 
 export interface PresenceMessage {
@@ -189,6 +195,10 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
   }
 }
 
+function isMsLeft(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+}
+
 function isPlates(value: unknown): value is [number, number] {
   return (
     Array.isArray(value) &&
@@ -233,6 +243,7 @@ export function parseServerMessage(raw: unknown): ServerMessage | null {
             view: value['view'] as unknown as MatchState,
             names: [value['names'][0] ?? 'Player 1', value['names'][1] ?? 'Player 2'],
             plates: isPlates(value['plates']) ? [value['plates'][0], value['plates'][1]] : [0, 0],
+            turnMsLeft: isMsLeft(value['turnMsLeft']) ? value['turnMsLeft'] : null,
           }
         : null
     case 'presence':

@@ -36,3 +36,30 @@ describe('stakes on the wire', () => {
     ).toBeNull()
   })
 })
+
+describe('the turn clock on the wire', () => {
+  const base = { type: 'state', view: { any: 'shape' }, names: ['Ann', 'Bo'], plates: [0, 0] }
+
+  it('reads a remainder when the room sends one', () => {
+    expect(parseServerMessage(JSON.stringify({ ...base, turnMsLeft: 42_000 }))).toMatchObject({
+      type: 'state',
+      turnMsLeft: 42_000,
+    })
+    expect(parseServerMessage(JSON.stringify({ ...base, turnMsLeft: 0 }))).toMatchObject({
+      turnMsLeft: 0,
+    })
+  })
+
+  it('defaults to no clock, so a room that does not send one still parses', () => {
+    expect(parseServerMessage(JSON.stringify(base))).toMatchObject({
+      type: 'state',
+      turnMsLeft: null,
+    })
+    for (const bad of [-1, 'soon', null, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(
+        parseServerMessage(JSON.stringify({ ...base, turnMsLeft: bad })),
+        String(bad),
+      ).toMatchObject({ turnMsLeft: null })
+    }
+  })
+})

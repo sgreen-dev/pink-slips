@@ -2,6 +2,10 @@
 
 Every change to Pink Slips, by the day it landed. Dates are commit dates, newest first. Each line ends with the commit that made the change, so anything here can be traced in the history. A phase entry names its phase from `BUILD_PLAN.md`; the commit that marks a phase done is listed with it. Every commit adds a line here under its day.
 
+## 2026-09-09
+
+- Phase 29, turn timer with forfeit online: a ranked seat has ninety seconds to act, shown as a clock in the online bar that restarts on every action and turns pink under fifteen seconds; running out forfeits the match to the other seat, reported and rated like any other result. A dropped seat stops its clock for thirty seconds in total per turn, then it runs anyway. Friend rooms are untimed. (the commit that adds this line)
+
 ## 2026-09-08
 
 - Phase 24, guided first match: the first CPU match a browser plays shows a short guide, one step at a time under the prompt, stage a car, place fuel, play mods, advance, and the finish line in the banner, with OK and Skip guide, remembered under `pink-slips.guide.v1`; written to the rules dialog's reading level and held to its limits by a test. (3743945)

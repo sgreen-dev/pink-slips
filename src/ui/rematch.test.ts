@@ -14,6 +14,7 @@ describe('rematch on the client', () => {
     expect(parseServerMessage('{"type":"rematch","accepted":[true]}')).toBeNull()
     expect(parseServerMessage('{"type":"state","view":{},"names":["a","b"]}')).toMatchObject({
       plates: [0, 0],
+      turnMsLeft: null,
     })
     expect(
       parseServerMessage('{"type":"state","view":{},"names":["a","b"],"plates":[2,0]}'),
@@ -26,18 +27,22 @@ describe('rematch on the client', () => {
     let session = startOnline('ABCDEF', 'Ann')
     session = reduceOnline(session, {
       type: 'message',
+      at: 0,
       message: { type: 'welcome', code: 'ABCDEF', seat: 0, token: 't' },
     })
     session = reduceOnline(session, {
       type: 'message',
-      message: { type: 'state', view: redact(over, 0), names, plates: [0, 0] },
+      at: 0,
+      message: { type: 'state', view: redact(over, 0), names, plates: [0, 0], turnMsLeft: null },
     })
     session = reduceOnline(session, {
       type: 'message',
+      at: 0,
       message: { type: 'result', packsEarned: 1, rating: null, stakes: null },
     })
     session = reduceOnline(session, {
       type: 'message',
+      at: 0,
       message: { type: 'rematch', accepted: [false, true] },
     })
     expect(session.rematch).toEqual([false, true])
@@ -45,7 +50,8 @@ describe('rematch on the client', () => {
     const fresh = createMatch({ ...starterConfig(), firstPlayer: 1 }, 4)
     session = reduceOnline(session, {
       type: 'message',
-      message: { type: 'state', view: redact(fresh, 0), names, plates: [0, 0] },
+      at: 0,
+      message: { type: 'state', view: redact(fresh, 0), names, plates: [0, 0], turnMsLeft: null },
     })
     expect(session.result).toBeNull()
     expect(session.rematch).toEqual([false, false])

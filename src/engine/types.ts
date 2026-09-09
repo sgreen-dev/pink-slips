@@ -158,6 +158,8 @@ export type LogEntry =
   | { kind: 'matchEnd'; winner: PlayerIndex }
   /** A player gave the match up; the other player won it. */
   | { kind: 'concede'; player: PlayerIndex }
+  /** A player ran out of turn time online; the other player won it (DESIGN.md 13). */
+  | { kind: 'timeout'; player: PlayerIndex }
 
 export interface MatchState {
   players: readonly [PlayerState, PlayerState]

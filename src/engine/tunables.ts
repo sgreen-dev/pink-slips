@@ -85,5 +85,9 @@ export const TUNABLES = {
     pairWaitMs: 30_000,
     /** Rated players needed before the window applies at all. */
     pairMinRated: 50,
+    /** How long a seat has to act in a ranked room before it forfeits the match. */
+    turnLimitMs: 90_000,
+    /** How long the countdown pauses for a disconnected seat before it runs anyway. */
+    disconnectGraceMs: 30_000,
   },
 } as const
