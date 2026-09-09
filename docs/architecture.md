@@ -58,7 +58,7 @@ Every browser read and write goes through a try/catch wrapper (`src/ui/storage.t
 | `server/` | Cloudflare Worker: sockets, Durable Objects, storage. | `worker.ts` |
 | `counter/` | Cloudflare Worker: one number in KV. Standalone. | `worker.ts` |
 
-`src/ui` splits deliberately: the logic sits in `.ts` modules with their own unit tests and the `.tsx` components stay thin. Counting `src/ui` and `src/ui/sound` together, that is 17 of 27 modules tested; the untested ten are React plumbing and the two audio players, which need a browser. Vitest runs in a `node` environment with no DOM, so anything worth testing is moved out of the component rather than rendered in a test.
+`src/ui` splits deliberately: the logic sits in `.ts` modules with their own unit tests and the `.tsx` components stay thin, which is still the first place to put anything worth testing. Components are now tested too (backlog `Q35`): the suite runs in `node` by default, since the engine, the CPU and the service never touch a DOM and are faster without one, and a test that needs a screen opts in with `// @vitest-environment happy-dom` at the top of its file and renders through `src/ui/testRender.tsx`. `CarCard`, `GaragePicker`, `Board`, `CollectionScreen` and `BuilderScreen` have one.
 
 `DESIGN.md` section 9 has the folder map and the engine API shape.
 
@@ -98,7 +98,7 @@ Four things depend on that: the simulator can replay a run exactly, tests can as
 
 | Choice | Why |
 |---|---|
-| TypeScript, React, Vite, Vitest | No rationale recorded. Observable: the only runtime dependencies are `react` and `react-dom` — no router, no state library, no UI kit, no component test library. |
+| TypeScript, React, Vite, Vitest | No rationale recorded. Observable: the only runtime dependencies are `react` and `react-dom` — no router, no state library, no UI kit. Rendering a component in a test needs `happy-dom` and Testing Library, which are dev dependencies only. |
 | A pure, immutable engine with no I/O | It is callable from a screen, a CPU loop, a simulator and a server without change. Online play reused it as-is. |
 | Seeded RNG inside the state | Keeps every engine function pure and makes runs reproducible. |
 | Static site on GitHub Pages | Solo play needs no service, so most of the game costs nothing to run and works with no account. |
@@ -116,13 +116,13 @@ Where a row says no rationale is recorded, that is a gap in the record, not an e
 |---|---|
 | `npm run dev` | Vite dev server |
 | `npm run build` | `tsc -b` then `vite build` into `dist/` |
-| `npm test` | Vitest, node environment, `src/**/*.test.ts` |
+| `npm test` | Vitest, `src/**/*.test.{ts,tsx}` and `counter/*.test.ts`; `node` by default, `happy-dom` per file |
 | `npm run lint` / `format:check` | ESLint / Prettier |
 | `npm run sim` | CPU against CPU, prints the balance report |
 | `npm run deploy:check` | Says whether the site and both workers answer |
 | `npm run online:smoke -- <url>` | Plays a real ranked match against a deployment |
 
-CI runs lint, format, tests and build on every push to `main`, then deploys the site. It does **not** deploy either worker. `npm run build` type-checks the room worker along with the app: the root `tsconfig.json` references `./server`, whose project holds `server/worker.ts` and everything it bundles to the same strictness as the rest of the source. The counter worker is checked the same way, by its own project, and `scripts/*.ts` and `eslint.config.js` belong to the node project, so every line of TypeScript and JavaScript in the repo is type-checked by `npm run build`. The Python under `scripts/art/` and `scripts/audio/` is deliberately outside all of it: it runs by hand on the owner's machine to encode art and audio, never in CI and never in the browser, so it carries no linter, no type checker and no tests by choice rather than by oversight. Gaps that remain: `scripts/*.ts` and `eslint.config.js` are in no project, and CI runs on pushes to `main` only, never on a pull request, so every check happens after the code has landed. See `docs/backlog.md`.
+CI runs lint, format, tests and build on every push to `main`, then deploys the site. It does **not** deploy either worker. `npm run build` type-checks the room worker along with the app: the root `tsconfig.json` references `./server`, whose project holds `server/worker.ts` and everything it bundles to the same strictness as the rest of the source. The counter worker is checked the same way, by its own project, and `scripts/*.ts` and `eslint.config.js` belong to the node project, so every line of TypeScript and JavaScript in the repo is type-checked by `npm run build`. The Python under `scripts/art/` and `scripts/audio/` is deliberately outside all of it: it runs by hand on the owner's machine to encode art and audio, never in CI and never in the browser, so it carries no linter, no type checker and no tests by choice rather than by oversight. See `docs/backlog.md` for what is still open.
 
 A build is about 394 KB of JavaScript and 30 KB of CSS, roughly 118 KB and 7 KB gzipped.
 
