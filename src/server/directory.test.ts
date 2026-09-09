@@ -223,6 +223,67 @@ describe('directory', () => {
     }
   })
 
+  /**
+   * The creation limit lives on the directory, the one object the whole service shares. In the
+   * worker it lived in a module-level Map, which is per isolate: isolates are many, per colo
+   * and short-lived, so retrying found an empty count and the limit was not one.
+   */
+  describe('the limit on new players from one address', () => {
+    const { creationsPerWindow: CAP, creationWindowMs: WINDOW } = TUNABLES.online
+
+    it('allows a run of players from an address and then refuses', async () => {
+      const { directory } = setUp()
+      for (let i = 0; i < CAP; i++) {
+        expect(await directory.allowCreation('1.2.3.4'), `attempt ${i + 1}`).toBe(true)
+      }
+      expect(await directory.allowCreation('1.2.3.4')).toBe(false)
+      // Refusing does not reset it either, however many times it is asked.
+      expect(await directory.allowCreation('1.2.3.4')).toBe(false)
+    })
+
+    it('counts each address on its own', async () => {
+      const { directory } = setUp()
+      for (let i = 0; i < CAP; i++) await directory.allowCreation('1.2.3.4')
+      expect(await directory.allowCreation('1.2.3.4')).toBe(false)
+      expect(await directory.allowCreation('5.6.7.8')).toBe(true)
+    })
+
+    it('lets the address through again once the window has passed', async () => {
+      const { directory, tick } = setUp()
+      for (let i = 0; i < CAP; i++) await directory.allowCreation('1.2.3.4')
+      expect(await directory.allowCreation('1.2.3.4')).toBe(false)
+      // Just short of the window is still refused; past it, allowed.
+      tick(WINDOW - 1)
+      expect(await directory.allowCreation('1.2.3.4')).toBe(false)
+      tick(2)
+      expect(await directory.allowCreation('1.2.3.4')).toBe(true)
+    })
+
+    it('keeps nothing for an address whose times have all aged out', async () => {
+      const { directory, store, tick } = setUp()
+      await directory.allowCreation('1.2.3.4')
+      expect(store.data.get('made:1.2.3.4')).toEqual([1_000_000])
+      tick(WINDOW + 1)
+      await directory.allowCreation('1.2.3.4')
+      // The old time is gone rather than accumulating for every address ever seen.
+      expect(store.data.get('made:1.2.3.4')).toEqual([1_000_000 + WINDOW + 1])
+    })
+
+    it('survives the object being rebuilt, which is what the worker map did not', async () => {
+      const { directory, store } = setUp()
+      for (let i = 0; i < CAP; i++) await directory.allowCreation('1.2.3.4')
+      // A second Directory over the same storage stands for another isolate, or this object
+      // waking after hibernation: the count is in the store, so it is still there.
+      const again = new Directory(
+        store,
+        () => 'x'.repeat(32),
+        async (t) => t,
+        () => 1_000_000,
+      )
+      expect(await again.allowCreation('1.2.3.4')).toBe(false)
+    })
+  })
+
   // Scrapping and buying on the service side (DESIGN.md 12). The pure rules are tested in
   // src/collection/collection.test.ts; these cover the wrappers that read a token, store the
   // result, and answer 'refused' rather than throwing.

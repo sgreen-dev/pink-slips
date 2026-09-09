@@ -45,7 +45,7 @@ npm run online:smoke -- <url> --rematch     # a friend room plays twice
 npm run online:smoke -- <url> --timeout     # a silent player loses on the clock
 ```
 
-Each run makes two players, and account creation is capped per address per hour, so a few runs in a row will start returning 429. That is the limiter, not a fault.
+Each run makes two players, and account creation is capped at five per address an hour, so three runs in a row will start returning 429. That is the limiter, not a fault. It is counted by the account directory, so unlike before it will not quietly reset on a retry.
 
 ## What these checks cannot tell you
 

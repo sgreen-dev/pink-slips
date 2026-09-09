@@ -98,5 +98,9 @@ export const TUNABLES = {
     turnLimitMs: 90_000,
     /** How long the countdown pauses for a disconnected seat before it runs anyway. */
     disconnectGraceMs: 30_000,
+    /** New players one address may make in a window, before the service refuses more. */
+    creationsPerWindow: 5,
+    /** The window that count is taken over, in ms. */
+    creationWindowMs: 60 * 60 * 1000,
   },
 } as const

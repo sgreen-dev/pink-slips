@@ -58,7 +58,6 @@ const QUEUE_TICK_MS = 5000
 /** Delay from a player joining the queue to the first pairing attempt. */
 const QUEUE_FIRST_MS = 200
 /** New players one address may make in an hour. */
-const CREATIONS_PER_HOUR = 5
 
 function corsHeaders(request: Request): Record<string, string> {
   const origin = request.headers.get('Origin') ?? ''
@@ -119,20 +118,6 @@ async function readJson(request: Request): Promise<unknown> {
   }
 }
 
-/** Recent player creations by address. Lives as long as the worker instance, which is enough. */
-const recentCreations = new Map<string, number[]>()
-
-function allowCreation(ip: string, now: number): boolean {
-  const hour = 60 * 60 * 1000
-  const recent = (recentCreations.get(ip) ?? []).filter((at) => now - at < hour)
-  if (recent.length >= CREATIONS_PER_HOUR) {
-    recentCreations.set(ip, recent)
-    return false
-  }
-  recentCreations.set(ip, [...recent, now])
-  return true
-}
-
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
@@ -143,11 +128,11 @@ export default {
     if (path === '/new') return json({ code: newCode() }, 200, headers)
 
     if (path === '/auth/player' && request.method === 'POST') {
-      const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
-      if (!allowCreation(ip, Date.now())) {
-        return text('Too many new players from this address. Try again later.', 429, headers)
-      }
-      return directoryOf(env).fetch(request)
+      // The address is read here, where Cloudflare sets it, and carried to the directory on a
+      // header this worker replaces rather than forwards, so a client cannot name its own.
+      const forwarded = new Request(request)
+      forwarded.headers.set('X-Address', request.headers.get('CF-Connecting-IP') ?? 'unknown')
+      return directoryOf(env).fetch(forwarded)
     }
     if ((path === '/auth/recover' || path === '/auth/logout') && request.method === 'POST') {
       return directoryOf(env).fetch(request)
@@ -244,6 +229,12 @@ export class AccountDirectory extends DurableObject<Env> {
       const name = typeof body?.['name'] === 'string' ? body['name'] : ''
       const problem = Directory.nameProblem(name)
       if (problem) return text(problem, 400, headers)
+      // The count lives on this object, the one the whole service shares, and not in a worker
+      // isolate where retrying would find an empty one.
+      const address = request.headers.get('X-Address') ?? 'unknown'
+      if (!(await this.directory.allowCreation(address))) {
+        return text('Too many new players from this address. Try again later.', 429, headers)
+      }
       const made = await this.directory.createPlayer(name)
       return json(made, 200, headers)
     }

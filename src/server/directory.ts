@@ -143,6 +143,8 @@ const ACCOUNT = 'acct:'
 const PROVIDER = 'prov:'
 const SESSION = 'sess:'
 const RECOVERY = 'rec:'
+/** When each address last made players, for the creation limit. Pruned as it is read. */
+const CREATIONS = 'made:'
 const STATS = 'stats'
 
 function cleanName(raw: string): string {
@@ -206,8 +208,33 @@ export class Directory {
   }
 
   /**
+   * Whether an address may make another player, and records it when it may (DESIGN.md 13).
+   *
+   * This lives on the directory rather than in the worker because the worker is many isolates,
+   * per colo and short-lived, so a count held in one of them is not a limit at all: retrying
+   * lands in a different isolate with an empty count. The directory is one object for the whole
+   * service, so a count kept here is the count. Times older than the window are dropped as they
+   * are read, and an address with none left loses its key, so this grows only with the
+   * addresses that made a player in the last hour.
+   */
+  async allowCreation(address: string): Promise<boolean> {
+    const key = `${CREATIONS}${address}`
+    const now = this.now()
+    const window = this.t.online.creationWindowMs
+    const kept = ((await this.store.get<number[]>(key)) ?? []).filter((at) => now - at < window)
+    if (kept.length >= this.t.online.creationsPerWindow) {
+      // Rewrite anyway, so the pruning happens even for an address that is being refused.
+      await this.store.put(key, kept)
+      return false
+    }
+    await this.store.put(key, [...kept, now])
+    return true
+  }
+
+  /**
    * Makes a player from a name and opens a session. The recovery code is returned once. The
-   * caller checks the name first with `nameProblem`; a refused name is not stored.
+   * caller checks the name first with `nameProblem` and the address with `allowCreation`; a
+   * refused name is not stored.
    */
   async createPlayer(
     name: string,
