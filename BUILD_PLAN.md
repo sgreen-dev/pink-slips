@@ -60,7 +60,7 @@
 | 41 | Take the session token from the header | done | 80c47b7 |
 | 42 | Sweep the backlog: security and accessibility | done | 4b3413b |
 | 43 | Sweep the backlog: gameplay, tests and tooling | done | 2f7d5eb |
-| 44 | Random garages | done | (pending) |
+| 44 | Random garages | done | 788e3b2 |
 
 ---
 
