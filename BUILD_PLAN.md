@@ -45,7 +45,7 @@
 | 26 | Rematch in the same room | done | 35ca95a |
 | 27 | Laps | done | 75242bb |
 | 28 | Loaner garages and the intro set | done | d965d6e |
-| 29 | Turn timer with forfeit, online | done | (this commit) |
+| 29 | Turn timer with forfeit, online | done | afaddab |
 
 ---
 
@@ -828,4 +828,4 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 
 23. Laps: complete the roster, keep a keepsake in Chrome, start over with bigger packs and a plate. Phase 27, 2026-09-08 (75242bb, the commit that marks it done).
 
-10. Turn timer with forfeit, online. Phase 29, 2026-09-09 (the commit that closed it).
+10. Turn timer with forfeit, online. Phase 29, 2026-09-09 (afaddab, the commit that marks it done).

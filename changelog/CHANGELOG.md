@@ -4,7 +4,8 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-09
 
-- Phase 29, turn timer with forfeit online: a ranked seat has ninety seconds to act, shown as a clock in the online bar that restarts on every action and turns pink under fifteen seconds; running out forfeits the match to the other seat, reported and rated like any other result. A dropped seat stops its clock for thirty seconds in total per turn, then it runs anyway. Friend rooms are untimed. (the commit that adds this line)
+- Phase 29, turn timer with forfeit online: a ranked seat has ninety seconds to act, shown as a clock in the online bar that restarts on every action and turns pink under fifteen seconds; running out forfeits the match to the other seat, reported and rated like any other result. A dropped seat stops its clock for thirty seconds in total per turn, then it runs anyway. Friend rooms are untimed. (afaddab)
+- Phase 29 marked done in the build plan. (the commit that marks it done)
 
 ## 2026-09-08
 
