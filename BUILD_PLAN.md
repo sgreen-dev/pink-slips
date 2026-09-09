@@ -51,7 +51,7 @@
 | 32 | Report a browser that will not store | done | 081b66b |
 | 33 | Test scrapping and buying on both sides | done | 3c067ed |
 | 34 | Type-check the room worker in CI | done | 214a800 |
-| 35 | Check and test the counter worker | done | (pending) |
+| 35 | Check and test the counter worker | done | 041911e |
 
 ---
 
