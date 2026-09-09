@@ -53,7 +53,7 @@
 | 34 | Type-check the room worker in CI | done | 214a800 |
 | 35 | Check and test the counter worker | done | 041911e |
 | 36 | Bound what a CPU result can mint | done | a00dd2a |
-| 37 | Widen the match generator | done | (pending) |
+| 37 | Widen the match generator | done | a95733b |
 
 ---
 
