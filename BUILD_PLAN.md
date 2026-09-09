@@ -54,7 +54,7 @@
 | 35 | Check and test the counter worker | done | 041911e |
 | 36 | Bound what a CPU result can mint | done | a00dd2a |
 | 37 | Widen the match generator | done | a95733b |
-| 38 | Count new players on the directory | done | (pending) |
+| 38 | Count new players on the directory | done | f92c4a8 |
 
 ---
 
