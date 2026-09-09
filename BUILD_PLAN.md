@@ -55,6 +55,7 @@
 | 36 | Bound what a CPU result can mint | done | a00dd2a |
 | 37 | Widen the match generator | done | a95733b |
 | 38 | Count new players on the directory | done | f92c4a8 |
+| 39 | Write a room only once someone joins | done | cc3aad8 |
 
 ---
 
