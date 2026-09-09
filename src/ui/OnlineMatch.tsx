@@ -1,12 +1,11 @@
 import { useCallback, useContext, useEffect, useReducer, useRef, useState } from 'react'
 import { packsEarned } from '../collection/collection.ts'
 import { addPacks, loadCollection } from '../collection/persist.ts'
-import { currentPlayer, isOver, type Action, type PlayerIndex } from '../engine/index.ts'
+import { currentPlayer, isModPlay, isOver, type Action, type PlayerIndex } from '../engine/index.ts'
 import { EMPTY_TRANSFER, type Transfer } from '../collection/stakes.ts'
 import { AccountContext, fetchMe } from './account.ts'
 import { copyText } from './clipboard.ts'
 import { Board } from './Board.tsx'
-import { isModPlay } from './celebration.ts'
 import { recordMatch } from './counter.ts'
 import { NO_SELECTION, type Selection } from './interaction.ts'
 import {

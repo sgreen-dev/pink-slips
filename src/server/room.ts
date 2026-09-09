@@ -6,6 +6,7 @@ import {
   forfeit,
   isLegal,
   isOver,
+  keepsTakeBack,
   redact,
   rngFromHex,
   seedRng,
@@ -117,10 +118,6 @@ export const REASONS = {
   noRematchStakes:
     'A stakes match is not replayed in its room, since cars changed hands. Make a new room.',
 } as const
-
-function isModPlay(action: Action): boolean {
-  return action.type === 'playPart' || action.type === 'playBoost' || action.type === 'playSabotage'
-}
 
 function otherSeat(seat: PlayerIndex): PlayerIndex {
   return seat === 0 ? 1 : 0
@@ -433,7 +430,7 @@ export class Room {
     if (state.phase.kind === 'over') return [fail(REASONS.over)]
     if (action.player !== from) return [fail(REASONS.notYourSeat)]
     if (!isLegal(state, action)) return [fail(REASONS.illegal)]
-    const keep = isModPlay(action) && state.phase.kind === 'turn' && state.turn.step === 'mods'
+    const keep = keepsTakeBack(state, action)
     this.history = keep ? [...this.history, { seat: from, state }] : []
     this.state = apply(state, action)
     this.armDeadline(now)
