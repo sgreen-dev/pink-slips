@@ -46,7 +46,7 @@
 | 27 | Laps | done | 75242bb |
 | 28 | Loaner garages and the intro set | done | d965d6e |
 | 29 | Turn timer with forfeit, online | done | afaddab |
-| 30 | Scrapping duplicates for credits | done | (this commit) |
+| 30 | Scrapping duplicates for credits | done | 267b1f7 |
 
 ---
 
@@ -855,4 +855,4 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 
 10. Turn timer with forfeit, online. Phase 29, 2026-09-09 (afaddab, the commit that marks it done).
 
-1. Trading duplicates, or converting them. Converting done as phase 30, 2026-09-09 (the commit that closed it); trading between players is still open and needs a population first.
+1. Trading duplicates, or converting them. Converting done as phase 30, 2026-09-09 (267b1f7); trading between players is still open and needs a population first.
