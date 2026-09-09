@@ -26,11 +26,17 @@ export function loadSession(store: StorageLike | null = browserStorage()): strin
   }
 }
 
-export function saveSession(token: string, store: StorageLike | null = browserStorage()): void {
+/**
+ * Keeps the session token. Returns false when the browser refused it, which matters more here
+ * than anywhere else: the player is signed in on this page and a guest on the next visit, and
+ * without the recovery code, which is shown once, the player is gone.
+ */
+export function saveSession(token: string, store: StorageLike | null = browserStorage()): boolean {
   try {
     store?.setItem(SESSION_KEY, token)
+    return store !== null
   } catch {
-    // A store that refuses the token means the next visit starts signed out.
+    return false
   }
 }
 

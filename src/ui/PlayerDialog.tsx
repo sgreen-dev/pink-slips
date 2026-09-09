@@ -13,6 +13,8 @@ interface PlayerDialogProps {
   code?: string | null
   /** A player was made or recovered: the token is the browser's session from now on. */
   onSignedIn: (token: string, recoveryCode: string | null) => void
+  /** False when the browser refused to keep the session, which the code view has to say. */
+  sessionKept?: boolean
   onClose: () => void
 }
 
@@ -20,7 +22,14 @@ interface PlayerDialogProps {
  * The way into an account: make a player from a name, take one back with a recovery code,
  * or read the code that was just issued. One pop-up in the same style as the pack reveal.
  */
-export function PlayerDialog({ endpoint, view, code, onSignedIn, onClose }: PlayerDialogProps) {
+export function PlayerDialog({
+  endpoint,
+  view,
+  code,
+  onSignedIn,
+  onClose,
+  sessionKept,
+}: PlayerDialogProps) {
   const [current, setCurrent] = useState<PlayerView>(view)
   const [shown, setShown] = useState<string | null>(code ?? null)
   const [name, setName] = useState('')
@@ -199,6 +208,12 @@ export function PlayerDialog({ endpoint, view, code, onSignedIn, onClose }: Play
               on another device, or on this one if the browser is ever cleared. You can get a new
               code from your profile at any time.
             </p>
+            {sessionKept === false && (
+              <p className="builder__notice" role="status">
+                This browser is blocking storage, so you will be signed out when you leave the page.
+                Write the code down before you do: it is the only way back.
+              </p>
+            )}
             <div className="online__actions">
               <button type="button" className="button" onClick={() => void copy()}>
                 {copied ? 'Copied' : 'Copy'}

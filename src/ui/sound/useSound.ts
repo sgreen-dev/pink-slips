@@ -10,8 +10,6 @@ export interface SoundHandle {
   play: (name: SoundName, intensity?: number) => void
   /** Tells the music which scene is on screen; a change starts the next track. */
   setScene: (scene: Scene) => void
-  /** Effects played so far, for checks that cannot listen. */
-  played: number
 }
 
 export const SoundContext = createContext<SoundHandle | null>(null)
@@ -21,7 +19,6 @@ const INERT: SoundHandle = {
   setSettings: () => undefined,
   play: () => undefined,
   setScene: () => undefined,
-  played: 0,
 }
 
 /** The sound handle, or an inert one outside the provider, so tests and screens never guard. */

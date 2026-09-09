@@ -208,6 +208,35 @@ function isPlates(value: unknown): value is [number, number] {
 }
 
 /** The client's mirror of parseClientMessage, so a bad frame never reaches the board. */
+/**
+ * Enough of a `MatchState` for the board and the legality helpers to run on it. The view used to
+ * be taken on `isRecord` alone and cast, so a room that sent `{}` -- malformed, out of date, or
+ * hostile -- crashed the board instead of being dropped, which is what every other message here
+ * gets. This checks the shape, not the contents: card ids are the room's business, and a view is
+ * redacted anyway, so hands and decks arrive as placeholders.
+ */
+function isMatchStateShape(value: unknown): value is MatchState {
+  if (!isRecord(value)) return false
+  const seats = value['players']
+  if (!Array.isArray(seats) || seats.length !== 2 || !seats.every(isPlayerStateShape)) return false
+  if (value['firstPlayer'] !== 0 && value['firstPlayer'] !== 1) return false
+  if (!isRecord(value['phase']) || typeof value['phase']['kind'] !== 'string') return false
+  if (!isRecord(value['turn']) || !isRecord(value['race'])) return false
+  if (!Array.isArray(value['log'])) return false
+  // The generator's state: four words, zeroed in a redacted view (DESIGN.md 13).
+  const rng = value['rng']
+  return Array.isArray(rng) && rng.length === 4 && rng.every((w) => typeof w === 'number')
+}
+
+function isPlayerStateShape(value: unknown): boolean {
+  if (!isRecord(value)) return false
+  const lists = ['garage', 'hand', 'deck', 'discard', 'pinkSlips']
+  if (!lists.every((key) => Array.isArray(value[key]))) return false
+  const staged = value['stagedCarId']
+  if (staged !== null && typeof staged !== 'string') return false
+  return isRecord(value['pendingSabotage']) && typeof value['boostBlockedNextTurn'] === 'boolean'
+}
+
 export function parseServerMessage(raw: unknown): ServerMessage | null {
   let value = raw
   if (typeof raw === 'string') {
@@ -237,7 +266,9 @@ export function parseServerMessage(raw: unknown): ServerMessage | null {
         : null
     }
     case 'state':
-      return isRecord(value['view']) && isStringArray(value['names']) && value['names'].length === 2
+      return isMatchStateShape(value['view']) &&
+        isStringArray(value['names']) &&
+        value['names'].length === 2
         ? {
             type: 'state',
             view: value['view'] as unknown as MatchState,
