@@ -96,10 +96,6 @@ export const STARTERS: readonly StarterGarage[] = [
   },
 ]
 
-export const STARTER_BY_ID: ReadonlyMap<string, StarterGarage> = new Map(
-  STARTERS.map((starter) => [starter.id, starter]),
-)
-
 /**
  * The intro set (DESIGN.md 12): what a fresh collection owns. Six cars kept from the loaner
  * garages, none above Performance, so every Super and Hyper is opened rather than given. The

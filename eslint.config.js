@@ -28,7 +28,9 @@ export default defineConfig([
     },
   },
   {
-    // The engine, CPU, and simulator are pure TypeScript and never import from the UI.
+    // The engine, CPU, simulator, server and protocol are pure TypeScript and never import
+    // from the UI. Note `src/collection` and `src/data` reach the worker too but are not listed
+    // here; see backlog Q28.
     files: ['src/engine/**', 'src/cpu/**', 'src/sim/**', 'src/server/**', 'src/protocol/**'],
     rules: {
       'no-restricted-imports': [
@@ -37,7 +39,8 @@ export default defineConfig([
           patterns: [
             {
               group: ['**/ui', '**/ui/**', 'react', 'react-dom'],
-              message: 'Engine, CPU, and simulator code must not depend on the UI.',
+              message:
+                'Engine, CPU, simulator, server and protocol code must not depend on the UI.',
             },
           ],
         },

@@ -6,10 +6,11 @@ import { cardBackUrl } from './artwork.ts'
  * plate on it names the holder's laps (DESIGN.md 12).
  */
 export function CardBack({
-  size = 'sm',
+  size = 'xs',
   plate = 0,
 }: {
-  size?: 'xs' | 'sm' | 'md'
+  /** Only xs is drawn; the type says so rather than offering sizes with no rule behind them. */
+  size?: 'xs'
   plate?: number
 }) {
   const back = cardBackUrl()

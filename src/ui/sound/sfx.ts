@@ -80,15 +80,6 @@ export function audioContext(): AudioContext | null {
   return context
 }
 
-/** A user gesture happened: the context may run. True when audio is available. */
-export function unlockEffects(): boolean {
-  const ctx = audioContext()
-  if (!ctx) return false
-  if (ctx.state === 'suspended') void ctx.resume()
-  loadEffectFiles(ctx)
-  return true
-}
-
 const recordings = new Map<SoundName, AudioBuffer>()
 let loadingStarted = false
 
@@ -129,10 +120,6 @@ function playRecording(buffer: AudioBuffer, launch: number | null): void {
   source.connect(gain)
   gain.connect(master)
   source.start()
-}
-
-export function effectsReady(): boolean {
-  return context !== null
 }
 
 function noise(): AudioBuffer {

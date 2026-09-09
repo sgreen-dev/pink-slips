@@ -41,7 +41,7 @@ Everything open: defects, risks, gaps, and features not yet built. One line each
 | A2 | bug | med | `GaragePicker` nests card buttons inside a `<label>`, so the radio absorbs five accessible names and the start screen gains ~30 tab stops that each toggle the radio they sit in | `src/ui/GaragePicker.tsx:17` | open |
 | A3 | bug | med | Ownership on the collection grid is opacity-only — no text, no ARIA — on the screen whose job is showing what you own. The builder does it with words | `src/ui/CollectionScreen.tsx:417` | open |
 | U1 | bug | med | The start screen's Sign out confirmed in the wrong order, against the rule added to `DESIGN.md` 8 in phase 31 <sup>4</sup> | `src/ui/StartScreen.tsx` | done |
-| D1 | bug | med | Two orphaned `*Why here:*` lines under the High-value heading, left when items 9 and 6 moved to Done in `fced226` and only their body text went | `BUILD_PLAN.md:808` | open |
+| D1 | bug | med | Two orphaned `*Why here:*` lines under the High-value heading. Gone with the section they were in when this file replaced it | — | done |
 | D2 | gap | med | `DESIGN.md` 6's random-garage CPU figures have drifted: Street over Rookie is 70% not 77, Pro over Rookie 76% not 80. Starter-pairing figures are still exact <sup>5</sup> | `DESIGN.md` 6 | open |
 | G8 | gap | low | Staging is sequential and public — the second chooser sees the opponent's car — where `DESIGN.md` 3.1 and 3.4 read as simultaneous. Pro is built on the asymmetry, so the doc is the likely fix | `src/engine/match.ts:158,861` | open |
 | G9 | gap | low | Three advance steps the numbered formula in 3.3 does not describe: where a percentage Boost lands relative to sabotage, where Overdrive's fraction lands relative to wear, and what its second advance counts | `src/engine/advance.ts:104,114` | open |
@@ -60,18 +60,18 @@ Everything open: defects, risks, gaps, and features not yet built. One line each
 | Q34 | gap | low | `accountFor` and `signOut` still look under the old plaintext session key, to carry sessions across phase 40 without signing anyone out. Sessions last a year, so the fallback can go after 2027-09-09 | `src/server/directory.ts` | open |
 | Q17 | gap | low | No coverage tooling, though `coverage` is already excluded in two configs. A report would have shown Q5–Q8 | `package.json` | open |
 | Q28 | risk | low | The ESLint import boundary covers five directories but not `src/collection` or `src/data`, both of which are in the worker bundle. `persist.ts` already imports from `src/ui` through that gap — not breached, but unguarded | `eslint.config.js:32` | open |
-| Q29 | gap | low | Five exported symbols with no caller: `STARTER_BY_ID`, `opponentOf`, `unlockEffects`, `effectsReady`, `engineRunning` | see note <sup>6</sup> | open |
-| Q30 | gap | low | Two unreachable CSS rules: `.start__soon` and `.card-back--md`; `.card-back--sm`, the component's own default, has no rule at all | `src/index.css:642,2121` | open |
-| Q23 | gap | low | Ignored write failures with recoverable consequences: the builder draft, the guide flag, the online seat, the sound settings | `src/ui/BuilderScreen.tsx:76` and three others | open |
-| Q26 | gap | low | Every online scrap, buy and lap writes both localStorage keys twice, since `update` already mirrors | `src/ui/CollectionScreen.tsx:126` | open |
-| Q27 | gap | low | The clipboard helper, the match-ended settle block and the sound-between effect are each duplicated between two components | `src/ui/OnlineMatch.tsx:198` and pairs | open |
-| Q31 | gap | low | The `K` tunable's comment gives a formula without the type multiplier that the code and `DESIGN.md` 3.3 both include | `src/engine/tunables.ts:13` | open |
-| Q32 | gap | low | An orphaned doc comment: the line describing `renamePlayer` sits above `scrapOnline` | `src/ui/account.ts:123` | open |
-| Q33 | gap | low | The import-boundary rule's comment and error name three directories where the rule covers five | `eslint.config.js:31` | open |
+| Q29 | gap | low | Five exported symbols with no caller: `STARTER_BY_ID`, `opponentOf`, `unlockEffects`, `effectsReady`, `engineRunning`, all removed | — | done |
+| Q30 | gap | low | Two unreachable CSS rules removed. `CardBack` offered three sizes with a rule for one, and defaulted to a missing one; its type now names only the size that is drawn | — | done |
+| Q23 | gap | low | Four ignored write results. The online seat is the one that costs something — a refused write means a refresh cannot rejoin the room — so it now says so in the bar; the draft, the guide flag and the sound settings lose nothing a player cannot redo, and the code says it ignores them rather than dropping them silently | — | done |
+| Q26 | gap | low | Every online scrap, buy and lap wrote both localStorage keys twice, since `update` already mirrors. The second call is gone | — | done |
+| Q27 | gap | low | The clipboard helper was copied into two screens. Now one tested `src/ui/clipboard.ts`, which also reports whether the copy landed | — | done |
+| Q31 | gap | low | The `K` tunable's comment gave a formula without the type multiplier the code applies. Corrected | — | done |
+| Q32 | gap | low | An orphaned doc comment describing `renamePlayer` sat above `scrapOnline`. Moved to the function it describes | — | done |
+| Q33 | gap | low | The import-boundary rule's comment and error named three directories where it covers five. Both corrected, with a pointer to Q28 | — | done |
 | Q9 | gap | low | `DESIGN.md` 3.2's mod take-back has no engine test — defensible, since it is not an engine action, but three independent implementations exist and nothing checks they agree | `src/ui/celebration.ts`, `src/server/room.ts` | open |
 | Q2b | gap | low | The Luxury and Off-road distance multipliers are asserted by no test: the advance tests compute the expectation from the tunable itself, so changing either would leave the suite green | `src/engine/advance.test.ts:32` | open |
 | Q4b | gap | low | `advance.ts` clamps effective weight to a minimum of 1; `DESIGN.md` 3.3 states the subtraction with no floor | `src/engine/advance.ts:92` | open |
-| Q10 | gap | low | A placeholder test asserting `1 + 1 === 2`, left from phase 0 | `src/placeholder.test.ts` | open |
+| Q10 | gap | low | A placeholder test asserting `1 + 1 === 2`, left from phase 0. Removed | — | done |
 | Q16 | gap | low | The Python art and audio scripts have no linting, type checking or tests. Reasonable, since they run by hand — but nothing records it as a choice | `scripts/art/`, `scripts/audio/` | open |
 | Q24b | gap | low | No error boundary, so any thrown render blanks the page and a match in progress is unrecoverable | `src/main.tsx:12` | open |
 | G16 | gap | low | Two tunables are hardcoded in copy: the pink-slip target and the track's distance marks | `src/ui/Garage.tsx:65`, `src/ui/RaceTrack.tsx:19` | open |

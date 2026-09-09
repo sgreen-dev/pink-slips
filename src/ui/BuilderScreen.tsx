@@ -73,7 +73,9 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
   const rules = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
-    saveDraft(draft)
+    // A refused write loses the draft on refresh and nothing else; saving the garage says so
+    // for real, which is the write that matters here.
+    void saveDraft(draft)
   }, [draft])
 
   const validation = validateDraft(draft, owned)

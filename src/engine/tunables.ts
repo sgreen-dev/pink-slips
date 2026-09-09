@@ -10,7 +10,7 @@ import type { CarType, Tier } from '../data/types.ts'
 export const TUNABLES = {
   /** A quarter mile. Fixed by theme. */
   trackLengthFt: 1320,
-  /** K in base = floor(K × hp ÷ weight). */
+  /** K in base = floor(K × hp × type multiplier ÷ weight), the step 3 of DESIGN.md 3.3. */
   advanceK: 3000,
   /** Fuel a car needs before it can advance, by tier. Tuned in phase 5 from 1/2/3/5. */
   fuelCostByTier: { daily: 1, performance: 2, super: 4, hyper: 6 } as Readonly<

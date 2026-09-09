@@ -120,7 +120,6 @@ export function rotateRecovery(
   ).then((r) => r.body?.recoveryCode ?? null)
 }
 
-/** Renames the player. `refused` when the name is not allowed; null when unreachable. */
 /** Scraps the account's surplus for credits; 'refused' when there is nothing spare. */
 export async function scrapOnline(
   endpoint: string,
@@ -174,6 +173,7 @@ export async function claimLapOnline(
   return body
 }
 
+/** Renames the player. `refused` when the name is not allowed; null when unreachable. */
 export async function renamePlayer(
   endpoint: string,
   token: string,
