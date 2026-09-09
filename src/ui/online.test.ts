@@ -7,13 +7,10 @@ import {
   clearOnlineSeat,
   createRoom,
   loadOnlineSeat,
-  normalizeCode,
   ONLINE_KEY,
   RECONNECT_FIRST_MS,
   reduceOnline,
   RoomClient,
-  roomFromSearch,
-  roomLink,
   saveOnlineSeat,
   socketUrl,
   secondsLeft,
@@ -21,6 +18,7 @@ import {
   type SocketLike,
   type Status,
 } from './online.ts'
+import { normalizeCode, roomFromSearch, roomLink } from './roomLink.ts'
 import type { StorageLike } from '../browser/storage.ts'
 
 function fakeStore(): StorageLike & { data: Map<string, string> } {

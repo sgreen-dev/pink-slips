@@ -12,12 +12,12 @@ import {
   clearOnlineSeat,
   reduceOnline,
   RoomClient,
-  roomLink,
   saveOnlineSeat,
   socketUrl,
   startOnline,
   secondsLeft,
 } from './online.ts'
+import { roomLink } from './roomLink.ts'
 import type { OnlineEntry } from './OnlineScreen.tsx'
 import { RaceEndBanner } from './RaceEndBanner.tsx'
 import { ResultScreen } from './ResultScreen.tsx'

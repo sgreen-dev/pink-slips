@@ -17,12 +17,6 @@ import { browserStorage, readRecord, writeRecord, type StorageLike } from '../br
  */
 
 /** The room service, from VITE_ROOM_URL at build time; null hides online play. */
-export function roomEndpoint(): string | null {
-  const raw: unknown = import.meta.env.VITE_ROOM_URL
-  const trimmed = typeof raw === 'string' ? raw.trim().replace(/\/+$/, '') : ''
-  return trimmed === '' ? null : trimmed
-}
-
 export function socketUrl(endpoint: string, code: string, session: string | null = null): string {
   const base = endpoint.replace(/^http/, 'ws')
   const query = session ? `?session=${encodeURIComponent(session)}` : ''
@@ -49,17 +43,6 @@ export async function createRoom(
 }
 
 /** Reads a room code typed or pasted by a player: any case, spaces and dashes ignored. */
-export function normalizeCode(raw: string): string | null {
-  const code = raw.toUpperCase().replace(/[\s-]/g, '')
-  return isRoomCode(code) ? code : null
-}
-
-/** The room code in a shared link's query string, when there is a valid one. */
-export function roomFromSearch(search: string): string | null {
-  const raw = new URLSearchParams(search).get('room')
-  return raw === null ? null : normalizeCode(raw)
-}
-
 export function roomLink(code: string, location: { origin: string; pathname: string }): string {
   return `${location.origin}${location.pathname}?room=${code}`
 }
