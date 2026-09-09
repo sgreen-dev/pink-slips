@@ -41,8 +41,6 @@ export interface Car {
 
   /** Derived from hp / weightLb unless tierNote records a judgment placement. */
   tier: Tier
-  /** Present only when the tier was placed by judgment near a band boundary (DESIGN.md 2.2). */
-  tierNote?: string
 
   // Mechanical fields
   /** Horsepower as published. Numerator of the advance formula. */
@@ -50,18 +48,27 @@ export interface Car {
   /** Weight in pounds as published. Denominator of the advance formula. */
   weightLb: number
 
-  // Flavor fields, printed, no effect in v1
-  drivetrain: Drivetrain
+  // Flavor fields, printed on the card face, no effect in v1
   zeroToSixtySec: number
   topSpeedMph: number
-  engine: string
-  productionYears: string
 
   // Data fields
-  /** Where the hp and weight figures came from. */
-  source: string
   /** Empty in v1. */
   imageUrl: string
+}
+
+/**
+ * The rest of a car's printed record, in `carDetails.ts` keyed by car id. Only the card detail
+ * panel reads it, so it is kept off the roster and out of the first download (backlog P3).
+ */
+export interface CarDetail {
+  drivetrain: Drivetrain
+  engine: string
+  productionYears: string
+  /** Where the hp and weight figures came from. Every car has one. */
+  source: string
+  /** Present only when the tier was placed by judgment near a band boundary (DESIGN.md 2.2). */
+  tierNote?: string
 }
 
 export type ModFamily = 'part' | 'boost' | 'sabotage'

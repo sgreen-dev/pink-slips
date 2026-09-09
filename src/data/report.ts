@@ -3,6 +3,7 @@
  * Run with `npm run data:report`.
  */
 import { CARS } from './cars.ts'
+import { CAR_DETAILS } from './carDetails.ts'
 import { TIER_LABEL, powerToWeight } from './tiers.ts'
 import { CAR_TYPES, CAR_TYPE_LABEL, TIERS, type CarType, type Tier } from './types.ts'
 
@@ -64,7 +65,7 @@ for (const type of CAR_TYPES) {
     const names = cars
       .map(
         (car) =>
-          `${car.name} (${powerToWeight(car.hp, car.weightLb).toFixed(3)}${car.tierNote ? '*' : ''})`,
+          `${car.name} (${powerToWeight(car.hp, car.weightLb).toFixed(3)}${CAR_DETAILS[car.id]?.tierNote ? '*' : ''})`,
       )
       .join(', ')
     lines.push(`  ${CAR_TYPE_LABEL[type]} / ${TIER_LABEL[tier]}: ${names}`)
