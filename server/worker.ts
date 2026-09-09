@@ -30,6 +30,8 @@ interface Env {
 interface Attachment {
   seat: 0 | 1 | null
   identity: SeatIdentity | null
+  /** The room this socket opened, so an unstored room can be rebuilt after hibernation. */
+  code?: string
 }
 
 interface QueueAttachment extends Waiting {
@@ -469,16 +471,17 @@ export class MatchRoom extends DurableObject<Env> {
       return new Response(null, { status: 204 })
     }
     const code = url.pathname.split('/').pop() ?? ''
-    if (!this.room) {
-      this.room = new Room(code, this.seed())
-      await this.persist()
-    }
+    // The room is built in memory and nothing is written yet. Connecting takes no seat and
+    // proves nothing, and the code space is about a billion, so storing here would let anyone
+    // walk it and leave a stored object per code for a day. Storage waits for a real join;
+    // until then the code rides on the socket so the room can be rebuilt after hibernation.
+    if (!this.room) this.room = new Room(code, this.seed())
     const identity = JSON.parse(request.headers.get('X-Identity') ?? 'null') as SeatIdentity | null
     const pair = new WebSocketPair()
     const client = pair[0]
     const server = pair[1]
     this.ctx.acceptWebSocket(server)
-    server.serializeAttachment({ seat: null, identity } satisfies Attachment)
+    server.serializeAttachment({ seat: null, identity, code } satisfies Attachment)
     return new Response(null, { status: 101, webSocket: client })
   }
 
@@ -498,12 +501,18 @@ export class MatchRoom extends DurableObject<Env> {
       send(ws, { type: 'error', reason: 'That message could not be read.' })
       return
     }
-    const room = this.room
-    if (!room) return
     const held = attachment(ws)
+    // An unstored room is gone after hibernation, so it is rebuilt from the code the socket
+    // carries. A room nobody joined has no state to lose by being built again.
+    const room = this.room ?? (held.code ? (this.room = new Room(held.code, this.seed())) : null)
+    if (!room) return
     const out = room.handle(held.seat, message, randomToken, held.identity, Date.now())
+    // Seats are recorded before anything is sent, so a broadcast in the same batch finds a
+    // socket this batch just seated.
+    let seated = held.seat !== null
     for (const item of out) {
       if (item.to === null && item.message.type === 'welcome') {
+        seated = true
         ws.serializeAttachment({ ...held, seat: item.message.seat } satisfies Attachment)
       }
     }
@@ -511,6 +520,9 @@ export class MatchRoom extends DurableObject<Env> {
       if (item.to === null) send(ws, item.message)
       else this.broadcast(item.to, item.message)
     }
+    // Only a seat writes. A socket that has not joined can spam the room without touching
+    // storage or pushing its expiry out, which is what let one be pinned alive for ever.
+    if (!seated) return
     await this.report(room)
     await this.persist()
   }
