@@ -10,6 +10,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'node',
-    include: ['src/**/*.test.{ts,tsx}'],
+    // The counter worker is standalone, so its test sits beside it rather than under src.
+    include: ['src/**/*.test.{ts,tsx}', 'counter/*.test.ts'],
   },
 })

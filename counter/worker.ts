@@ -17,13 +17,18 @@ const KEY = 'matches'
 const ALLOWED_ORIGINS = ['https://sgreen-dev.github.io', 'http://localhost:5173']
 const MIN_GAP_MS = 10_000
 
+export interface Env {
+  COUNTS: KVNamespace
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const origin = request.headers.get('Origin') ?? ''
     const allowed = ALLOWED_ORIGINS.includes(origin)
-    const headers = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': allowed ? origin : ALLOWED_ORIGINS[0],
+      // A disallowed origin is answered with the primary one, which the browser then rejects.
+      'Access-Control-Allow-Origin': allowed ? origin : (ALLOWED_ORIGINS[0] ?? ''),
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Cache-Control': 'no-store',
       Vary: 'Origin',
@@ -46,10 +51,10 @@ export default {
   },
 }
 
-async function readCount(env) {
+async function readCount(env: Env): Promise<number> {
   return Number(await env.COUNTS.get(KEY)) || 0
 }
 
-function reply(count, headers) {
+function reply(count: number, headers: Record<string, string>): Response {
   return new Response(JSON.stringify({ count }), { headers })
 }

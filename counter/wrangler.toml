@@ -1,5 +1,5 @@
 name = "pink-slips-counter"
-main = "worker.js"
+main = "worker.ts"
 compatibility_date = "2026-09-01"
 
 [[kv_namespaces]]

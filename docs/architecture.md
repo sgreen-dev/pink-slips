@@ -56,7 +56,7 @@ Every browser read and write goes through a try/catch wrapper (`src/ui/storage.t
 | `src/server` | The room and the account directory, with no platform code. | `Room`, `Directory` |
 | `src/ui` | React screens plus pure logic modules that are tested. | `App.tsx` |
 | `server/` | Cloudflare Worker: sockets, Durable Objects, storage. | `worker.ts` |
-| `counter/` | Cloudflare Worker: one number in KV. Standalone. | `worker.js` |
+| `counter/` | Cloudflare Worker: one number in KV. Standalone. | `worker.ts` |
 
 `src/ui` splits deliberately: twenty `.ts` modules hold the logic, thirteen of them with their own unit tests, and the twenty-nine `.tsx` components stay thin. Vitest runs in a `node` environment with no DOM, so anything worth testing is moved out of the component rather than rendered in a test.
 
@@ -122,7 +122,7 @@ Where a row says no rationale is recorded, that is a gap in the record, not an e
 | `npm run deploy:check` | Says whether the site and both workers answer |
 | `npm run online:smoke -- <url>` | Plays a real ranked match against a deployment |
 
-CI runs lint, format, tests and build on every push to `main`, then deploys the site. It does **not** deploy either worker. `npm run build` type-checks the room worker along with the app: the root `tsconfig.json` references `./server`, whose project holds `server/worker.ts` and everything it bundles to the same strictness as the rest of the source. Gaps that remain: ESLint is scoped to `.ts`/`.tsx`, so `counter/worker.js` is unlinted and unchecked; `scripts/*.ts` and `eslint.config.js` are in no project either; and CI runs on pushes to `main` only, never on a pull request, so every check happens after the code has landed. See `docs/backlog.md`.
+CI runs lint, format, tests and build on every push to `main`, then deploys the site. It does **not** deploy either worker. `npm run build` type-checks the room worker along with the app: the root `tsconfig.json` references `./server`, whose project holds `server/worker.ts` and everything it bundles to the same strictness as the rest of the source. The counter worker is checked the same way, by its own project. Gaps that remain: `scripts/*.ts` and `eslint.config.js` are in no project, and CI runs on pushes to `main` only, never on a pull request, so every check happens after the code has landed. See `docs/backlog.md`.
 
 A build is about 394 KB of JavaScript and 30 KB of CSS, roughly 118 KB and 7 KB gzipped.
 
