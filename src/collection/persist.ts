@@ -99,6 +99,16 @@ export function loadCollection(store: StorageLike | null = browserStorage()): Co
   return state
 }
 
+/**
+ * A change the browser made, and whether it managed to store it. A blocked or full store still
+ * returns the new state, since the change is real for this page, but `saved` false means it will
+ * not be there next time and the screen has to say so (DESIGN.md 12).
+ */
+export interface Written {
+  state: CollectionState
+  saved: boolean
+}
+
 export function saveCollection(
   state: CollectionState,
   store: StorageLike | null = browserStorage(),
@@ -106,22 +116,18 @@ export function saveCollection(
   return writeRecord(COLLECTION_KEY, state, store)
 }
 
-/** Adds packs to the stack and returns the new state. */
-export function addPacks(
-  count: number,
-  store: StorageLike | null = browserStorage(),
-): CollectionState {
+/** Adds packs to the stack. */
+export function addPacks(count: number, store: StorageLike | null = browserStorage()): Written {
   const current = loadCollection(store)
   const next = { ...current, packs: current.packs + count }
-  saveCollection(next, store)
-  return next
+  return { state: next, saved: saveCollection(next, store) }
 }
 
 /** Opens the next pack with the seed, adds its cards, and saves. Null when the stack is empty. */
 export function openNextPack(
   seed: number,
   store: StorageLike | null = browserStorage(),
-): { state: CollectionState; pack: Pack } | null {
+): { state: CollectionState; pack: Pack; saved: boolean } | null {
   const current = loadCollection(store)
   if (current.packs <= 0) return null
   const [pack] = openPack(seedRng(seed), TUNABLES, current.laps)
@@ -137,8 +143,7 @@ export function openNextPack(
     grantVersion: current.grantVersion,
     credits: current.credits,
   }
-  saveCollection(state, store)
-  return { state, pack }
+  return { state, pack, saved: saveCollection(state, store) }
 }
 
 /**
@@ -148,12 +153,13 @@ export function openNextPack(
 export function claimLapLocally(
   keepsakeId: string,
   store: StorageLike | null = browserStorage(),
-): CollectionState | null {
+): Written | null {
   const next = claimLap(loadCollection(store), keepsakeId)
   if (!next) return null
-  saveCollection(next, store)
-  saveGarages(garagesAfterLap(loadGarages(store), next.owned), store)
-  return next
+  // The lap rewrites the garages too, so both writes have to land for the lap to survive.
+  const stored = saveCollection(next, store)
+  const garages = saveGarages(garagesAfterLap(loadGarages(store), next.owned), store)
+  return { state: next, saved: stored && garages }
 }
 
 /** True while the collection screen still owes the player the rebase notice. */
@@ -170,20 +176,18 @@ export function clearRebaseNotice(store: StorageLike | null = browserStorage()):
 }
 
 /** Scraps the browser's surplus for credits. Null when there is nothing to scrap. */
-export function scrapLocally(store: StorageLike | null = browserStorage()): CollectionState | null {
+export function scrapLocally(store: StorageLike | null = browserStorage()): Written | null {
   const next = scrapAll(loadCollection(store))
   if (!next) return null
-  saveCollection(next, store)
-  return next
+  return { state: next, saved: saveCollection(next, store) }
 }
 
 /** Buys a card with the browser's credits. Null when it cannot be bought. */
 export function buyLocally(
   id: string,
   store: StorageLike | null = browserStorage(),
-): CollectionState | null {
+): Written | null {
   const next = buyCard(loadCollection(store), id)
   if (!next) return null
-  saveCollection(next, store)
-  return next
+  return { state: next, saved: saveCollection(next, store) }
 }

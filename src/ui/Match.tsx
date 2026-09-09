@@ -57,6 +57,21 @@ interface MatchProps {
  * Owns one match: the engine state, the CPU's turns, the moment after each finish line, the
  * hotseat hand-over, and the selection.
  */
+/**
+ * Stores what a guest's finished match earned: the packs, and the cars stakes moved. Returns
+ * false when the browser refused either write, so the result screen can say the earnings will
+ * not survive a refresh.
+ */
+async function settleGuest(mode: Mode, won: boolean, transfer: Transfer | null): Promise<boolean> {
+  let stored = addPacks(packsEarned(mode, won)).saved
+  if (transfer) {
+    const current = loadCollection()
+    const owned = applyTransfer(current.owned, transfer, current.variants.chrome)
+    stored = saveCollection({ ...current, owned }) && stored
+  }
+  return stored
+}
+
 export function Match({
   mode,
   config,
@@ -77,6 +92,7 @@ export function Match({
   const recorded = useRef(false)
   /** Packs the account service granted; guests use the local rule at render time. */
   const [granted, setGranted] = useState<number | null>(null)
+  const [unstored, setUnstored] = useState(false)
   const [variantOf] = useState(() => lookupFrom(loadCollection().variants))
   const account = useContext(AccountContext)
   const onContinue = useCallback(() => dispatch({ type: 'continue' }), [])
@@ -126,14 +142,12 @@ export function Match({
         setServerSettled(result.stakes)
       })
     } else {
-      addPacks(packsEarned(mode, won))
-      if (transfer) {
-        const current = loadCollection()
-        saveCollection({
-          ...current,
-          owned: applyTransfer(current.owned, transfer, current.variants.chrome),
-        })
-      }
+      // A guest's packs and captured cars live only in this browser, so a refused write means
+      // the result screen would be showing something that will not be there next time. The
+      // writes are synchronous; the notice is set from a callback, as the account branch does.
+      void settleGuest(mode, won, transfer).then((stored) => {
+        if (!stored) setUnstored(true)
+      })
     }
   }, [winner, mode, account, transfer])
   const earned =
@@ -151,6 +165,11 @@ export function Match({
           names={names}
           title={headline(winner)}
           packsEarned={earned}
+          storageWarning={
+            unstored
+              ? 'This browser is blocking storage, so what this match earned will be gone next time you open the game.'
+              : null
+          }
           stakes={
             stakes && cpu
               ? account

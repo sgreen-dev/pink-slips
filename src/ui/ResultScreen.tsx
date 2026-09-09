@@ -17,6 +17,8 @@ interface ResultScreenProps {
   note?: string | null
   /** Packs this match added to the collection. */
   packsEarned: number
+  /** Set when the browser refused to store what this match earned, so the screen says so. */
+  storageWarning?: string | null
   /** What changed hands under stakes, or null when the match played for none. */
   stakes?: Transfer | null
   /** Text on the first button; online play offers a new room instead of a rematch. */
@@ -40,6 +42,7 @@ export function ResultScreen({
   title,
   note = null,
   packsEarned,
+  storageWarning,
   stakes = null,
   rematchLabel = 'Rematch',
   rematchDisabled = false,
@@ -74,6 +77,7 @@ export function ResultScreen({
               : `Three pink slips in ${Math.ceil(state.turn.number / 2)} turns.`}
         </p>
         {note && <p className="result__note">{note}</p>}
+        {storageWarning && <p className="builder__notice">{storageWarning}</p>}
         {packsEarned > 0 && (
           <p className="result__packs">
             {waiting === null

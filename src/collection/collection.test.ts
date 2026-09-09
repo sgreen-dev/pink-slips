@@ -36,10 +36,13 @@ import {
   COLLECTION_KEY,
   REBASE_NOTICE_KEY,
   addPacks,
+  buyLocally,
+  claimLapLocally,
   clearRebaseNotice,
   loadCollection,
   openNextPack,
   rebaseNoticePending,
+  scrapLocally,
 } from './persist.ts'
 
 function memoryStore(
@@ -51,6 +54,20 @@ function memoryStore(
     getItem: (key) => data.get(key) ?? null,
     setItem: (key, value) => void data.set(key, value),
     removeItem: (key) => void data.delete(key),
+  }
+}
+
+/** Reads back what it was given but refuses every write, as a blocked or full browser does. */
+function readOnlyStore(initial: Record<string, string> = {}): StorageLike {
+  const data = new Map(Object.entries(initial))
+  return {
+    getItem: (key) => data.get(key) ?? null,
+    setItem: () => {
+      throw new Error('QuotaExceededError')
+    },
+    removeItem: () => {
+      throw new Error('QuotaExceededError')
+    },
   }
 }
 
@@ -250,7 +267,7 @@ describe('persistence', () => {
 
   it('opens packs from the stack and keeps what they held', () => {
     const store = memoryStore()
-    expect(addPacks(2, store).packs).toBe(2)
+    expect(addPacks(2, store).state.packs).toBe(2)
     const opened = openNextPack(5, store)
     expect(opened).not.toBeNull()
     if (!opened) return
@@ -453,5 +470,66 @@ describe('scrapping and buying', () => {
     const after = claimLap(state, outsideCar)
     expect(after?.credits).toBe(250)
     expect(after?.packs).toBe(4)
+  })
+})
+
+// A guest's collection lives only in their browser, so a refused write means what the screen is
+// showing will not survive a refresh. Every writer has to say so rather than report success.
+describe('a browser that refuses to store', () => {
+  const stocked = (extra: Partial<CollectionState> = {}) =>
+    JSON.stringify({
+      owned: grant(introCollection(), ['bugatti-chiron', 'bugatti-chiron', 'bugatti-chiron']),
+      packs: 2,
+      variants: NO_VARIANTS,
+      laps: 0,
+      grantVersion: GRANT_VERSION,
+      credits: 500,
+      ...extra,
+    })
+
+  it('still returns the new state, so the page keeps working', () => {
+    const store = readOnlyStore({ [COLLECTION_KEY]: stocked() })
+    expect(addPacks(3, store).state.packs).toBe(5)
+    expect(openNextPack(5, store)?.state.packs).toBe(1)
+  })
+
+  it('reports that packs were not stored', () => {
+    const store = readOnlyStore({ [COLLECTION_KEY]: stocked() })
+    expect(addPacks(3, store).saved).toBe(false)
+    expect(openNextPack(5, store)?.saved).toBe(false)
+  })
+
+  it('reports that a scrap and a buy were not stored', () => {
+    const store = readOnlyStore({ [COLLECTION_KEY]: stocked() })
+    const scrapped = scrapLocally(store)
+    expect(scrapped?.state.credits).toBeGreaterThan(500)
+    expect(scrapped?.saved).toBe(false)
+    const bought = buyLocally('toyota-prius', readOnlyStore({ [COLLECTION_KEY]: stocked() }))
+    expect(bought?.saved).toBe(false)
+  })
+
+  it('says so when it stores, so the flag is not simply always false', () => {
+    const store = memoryStore({ [COLLECTION_KEY]: stocked() })
+    expect(addPacks(3, store).saved).toBe(true)
+    expect(openNextPack(5, store)?.saved).toBe(true)
+    expect(scrapLocally(store)?.saved).toBe(true)
+  })
+
+  // Nothing to scrap and nothing to buy stay null, so a screen can tell a refused write from an
+  // action that was never possible and say the right thing for each.
+  it('keeps null for an action that was not possible at all', () => {
+    const bare = JSON.stringify({
+      owned: introCollection(),
+      packs: 0,
+      variants: NO_VARIANTS,
+      laps: 0,
+      grantVersion: GRANT_VERSION,
+      credits: 0,
+    })
+    const store = readOnlyStore({ [COLLECTION_KEY]: bare })
+    expect(openNextPack(5, store)).toBeNull()
+    expect(scrapLocally(store)).toBeNull()
+    expect(buyLocally('toyota-prius', store)).toBeNull()
+    expect(claimLapLocally('toyota-prius', store)).toBeNull()
   })
 })

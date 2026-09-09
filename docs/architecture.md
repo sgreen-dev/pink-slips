@@ -41,7 +41,7 @@ Three deployables, only the site automatic. See `docs/deploy.md`.
 
 All keys are prefixed `pink-slips.` in the browser. A guest's collection lives only in that browser; making a player copies it to the account, which is what carries it to another device.
 
-Every browser read and write goes through a try/catch wrapper (`src/ui/storage.ts`), so a browser with storage disabled loses persistence but still plays.
+Every browser read and write goes through a try/catch wrapper (`src/ui/storage.ts`), so a browser with storage disabled loses persistence but still plays. A write that fails is reported rather than swallowed: `src/collection/persist.ts` returns `{ state, saved }` from every writer, so the screen shows the change and says plainly that it will not survive a refresh.
 
 ## The parts
 

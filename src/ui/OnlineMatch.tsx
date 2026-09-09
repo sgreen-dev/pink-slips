@@ -54,6 +54,7 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
   const [variantOf] = useState(() => lookupFrom(loadCollection().variants))
   const [recorded, setRecorded] = useState(false)
   const [earned, setEarned] = useState(0)
+  const [unstored, setUnstored] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [settled, setSettled] = useState<Transfer | null>(null)
   const [copied, setCopied] = useState(false)
@@ -140,13 +141,13 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
       if (seat === 0) void recordMatch()
       if (packs === null || !account) {
         const local = packs ?? packsEarned('online', winner === seat)
-        addPacks(local)
+        if (!addPacks(local).saved) setUnstored(true)
         setEarned(local)
       } else {
         // Refresh the account first so the pack pop-up opens from the right count.
         void fetchMe(account.endpoint, account.token).then((me) => {
           if (me.data) account.update(me.data)
-          else addPacks(packs)
+          else if (!addPacks(packs).saved) setUnstored(true)
           setEarned(packs)
         })
       }
@@ -253,6 +254,11 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
           title={headline(winner)}
           note={note}
           packsEarned={earned}
+          storageWarning={
+            unstored
+              ? 'This browser is blocking storage, so the packs this match earned will be gone next time you open the game.'
+              : null
+          }
           stakes={entry.stakes ? (settled ?? EMPTY_TRANSFER) : null}
           rematchLabel={
             entry.ticket

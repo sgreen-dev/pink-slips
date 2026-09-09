@@ -300,12 +300,14 @@ export const AccountContext = createContext<AccountHandle | null>(null)
 /** Opens the next pack: from the account when signed in, otherwise from the browser's stack. */
 export async function openNext(
   account: AccountHandle | null,
-): Promise<{ state: CollectionState; pack: Pack } | null> {
+): Promise<{ state: CollectionState; pack: Pack; saved: boolean } | null> {
   if (!account) return openNextPack(newSeed())
   const opened = await openPackOnline(account.endpoint, account.token)
   if (!opened) return null
   account.update(opened.data)
-  return { state: opened.data.collection, pack: opened.pack }
+  // The service holds a signed-in player's collection, so the pack is stored whatever the
+  // browser does with its mirror copy.
+  return { state: opened.data.collection, pack: opened.pack, saved: true }
 }
 
 export type QueueStatus = 'connecting' | 'waiting' | 'matched' | 'closed'

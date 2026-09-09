@@ -88,6 +88,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const [keepsake, setKeepsake] = useState('')
   const [confirmLap, setConfirmLap] = useState(false)
   const [lapError, setLapError] = useState<string | null>(null)
+  const [packError, setPackError] = useState<string | null>(null)
   const ownedCars = CARS.filter((car) => owns(owned, car.id))
   const rarestFirst = [...TIERS].reverse()
   const defaultKeepsake =
@@ -131,9 +132,14 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         setScrapError('There is nothing spare to scrap.')
         return
       }
-      applyCollection(next)
+      if (!next.saved) setScrapError(notStored('Scrapped'))
+      applyCollection(next.state)
     }
   }
+  /** What to say when the change happened on screen but the browser refused to store it. */
+  const notStored = (what: string) =>
+    `${what}, but this browser is blocking storage, so it will be gone next time you open the game.`
+
   /** Shows the card just bought, the way its info button would, and leaves a line naming it. */
   const showBought = (id: string) => {
     const target = detailTargetFor(id)
@@ -162,7 +168,8 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         setScrapError('That card could not be bought.')
         return
       }
-      applyCollection(next)
+      if (!next.saved) setScrapError(notStored('Bought'))
+      applyCollection(next.state)
       showBought(bought)
     }
   }
@@ -183,7 +190,8 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         setLapError('The lap could not be taken.')
         return
       }
-      setState(next)
+      if (!next.saved) setLapError(notStored('The lap was taken'))
+      setState(next.state)
     }
     setConfirmLap(false)
     setKeepsake('')
@@ -196,8 +204,18 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const { packsPerMatch, packsPerCpuWin } = TUNABLES.collection
 
   const open = async () => {
+    setPackError(null)
     const result = await openNext(account)
-    if (!result) return
+    // A signed-in player's pack comes from the service, so null here is the connection.
+    if (!result) {
+      setPackError(
+        account
+          ? 'The pack could not be opened. Check the connection and try again.'
+          : 'The pack could not be opened.',
+      )
+      return
+    }
+    if (!result.saved) setPackError(notStored('The pack was opened'))
     const fresh = new Set(
       packCards(result.pack)
         .filter((card) => copiesOwned(owned, card.id) === 0)
@@ -259,6 +277,9 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
           Finishing a match earns {packsPerMatch} pack. Beating the CPU earns {packsPerCpuWin}. A
           pack holds {packCarCount(state.laps)} cars and {TUNABLES.collection.packMods} mods.
         </p>
+        {packError && <p className="builder__notice">{packError}</p>}
+        {/* Outside the lap panel below, which unmounts the moment the lap is taken. */}
+        {lapError && <p className="builder__notice">{lapError}</p>}
         {opened && <PackReveal pack={opened.pack} fresh={opened.fresh} />}
         {(spareCount > 0 || state.credits > 0) && (
           <div className="collection__scrap">
@@ -362,7 +383,6 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
                 Take the lap
               </button>
             )}
-            {lapError && <p className="builder__notice">{lapError}</p>}
           </div>
         )}
       </section>
