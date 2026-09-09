@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type Ref } from 'react'
 import type { PlayerState } from '../engine/index.ts'
 import { cardBackUrl } from './artwork.ts'
 import { CardBack } from './CardBack.tsx'
@@ -25,6 +25,8 @@ interface GarageProps {
   raceNumber?: number
   /** Counts the viewer's turns ended; each one scrolls the row back to its start. */
   turnsEnded?: number
+  /** The board's handle on this garage, for the camera. */
+  ref?: Ref<HTMLElement>
 }
 
 export function Garage({
@@ -39,6 +41,7 @@ export function Garage({
   handCount,
   raceNumber,
   turnsEnded,
+  ref,
 }: GarageProps) {
   const row = useRef<HTMLDivElement | null>(null)
   // The staged car leads the row; when it changes, a new race begins, or the viewer's turn ends,
@@ -52,7 +55,7 @@ export function Garage({
     return () => clearTimeout(timer)
   }, [player.stagedCarId, raceNumber, turnsEnded])
   return (
-    <section className="garage">
+    <section className="garage" ref={ref}>
       <header className="garage__header">
         <span className="garage__name">
           {name}

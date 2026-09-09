@@ -112,6 +112,15 @@ export function handedOver(before: MatchState, after: MatchState, viewer: Player
   return currentPlayer(before) === viewer && currentPlayer(after) !== viewer
 }
 
+/**
+ * True when the viewer may stage a car now (DESIGN.md 8, Board order): the moment their own
+ * garage is worth bringing into view, whether they lost the race and stage first or won it and
+ * are asked to keep or swap once the other player has staged.
+ */
+export function canStage(state: MatchState, viewer: PlayerIndex): boolean {
+  return state.phase.kind === 'staging' && currentPlayer(state) === viewer
+}
+
 /** True when the entries added since `before` include an advance by the other player. */
 export function opponentAdvanced(
   before: MatchState,

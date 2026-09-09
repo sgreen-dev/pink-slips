@@ -5,6 +5,7 @@ import { scenario } from '../engine/test-helpers.ts'
 import {
   buttonActions,
   carIntents,
+  canStage,
   handedOver,
   modIntent,
   NO_SELECTION,
@@ -151,6 +152,19 @@ describe('stagedFirst', () => {
     expect(handedOver(mine, mine, 0)).toBe(false)
     expect(handedOver(theirs, mine, 0)).toBe(false)
     expect(handedOver(theirs, mine, 1)).toBe(true)
+  })
+  it('knows whose turn it is to stage, so the camera shows them their own cars', () => {
+    const turn = board([], 'fuel')
+    const loserFirst = { ...turn, phase: { kind: 'staging', pending: [1, 0] } } as const
+    expect(canStage(loserFirst, 1)).toBe(true)
+    // The winner waits: their garage is not worth showing until the other seat has staged.
+    expect(canStage(loserFirst, 0)).toBe(false)
+    const winnerNext = { ...turn, phase: { kind: 'staging', pending: [0] } } as const
+    expect(canStage(winnerNext, 0)).toBe(true)
+    expect(canStage(winnerNext, 1)).toBe(false)
+    // Outside the staging phase there is nothing to stage, whoever is acting.
+    expect(canStage(turn, 0)).toBe(false)
+    expect(canStage(turn, 1)).toBe(false)
   })
   it('notices an advance by the other player', () => {
     const before = apply(board([]), { type: 'endMods', player: 0 })

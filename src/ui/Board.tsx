@@ -14,6 +14,7 @@ import { Garage } from './Garage.tsx'
 import {
   buttonActions,
   carIntents,
+  canStage,
   handedOver,
   opponentAdvanced,
   modIntent,
@@ -133,6 +134,7 @@ export function Board({
   }
   const hand = useRef<HTMLDivElement | null>(null)
   const track = useRef<HTMLDivElement | null>(null)
+  const mine = useRef<HTMLElement | null>(null)
   // A turn's end: after a beat, the hand returns to its start and the track comes into view, so
   // the other player's turn plays where it can be seen.
   useEffect(() => {
@@ -152,12 +154,27 @@ export function Board({
   const [revealing, setRevealing] = useState(false)
   const pending = useRef<(() => void) | null>(null)
   useEffect(() => () => pending.current?.(), [])
-  // Continue after a race opens the next race at the top of the page.
+  // Continue after a race opens the next race at the top of the page, unless the viewer is the
+  // one staging, in which case the move below shows them their cars instead.
   const wasFrozen = useRef(frozen !== null)
   useEffect(() => {
-    if (wasFrozen.current && frozen === null) scrollPageTop()
+    if (wasFrozen.current && frozen === null && !canStage(state, viewer)) scrollPageTop()
     wasFrozen.current = frozen !== null
-  }, [frozen])
+  }, [frozen, state, viewer])
+  // The viewer's turn to stage brings their own garage into view, so the cars they are being
+  // asked about are on screen without a scroll. Once per staging turn, and never under the
+  // race-end banner, which is still up while the engine has already moved on to staging. The
+  // guide owns the first board of a first match, so its callout suppresses the move.
+  const staged = useRef<string | null>(null)
+  const stagingKey =
+    frozen === null && guide === undefined && canStage(state, viewer)
+      ? `${state.race.number}:${viewer}`
+      : null
+  useEffect(() => {
+    if (stagingKey === null || staged.current === stagingKey) return
+    staged.current = stagingKey
+    return reveal(mine.current)
+  }, [stagingKey])
   const act = (action: Action) => {
     if (action.type !== 'advance') {
       onAction(action)
@@ -286,6 +303,7 @@ export function Board({
       />
 
       <Garage
+        ref={mine}
         player={me}
         name={names[viewer]}
         plate={plates?.[viewer]}

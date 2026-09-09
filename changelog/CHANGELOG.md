@@ -8,6 +8,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 - Phase 29 marked done in the build plan. (the commit that marks it done)
 - A deploy checklist in `docs/deploy.md`, a Deploy section in the README, and `npm run deploy:check`, which fetches the site and one read-only route on each worker and says what is up: the site deploys itself on a push and the room worker does not, which left a feature half live for a day. (the commit that adds this line)
 - A technical write-up in `docs/architecture.md`: what runs where, where state lives, how a match flows solo and online, the invariants the tooling enforces, and the stack decisions with their reasons, saying plainly where a reason was never recorded. (the commit that adds this line)
+- The camera: when it becomes the player's turn to stage, their own garage comes into view, so the cars they are asked to keep or swap are on screen without a scroll on a phone, where they sat below the fold. Once per staging turn, after the race-end banner closes, and never over the guided first match. (the commit that adds this line)
 
 ## 2026-09-08
 
