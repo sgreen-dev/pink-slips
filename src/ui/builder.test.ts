@@ -115,20 +115,14 @@ describe('garage builder rules', () => {
       { id: 'c', name: 'Broken', cars: ['honda-civic-si'], deck: [], updatedAt: 3 },
     ]
     const options = garageOptions(saved)
-    expect(options.map((o) => o.name)).toEqual([
-      'Street Kings',
-      'Exotic Garage',
-      'Electric Avenue',
-      'New',
-      'Old',
-    ])
+    expect(options.map((o) => o.name)).toEqual(['Street Kings', 'Exotics', 'EVs', 'New', 'Old'])
     expect(options.filter((o) => o.custom)).toHaveLength(2)
     // The three loaners are offered whatever the collection holds, and are flagged as loaners
     // so the picker can say their cars are not owned (DESIGN.md 5).
     expect(options.filter((o) => o.loaner).map((o) => o.name)).toEqual([
       'Street Kings',
-      'Exotic Garage',
-      'Electric Avenue',
+      'Exotics',
+      'EVs',
     ])
     expect(options.every((o) => o.loaner !== o.custom)).toBe(true)
     const custom = options[3]!

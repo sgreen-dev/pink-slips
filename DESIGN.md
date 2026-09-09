@@ -414,16 +414,16 @@ They are **loaners** (phase 28): always raceable and never owned. Their cards ar
 | Name | Style | Cars |
 |---|---|---|
 | **Street Kings** | cheap tempo, race early and often | Mustang GT, Camaro SS 1LE, RX-7, S2000, Civic Si |
-| **Exotic Garage** | fuel the bench, win late with big cars | Aventador SVJ, 458 Italia, AMG GT R, 911 Carrera S, Miata |
-| **Electric Avenue** | launch bonuses and traction immunity | Model S Plaid, Ioniq 5 N, Raptor R, WRX STI, Prius |
+| **Exotics** | fuel the bench, win late with big cars | Aventador SVJ, 458 Italia, AMG GT R, 911 Carrera S, Miata |
+| **EVs** | launch bonuses and traction immunity | Model S Plaid, Ioniq 5 N, Raptor R, WRX STI, Prius |
 
 **Decklists** (30 cards each)
 
 - **Street Kings**: Two-Step ×3, Anti-Lag ×2, Perfect Launch ×3, Power Shift ×3, Drag Slicks ×2, Stage 2 Tune ×3, Turbo Kit ×2, Pit Crew ×3, Wheelspin ×3, Red Light ×2, Bad Tune ×2, Roadblock ×2
-- **Exotic Garage**: Extra Tank ×3, Tow Truck ×3, Fuel Cell ×3, Sponsor ×2, Supercharger ×3, Carbon Body Kit ×2, Roll Cage ×2, Nitrous Shot ×3, Fuel Dump ×2, Fuel Siphon ×3, Missed Shift ×2, Parts Thief ×2
-- **Electric Avenue**: Regen ×3, Drag Slicks ×2, Perfect Launch ×2, Launch Control ×2, Wheelie Bar ×2, Weight Reduction ×2, Extra Tank ×2, Aero Package ×2, Overdrive ×2, Oil Slick ×2, Red Light ×1, Bad Tune ×2, Pit Crew ×3, Sponsor ×3
+- **Exotics**: Extra Tank ×3, Tow Truck ×3, Fuel Cell ×3, Sponsor ×2, Supercharger ×3, Carbon Body Kit ×2, Roll Cage ×2, Nitrous Shot ×3, Fuel Dump ×2, Fuel Siphon ×3, Missed Shift ×2, Parts Thief ×2
+- **EVs**: Regen ×3, Drag Slicks ×2, Perfect Launch ×2, Launch Control ×2, Wheelie Bar ×2, Weight Reduction ×2, Extra Tank ×2, Aero Package ×2, Overdrive ×2, Oil Slick ×2, Red Light ×1, Bad Tune ×2, Pit Crew ×3, Sponsor ×3
 
-With the CPU on both sides each garage wins about half its matches overall, and they beat each other in a cycle: Street Kings over Exotic Garage, Exotic Garage over Electric Avenue, Electric Avenue over Street Kings, each near 60%. Sabotage that stalls a first advance, Red Light above all, swings these matchups more than any Part or Boost, which is why Exotic Garage carries none and Electric Avenue carries one.
+With the CPU on both sides each garage wins about half its matches overall, and they beat each other in a cycle: Street Kings over Exotics, Exotics over EVs, EVs over Street Kings, each near 60%. Sabotage that stalls a first advance, Red Light above all, swings these matchups more than any Part or Boost, which is why Exotics carries none and EVs carries one.
 
 ---
 

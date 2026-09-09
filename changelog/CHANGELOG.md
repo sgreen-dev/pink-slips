@@ -19,6 +19,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 - Phase 28, loaner garages and the intro set: the three prebuilt garages stay raceable but are no longer owned, and a fresh collection starts with six cars capped at Performance and sixteen mods at two copies, 22 of 159 cards instead of 46, so no mod arrives at the deck limit and no Ultra Rare car is given away; older collections are rebased once in the browser and on the service, keeping everything opened or won. (d965d6e)
 - Phase 28 marked done in the build plan. (the commit that marks it done)
 - The screens that still said starter now say loaner: the stakes lines on the start, result and online screens, the builder's garage list, and the lap panel, which returns the collection to the intro set. (the commit that adds this line)
+- Two loaner garages renamed for plainer labels: Exotic Garage is now Exotics and Electric Avenue is now EVs. Display names only, so the ids, the cars, the decks and every measured number are untouched. (the commit that adds this line)
 
 ## 2026-09-07
 

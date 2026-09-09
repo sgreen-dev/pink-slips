@@ -42,7 +42,7 @@ export const STARTERS: readonly StarterGarage[] = [
   },
   {
     id: 'exotic-garage',
-    name: 'Exotic Garage',
+    name: 'Exotics',
     style: 'fuel the bench, win late with big cars',
     cars: [
       'lamborghini-aventador-svj',
@@ -68,7 +68,7 @@ export const STARTERS: readonly StarterGarage[] = [
   },
   {
     id: 'electric-avenue',
-    name: 'Electric Avenue',
+    name: 'EVs',
     style: 'launch bonuses and traction immunity',
     cars: [
       'tesla-model-s-plaid',

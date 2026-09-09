@@ -18,7 +18,7 @@ import { playTurn, scenario, stage, stageBoth, starterConfig } from './test-help
 import { TUNABLES } from './tunables.ts'
 import type { MatchState, PlayerIndex } from './types.ts'
 
-/** Street Kings versus Exotic Garage. Both stage a Daily car so advances start on turn 2. */
+/** Street Kings versus Exotics. Both stage a Daily car so advances start on turn 2. */
 function dailyRace(seed = 1): MatchState {
   let state = createMatch(starterConfig(0, 1), seed)
   const dailyFor: Record<PlayerIndex, string> = { 0: 'honda-civic-si', 1: 'mazda-mx-5-miata' }
