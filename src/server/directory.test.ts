@@ -1,6 +1,7 @@
 import { STARTERS } from '../data/starters.ts'
 import { describe, expect, it } from 'vitest'
 import {
+  cardPrice,
   GRANT_VERSION,
   grant,
   introCollection,
@@ -38,6 +39,11 @@ class MemoryStore implements Store {
     for (const [key, value] of this.data) if (key.startsWith(prefix)) out.set(key, value as T)
     return out
   }
+}
+
+function must<T>(value: T | undefined | null, what: string): T {
+  if (value === undefined || value === null) throw new Error(`No ${what}`)
+  return value
 }
 
 /** Deterministic random values and a reversible fake hash. */
@@ -214,6 +220,78 @@ describe('directory', () => {
     for (const card of opened?.pack.cars ?? []) {
       expect(account?.collection.owned[card.id] ?? 0).toBeGreaterThan(0)
     }
+  })
+
+  // Scrapping and buying on the service side (DESIGN.md 12). The pure rules are tested in
+  // src/collection/collection.test.ts; these cover the wrappers that read a token, store the
+  // result, and answer 'refused' rather than throwing.
+  describe('scrapping and buying', () => {
+    const outside = must(
+      CARS.find((car) => car.tier === 'daily' && !owns(introCollection(), car.id)),
+      'a Daily car outside the intro set',
+    )
+
+    /** A player whose collection holds spare copies and the credits given. */
+    async function stocked(spares: Record<string, number>, credits = 0) {
+      const { directory, store } = setUp()
+      const { token } = await directory.createPlayer('Ann')
+      const guest: CollectionState = {
+        owned: { ...introCollection(), ...spares },
+        packs: 0,
+        variants: NO_VARIANTS,
+        laps: 0,
+        grantVersion: GRANT_VERSION,
+        credits,
+      }
+      await directory.claim(token, { collection: guest, garages: [] })
+      return { directory, store, token }
+    }
+
+    it('pays by grade, stores the credits, and refuses a second time', async () => {
+      const { directory, token } = await stocked({ [outside.id]: 3 })
+      const data = await directory.scrap(token)
+      expect(data).not.toBe('refused')
+      if (!data || data === 'refused') throw new Error('expected a scrap')
+      // Three held, one useful: two spare at the Daily rate.
+      expect(data.collection.credits).toBe(2 * TUNABLES.collection.scrapValue.daily)
+      expect(data.collection.owned[outside.id]).toBe(1)
+      // Stored, not just returned.
+      const account = await directory.accountFor(token)
+      expect(account?.collection.credits).toBe(data.collection.credits)
+      // Nothing spare is left, so a second scrap is refused rather than paying again.
+      expect(await directory.scrap(token)).toBe('refused')
+    })
+
+    it('buys a card the account does not own and takes the price', async () => {
+      const price = must(cardPrice(outside.id), 'a price')
+      const { directory, token } = await stocked({}, price)
+      const data = await directory.buy(token, outside.id)
+      if (!data || data === 'refused') throw new Error('expected a purchase')
+      expect(owns(data.collection.owned, outside.id)).toBe(true)
+      expect(data.collection.credits).toBe(0)
+      const account = await directory.accountFor(token)
+      expect(owns(account?.collection.owned ?? {}, outside.id)).toBe(true)
+    })
+
+    it('refuses a card already owned, one it cannot afford, and anything that is not a card', async () => {
+      const price = must(cardPrice(outside.id), 'a price')
+      const { directory, token } = await stocked({}, price - 1)
+      expect(await directory.buy(token, outside.id)).toBe('refused')
+      expect(await directory.buy(token, 'not-a-card')).toBe('refused')
+      // A client can send anything, so a non-string is refused before it reaches the rules.
+      expect(await directory.buy(token, 42)).toBe('refused')
+      expect(await directory.buy(token, null)).toBe('refused')
+      expect(await directory.buy(token, { id: outside.id })).toBe('refused')
+      const owned = must(Object.keys(introCollection())[0], 'an owned card')
+      const { directory: rich, token: richToken } = await stocked({}, price)
+      expect(await rich.buy(richToken, owned)).toBe('refused')
+    })
+
+    it('answers null to a token that is not a session, so neither can be used signed out', async () => {
+      const { directory } = await stocked({ [outside.id]: 3 }, 1000)
+      expect(await directory.scrap('not-a-token')).toBeNull()
+      expect(await directory.buy('not-a-token', outside.id)).toBeNull()
+    })
   })
 
   it('records a ranked result with Elo, the record, and packs for both sides', async () => {

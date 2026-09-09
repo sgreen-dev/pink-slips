@@ -6,6 +6,7 @@ import { TIERS, type Tier } from '../data/types.ts'
 import { createMatch, seedRng, TUNABLES } from '../engine/index.ts'
 import { starterConfig } from '../engine/test-helpers.ts'
 import type { CollectionState } from '../protocol/records.ts'
+import { Directory, type Store } from '../server/directory.ts'
 import { GARAGES_KEY, type StorageLike } from '../ui/storage.ts'
 import {
   copiesOwned,
@@ -57,6 +58,25 @@ function memoryStore(
   }
 }
 
+/** The service's own store, in memory, for the guest-against-player comparison below. */
+class MemoryStore implements Store {
+  private readonly data = new Map<string, unknown>()
+  async get<T>(key: string) {
+    return this.data.get(key) as T | undefined
+  }
+  async put(key: string, value: unknown) {
+    this.data.set(key, structuredClone(value))
+  }
+  async delete(key: string) {
+    this.data.delete(key)
+  }
+  async list<T>(prefix: string) {
+    const out = new Map<string, T>()
+    for (const [key, value] of this.data) if (key.startsWith(prefix)) out.set(key, value as T)
+    return out
+  }
+}
+
 /** Reads back what it was given but refuses every write, as a blocked or full browser does. */
 function readOnlyStore(initial: Record<string, string> = {}): StorageLike {
   const data = new Map(Object.entries(initial))
@@ -71,8 +91,8 @@ function readOnlyStore(initial: Record<string, string> = {}): StorageLike {
   }
 }
 
-function must<T>(value: T | undefined, what: string): T {
-  if (value === undefined) throw new Error(`No ${what}`)
+function must<T>(value: T | undefined | null, what: string): T {
+  if (value === undefined || value === null) throw new Error(`No ${what}`)
   return value
 }
 
@@ -531,5 +551,92 @@ describe('a browser that refuses to store', () => {
     expect(scrapLocally(store)).toBeNull()
     expect(buyLocally('toyota-prius', store)).toBeNull()
     expect(claimLapLocally('toyota-prius', store)).toBeNull()
+  })
+})
+
+/**
+ * Phase 30's claim is that a guest and a signed-in player scrap and buy with the same result.
+ * The pure rules above are shared, so what these check is that both wrappers reach them with the
+ * same collection and store what comes back.
+ */
+describe('scrapping and buying, guest side and service side', () => {
+  const daily = must(
+    CARS.find((car) => car.tier === 'daily' && !owns(intro, car.id)),
+    'a Daily car outside the intro set',
+  )
+
+  const other = must(
+    CARS.find((car) => car.tier === 'daily' && !owns(intro, car.id) && car.id !== daily.id),
+    'a second Daily car outside the intro set',
+  )
+
+  const stocked = (credits = 0) =>
+    JSON.stringify({
+      owned: { ...intro, [daily.id]: 3 },
+      packs: 0,
+      variants: NO_VARIANTS,
+      laps: 0,
+      grantVersion: GRANT_VERSION,
+      credits,
+    })
+
+  it('the guest scrap pays by grade and writes it back to the browser', () => {
+    const store = memoryStore({ [COLLECTION_KEY]: stocked() })
+    const next = must(scrapLocally(store), 'a scrap')
+    expect(next.state.credits).toBe(2 * TUNABLES.collection.scrapValue.daily)
+    expect(next.state.owned[daily.id]).toBe(1)
+    expect(next.saved).toBe(true)
+    // Read back through loadCollection, so the record really is in the store.
+    expect(loadCollection(store)).toEqual(next.state)
+    expect(scrapLocally(store)).toBeNull()
+  })
+
+  it('the guest buy takes the price and writes it back to the browser', () => {
+    const price = must(cardPrice(other.id), 'a price')
+    const store = memoryStore({ [COLLECTION_KEY]: stocked(price) })
+    const next = must(buyLocally(other.id, store), 'a purchase')
+    expect(next.state.credits).toBe(0)
+    expect(owns(next.state.owned, other.id)).toBe(true)
+    expect(next.saved).toBe(true)
+    expect(loadCollection(store)).toEqual(next.state)
+    // Now owned, so the same buy is refused; so is a card that does not exist, and one the
+    // credits no longer stretch to. The already-owned rule is what the code does today, not
+    // something DESIGN.md 12 states; backlog G13 asks whether it should stay.
+    expect(buyLocally(other.id, store)).toBeNull()
+    expect(buyLocally('not-a-card', store)).toBeNull()
+    expect(buyLocally(daily.id, store)).toBeNull()
+  })
+
+  it('leaves a guest and a signed-in player holding the same cards and credits', async () => {
+    const price = must(cardPrice(other.id), 'a price')
+
+    // The guest: scrap, then spend on a card they do not own.
+    const store = memoryStore({ [COLLECTION_KEY]: stocked(price) })
+    must(scrapLocally(store), 'a scrap')
+    const guest = must(buyLocally(other.id, store), 'a purchase').state
+
+    // The player: the same collection through the service, the same two calls.
+    const directory = new Directory(
+      new MemoryStore(),
+      () => Math.random().toString(16).slice(2).padEnd(32, '0'),
+      async (text) => `hash(${text})`,
+      () => 1_000_000,
+    )
+    const { token } = await directory.createPlayer('Ann')
+    await directory.claim(token, {
+      collection: JSON.parse(stocked(price)) as CollectionState,
+      garages: [],
+    })
+    const scrapped = await directory.scrap(token)
+    expect(scrapped).not.toBe('refused')
+    const bought = await directory.buy(token, other.id)
+    if (!bought || bought === 'refused') throw new Error('expected a purchase')
+
+    expect(bought.collection.owned).toEqual(guest.owned)
+    expect(bought.collection.credits).toBe(guest.credits)
+    // And both actually moved, so the comparison cannot pass on two collections that did nothing.
+    expect(owns(guest.owned, other.id)).toBe(true)
+    expect(guest.owned[daily.id]).toBe(1)
+    expect(guest.credits).toBe(2 * TUNABLES.collection.scrapValue.daily)
   })
 })

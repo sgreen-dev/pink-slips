@@ -49,6 +49,7 @@
 | 30 | Scrapping duplicates for credits | done | 267b1f7 |
 | 31 | Button order across every screen | done | 2c6ff81 |
 | 32 | Report a browser that will not store | done | 081b66b |
+| 33 | Test scrapping and buying on both sides | done | (pending) |
 
 ---
 
