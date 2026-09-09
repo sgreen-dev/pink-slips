@@ -38,6 +38,8 @@ export default defineConfig({
   // Source images for the site live here and are not served; a locked file in it must not stop the dev server.
   server: { watch: { ignored: ['**/game-images/**', '**/music/**'] } },
   plugins: [react(), versionFile()],
+  // Sent with a crash report so a stack can be read against the code that threw (backlog Q38).
+  define: { __COMMIT__: JSON.stringify(commit()) },
   test: {
     environment: 'node',
     // The counter worker is standalone, so its test sits beside it rather than under src.

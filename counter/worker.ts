@@ -1,8 +1,10 @@
 /**
  * The matches-played counter: a Cloudflare Worker with one KV namespace bound as COUNTS.
  *
- *   GET  /   -> { count }
- *   POST /   -> adds one finished match and returns { count }
+ *   GET  /         -> { count }
+ *   POST /         -> adds one finished match and returns { count }
+ *   GET  /version  -> { commit } this worker was deployed from (backlog Q36)
+ *   POST /error    -> records a crash from a player's browser (backlog Q38)
  *
  * Increments carry the game's origin and are limited to one every ten seconds per address. The
  * origin is a browser's word, not a control: anything that is not a browser sets that header
@@ -17,8 +19,33 @@
  */
 
 const KEY = 'matches'
+const ERRORS_KEY = 'errors'
 const ALLOWED_ORIGINS = ['https://sgreen-dev.github.io', 'http://localhost:5173']
 const MIN_GAP_MS = 10_000
+
+/**
+ * Crash reports (backlog Q38). This worker is where they go because it is the one that already
+ * has a KV namespace and gates nothing: losing a report costs nothing, and no part of the game
+ * waits on it. Read them back with `npm run errors`.
+ *
+ * Only what is needed to find the bug is kept — the message, the stack, the commit and the time.
+ * Never a player's name, their collection or a room code. Both text fields are cut to a length
+ * that cannot fill the value, and only the most recent few are kept.
+ */
+const ERROR_LIMIT = 25
+const MESSAGE_MAX = 300
+const STACK_MAX = 2000
+
+interface ErrorReport {
+  message: string
+  stack: string
+  commit: string
+  at: number
+}
+
+function textField(value: unknown, max: number): string {
+  return typeof value === 'string' ? value.slice(0, max) : ''
+}
 
 export interface Env {
   COUNTS: KVNamespace
@@ -44,6 +71,30 @@ export default {
       return new Response(JSON.stringify({ commit: env.COMMIT ?? 'unknown' }), { headers })
     }
     if (request.method === 'GET') return reply(await readCount(env), headers)
+    if (request.method === 'POST' && new URL(request.url).pathname === '/error') {
+      if (!allowed) return new Response('{"error":"origin"}', { status: 403, headers })
+      const address = request.headers.get('CF-Connecting-IP') ?? 'unknown'
+      // Its own gap, so a crash report and a finished match never crowd each other out.
+      const stampKey = `errstamp:${address}`
+      const last = Number(await env.COUNTS.get(stampKey)) || 0
+      const now = Date.now()
+      if (now - last < MIN_GAP_MS) return new Response('{"ok":true}', { headers })
+      await env.COUNTS.put(stampKey, String(now), { expirationTtl: 60 })
+      const body: unknown = await request.json().catch(() => null)
+      const fields = (body ?? {}) as Record<string, unknown>
+      const report: ErrorReport = {
+        message: textField(fields['message'], MESSAGE_MAX),
+        stack: textField(fields['stack'], STACK_MAX),
+        commit: textField(fields['commit'], 40),
+        at: now,
+      }
+      if (report.message === '') return new Response('{"ok":true}', { headers })
+      await env.COUNTS.put(
+        ERRORS_KEY,
+        JSON.stringify([report, ...(await readErrors(env))].slice(0, ERROR_LIMIT)),
+      )
+      return new Response('{"ok":true}', { headers })
+    }
     if (request.method === 'POST') {
       if (!allowed) return new Response('{"error":"origin"}', { status: 403, headers })
       const address = request.headers.get('CF-Connecting-IP') ?? 'unknown'
@@ -62,6 +113,17 @@ export default {
 
 async function readCount(env: Env): Promise<number> {
   return Number(await env.COUNTS.get(KEY)) || 0
+}
+
+/** The reports already stored, or none when the value is missing or unreadable. */
+async function readErrors(env: Env): Promise<ErrorReport[]> {
+  try {
+    const raw = await env.COUNTS.get(ERRORS_KEY)
+    const parsed: unknown = raw === null ? null : JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as ErrorReport[]) : []
+  } catch {
+    return []
+  }
 }
 
 function reply(count: number, headers: Record<string, string>): Response {

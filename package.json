@@ -22,7 +22,8 @@
     "online:smoke": "node scripts/online-smoke.ts",
     "deploy:check": "node scripts/deploy-check.ts",
     "deploy:rooms": "node scripts/deploy-worker.ts rooms",
-    "deploy:counter": "node scripts/deploy-worker.ts counter"
+    "deploy:counter": "node scripts/deploy-worker.ts counter",
+    "errors": "node scripts/errors.ts"
   },
   "dependencies": {
     "react": "^19.2.8",

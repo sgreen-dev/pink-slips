@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { reportCrash } from './report.ts'
 
 /**
  * The last line: a thrown render used to blank the page, which loses a match in progress with
@@ -18,8 +19,10 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: 
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo): void {
-    // Nothing collects these, so the console is where a player can be asked to look.
+    // The console is for whoever is looking at this browser; the report is for everyone else,
+    // since a crash on someone else's machine was invisible before it (backlog Q38).
     console.error('Pink Slips stopped:', error, info.componentStack)
+    reportCrash(error, info.componentStack ?? '')
   }
 
   override render(): ReactNode {

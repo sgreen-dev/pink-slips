@@ -31,6 +31,7 @@ If you want the rule anyway: `server/worker.ts` bundles `src/protocol/`, `src/se
 ## First time only
 
 - `npx wrangler login`.
+- Crash reports from players' browsers go to the counter worker's KV namespace, since it is the one with storage and it gates nothing. `npm run errors` prints them newest first, `npm run errors -- --clear` empties the store. They are not on a public route: a stack trace is for whoever is fixing the bug. Only the message, the stack and the commit are kept, never a name, a collection or a room code (backlog `Q38`).
 - The counter's KV namespace already exists; its id is in `counter/wrangler.toml`. To rebuild it: `npx wrangler kv namespace create COUNTS`, put the id in that file, `npx wrangler deploy` from `counter/`.
 - Two repository variables, read at **build** time: `VITE_ROOM_URL` and `VITE_COUNTER_URL`. Changing either needs a site rebuild before it takes effect. Without them the online button and the counter simply do not appear — no error, they are just gone.
 
