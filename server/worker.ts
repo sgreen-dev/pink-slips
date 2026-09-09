@@ -12,6 +12,7 @@ import { Directory, type Store } from '../src/server/directory.ts'
 import { sanitizeTransfer, type Transfer } from '../src/collection/stakes.ts'
 import { pickPair, type Waiting } from '../src/server/queue.ts'
 import { Room, type RoomSnapshot, type SeatIdentity, type Ticket } from '../src/server/room.ts'
+import { planRoomWrite, type WrittenRoom } from '../src/server/roomWrites.ts'
 
 /**
  * The online service (DESIGN.md 13): a Cloudflare Worker in front of two kinds of Durable
@@ -459,6 +460,8 @@ export class AccountDirectory extends DurableObject<Env> {
 
 export class MatchRoom extends DurableObject<Env> {
   private room: Room | null = null
+  /** The expiry and alarm last written, so an unchanged one is not written again. */
+  private written: WrittenRoom | null = null
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
@@ -644,10 +647,14 @@ export class MatchRoom extends DurableObject<Env> {
    */
   private async persist(): Promise<void> {
     if (!this.room) return
-    const expiresAt = Date.now() + ROOM_TTL_MS
-    await this.ctx.storage.put('room', this.room.snapshot())
-    await this.ctx.storage.put('expiresAt', expiresAt)
-    const deadline = this.room.alarmAt()
-    await this.ctx.storage.setAlarm(deadline === null ? expiresAt : Math.min(expiresAt, deadline))
+    // The snapshot always changes; the expiry and the alarm almost never do, so they are only
+    // written when they actually move (backlog P5). A steady exchange writes once per message
+    // instead of three times.
+    const plan = planRoomWrite(this.written, Date.now(), ROOM_TTL_MS, this.room.alarmAt())
+    const entries: Record<string, unknown> = { room: this.room.snapshot() }
+    if (plan.expiresAt !== null) entries['expiresAt'] = plan.expiresAt
+    await this.ctx.storage.put(entries)
+    if (plan.alarm !== null) await this.ctx.storage.setAlarm(plan.alarm)
+    this.written = plan.next
   }
 }

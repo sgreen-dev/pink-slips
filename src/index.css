@@ -998,6 +998,23 @@ h2 {
   padding: 0.5rem 0.2rem;
 }
 
+/*
+ * The car grids hold the whole roster at once, and most of it is below the fold. This lets the
+ * browser skip layout and paint for the cards that are off screen until they are scrolled near,
+ * which is the bulk of what changing a filter costs. The content stays in the DOM, so find in
+ * page, the tab order and a screen reader all still reach it.
+ *
+ * contain-intrinsic-size gives the size to assume while a card is skipped, and it is the content
+ * box, so it is the card's 8rem width and measured height less its own 0.667rem of padding and
+ * border. `auto` means a card that has been drawn once keeps its real size instead. Mod cards are
+ * deliberately not included: their heights vary by a mod's text, and one assumed size would make
+ * the scrollbar drift.
+ */
+.browse__grid .card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 7.333rem auto 10.818rem;
+}
+
 @media (max-width: 900px) {
   .builder__layout {
     grid-template-columns: 1fr;

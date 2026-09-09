@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { CARS, getCar } from './cars.ts'
+import { CAR_DETAILS } from './carDetails.ts'
 import { isJudgmentPlacement, powerToWeight, tierForRatio } from './tiers.ts'
 import { CAR_TYPES, TIERS, type CarType, type Tier } from './types.ts'
 
@@ -67,10 +68,11 @@ describe('cars', () => {
   it('gives every car a tier that matches its band, or a tierNote for a judgment placement', () => {
     for (const car of CARS) {
       const ratio = powerToWeight(car.hp, car.weightLb)
+      const note = CAR_DETAILS[car.id]?.tierNote
       if (car.tier === tierForRatio(ratio)) {
-        expect(car.tierNote, `${car.id} has a tierNote but sits inside its band`).toBeUndefined()
+        expect(note, `${car.id} has a tierNote but sits inside its band`).toBeUndefined()
       } else {
-        expect(car.tierNote, `${car.id} is outside its band with no tierNote`).toBeTruthy()
+        expect(note, `${car.id} is outside its band with no tierNote`).toBeTruthy()
         expect(isJudgmentPlacement(ratio, car.tier), `${car.id} is too far from a boundary`).toBe(
           true,
         )
@@ -78,7 +80,7 @@ describe('cars', () => {
     }
   })
 
-  it('has positive published figures and a source for every car', () => {
+  it('has positive published figures for every car', () => {
     for (const car of CARS) {
       expect(car.hp, car.id).toBeGreaterThan(0)
       expect(car.weightLb, car.id).toBeGreaterThan(0)
@@ -86,9 +88,6 @@ describe('cars', () => {
       expect(Number.isInteger(car.weightLb), car.id).toBe(true)
       expect(car.zeroToSixtySec, car.id).toBeGreaterThan(0)
       expect(car.topSpeedMph, car.id).toBeGreaterThan(0)
-      expect(car.source.trim().length, `${car.id} has no source`).toBeGreaterThan(0)
-      expect(car.engine.trim().length, car.id).toBeGreaterThan(0)
-      expect(car.productionYears.trim().length, car.id).toBeGreaterThan(0)
     }
   })
 

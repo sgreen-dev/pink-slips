@@ -1,7 +1,7 @@
 import { CAR_BY_ID, getCar } from '../data/cars.ts'
 import { getMod, MOD_BY_ID } from '../data/mods.ts'
 import { powerToWeight, TIER_LABEL } from '../data/tiers.ts'
-import { CAR_TYPE_LABEL } from '../data/types.ts'
+import { CAR_TYPE_LABEL, type CarDetail } from '../data/types.ts'
 import { computeAdvance, partSlots, TUNABLES } from '../engine/index.ts'
 import type { DetailTarget } from './detailContext.ts'
 import { typeIdentityLines } from './rules.ts'
@@ -33,7 +33,12 @@ export function stockAdvanceFt(carId: string): number {
     .finalFt
 }
 
-export function carDetailRows(carId: string): DetailRow[] {
+/**
+ * The rows for a car. `detail` holds the fields that live apart from the roster and load with
+ * the panel (backlog P3); without it the rows that do not need them are still returned, which
+ * is what the panel shows for the moment before that module arrives.
+ */
+export function carDetailRows(carId: string, detail?: CarDetail): DetailRow[] {
   const car = getCar(carId)
   const identity = typeIdentityLines()[car.type]
   const rows: DetailRow[] = [
@@ -56,14 +61,18 @@ export function carDetailRows(carId: string): DetailRow[] {
       label: 'Power to weight',
       value: `${powerToWeight(car.hp, car.weightLb).toFixed(3)} hp per lb`,
     },
-    { label: 'Drivetrain', value: car.drivetrain },
+    ...(detail ? [{ label: 'Drivetrain', value: detail.drivetrain }] : []),
     { label: '0–60 mph', value: `${car.zeroToSixtySec} s` },
     { label: 'Top speed', value: `${car.topSpeedMph} mph` },
-    { label: 'Engine', value: car.engine },
-    { label: 'Built', value: car.productionYears },
+    ...(detail
+      ? [
+          { label: 'Engine', value: detail.engine },
+          { label: 'Built', value: detail.productionYears },
+        ]
+      : []),
   ]
-  if (car.tierNote) rows.push({ label: 'Tier note', value: car.tierNote })
-  rows.push({ label: 'Source', value: car.source })
+  if (detail?.tierNote) rows.push({ label: 'Tier note', value: detail.tierNote })
+  if (detail) rows.push({ label: 'Source', value: detail.source })
   return rows
 }
 

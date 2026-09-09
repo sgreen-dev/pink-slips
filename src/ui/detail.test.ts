@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { CARS, getCar } from '../data/cars.ts'
+import { CAR_DETAILS, getCarDetail } from '../data/carDetails.ts'
 import { getMod } from '../data/mods.ts'
 import { computeAdvance } from '../engine/index.ts'
 import {
@@ -18,14 +19,14 @@ function value(rows: DetailRow[], label: string): string | undefined {
 
 describe('car detail', () => {
   it('lists the published figures and ends with their source', () => {
-    const rows = carDetailRows(MUSTANG)
-    const car = getCar(MUSTANG)
+    const detail = getCarDetail(MUSTANG)
+    const rows = carDetailRows(MUSTANG, detail)
     expect(value(rows, 'Horsepower')).toBe('460 hp')
     expect(value(rows, 'Weight')).toBe('3,705 lb')
     expect(value(rows, 'Power to weight')).toBe('0.124 hp per lb')
-    expect(value(rows, 'Engine')).toBe(car.engine)
-    expect(value(rows, 'Built')).toBe(car.productionYears)
-    expect(value(rows, 'Source')).toBe(car.source)
+    expect(value(rows, 'Engine')).toBe(detail.engine)
+    expect(value(rows, 'Built')).toBe(detail.productionYears)
+    expect(value(rows, 'Source')).toBe(detail.source)
     expect(rows.at(-1)?.label).toBe('Source')
   })
 
@@ -48,11 +49,13 @@ describe('car detail', () => {
   })
 
   it('shows a tier note only when the car has one', () => {
-    const noted = CARS.find((car) => car.tierNote)
+    const noted = CARS.find((car) => CAR_DETAILS[car.id]?.tierNote)
     expect(noted).toBeDefined()
     if (!noted) return
-    expect(value(carDetailRows(noted.id), 'Tier note')).toBe(noted.tierNote)
-    expect(value(carDetailRows(MUSTANG), 'Tier note')).toBeUndefined()
+    expect(value(carDetailRows(noted.id, getCarDetail(noted.id)), 'Tier note')).toBe(
+      getCarDetail(noted.id).tierNote,
+    )
+    expect(value(carDetailRows(MUSTANG, getCarDetail(MUSTANG)), 'Tier note')).toBeUndefined()
   })
 })
 
