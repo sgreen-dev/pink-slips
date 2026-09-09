@@ -43,7 +43,9 @@ export function StartScreen({
   onPlayer,
 }: StartScreenProps) {
   const account = useContext(AccountContext)
-  const [options] = useState<GarageOption[]>(() => garageOptions(loadGarages()))
+  const [options] = useState<GarageOption[]>(() =>
+    garageOptions(loadGarages(), loadCollection().owned),
+  )
   const [packs] = useState(() => loadCollection().packs)
   const rules = useRef<HTMLDialogElement>(null)
   const [mode, setMode] = useState<Mode>('cpu')

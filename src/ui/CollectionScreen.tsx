@@ -5,6 +5,7 @@ import {
   ALL_CARD_IDS,
   bestVariant,
   copiesOwned,
+  usefulCopies,
   cardPrice,
   isComplete,
   ownedCount,
@@ -96,10 +97,13 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const spare = surplus(state)
   const spareCount = [...spare.values()].reduce((sum, n) => sum + n, 0)
   const spareValue = scrapValue(state)
-  const missing = ALL_CARD_IDS.filter((id) => !owns(owned, id))
+  // Everything the credits could still add: a card not held at all, and a mod below the copies
+  // a deck can hold, since packs used to be the only way to a second or third (DESIGN.md 12).
+  const missing = ALL_CARD_IDS.filter((id) => copiesOwned(owned, id) < usefulCopies(id))
     .map((id) => ({
       id,
       name: nameOfCard(id),
+      held: copiesOwned(owned, id),
       price: cardPrice(id) ?? 0,
     }))
     .sort((a, b) => a.price - b.price || a.name.localeCompare(b.name))
@@ -302,7 +306,8 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
                     <option value="">a card you do not own</option>
                     {missing.map((card) => (
                       <option key={card.id} value={card.id}>
-                        {card.name} — {card.price}
+                        {card.name}
+                        {card.held > 0 ? ` (have ${card.held})` : ''} — {card.price}
                       </option>
                     ))}
                   </select>

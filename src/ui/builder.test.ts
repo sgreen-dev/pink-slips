@@ -136,6 +136,27 @@ describe('garage builder rules', () => {
   })
 })
 
+// DESIGN.md 12 says a saved garage that loses its last copy of a car leaves the start
+// screen's picker until the builder fixes it, and the collection screen tells the player so.
+it('drops a saved garage the collection can no longer build', () => {
+  const owned = introCollection()
+  const outside = ALL_CARS.find((car) => !owns(owned, car.id))
+  if (!outside) throw new Error('every car is in the intro set')
+  const mine: SavedGarage = {
+    id: 'mine',
+    name: 'Mine',
+    cars: [outside.id, ...streetKings.cars.slice(1)],
+    deck: streetKings.deck,
+    updatedAt: 9,
+  }
+  // With no collection given, the picker offers it, which is what the builder's own tests do.
+  expect(garageOptions([mine]).map((o) => o.name)).toContain('Mine')
+  // Told what the player holds, it does not, because they cannot field that car.
+  expect(garageOptions([mine], owned).map((o) => o.name)).not.toContain('Mine')
+  // The loaners are always there, whatever the collection holds.
+  expect(garageOptions([mine], owned)).toHaveLength(3)
+})
+
 describe('garage storage', () => {
   const garage: SavedGarage = {
     id: 'custom-1',

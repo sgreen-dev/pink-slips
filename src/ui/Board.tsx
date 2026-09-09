@@ -9,7 +9,7 @@ import {
 } from '../engine/index.ts'
 import type { RaceEnd } from './celebration.ts'
 import { Callout } from './Callout.tsx'
-import { blockedReason, handNote, whyNotPlayable, whyNotTarget } from './explain.ts'
+import { blockedReason, stallWarning, handNote, whyNotPlayable, whyNotTarget } from './explain.ts'
 import { Garage } from './Garage.tsx'
 import {
   buttonActions,
@@ -399,12 +399,15 @@ export function Board({
             const count = me.hand.filter((id) => id === modId).length
             const playable = !busy && modIntent(state, viewer, modId).kind !== 'unplayable'
             const note = live && !busy ? blockedReason(state, viewer, modId) : null
+            // A card can be playable and still cost the turn its advance, which the CPU is
+            // guarded against and the player was not (DESIGN.md 3.2).
+            const caution = live && !busy && !note ? stallWarning(state, viewer, modId) : null
             return (
               <div key={modId} className="hand__slot">
                 <ModCard
                   modId={modId}
                   playable={playable}
-                  note={note}
+                  note={note ?? caution}
                   selected={selection.kind !== 'none' && selection.modId === modId}
                   onClick={() => onMod(modId)}
                   onRefuse={() =>

@@ -14,6 +14,7 @@ import {
   handNote,
   laneNotes,
   whyNotPlayable,
+  stallWarning,
   whyNotTarget,
 } from './explain.ts'
 
@@ -319,5 +320,47 @@ describe('why a tap was refused', () => {
         expect(sentence.split(/\s+/).length, sentence).toBeLessThanOrEqual(20)
       }
     }
+  })
+})
+
+/**
+ * A Boost with a fuel cost can take the last fuel the staged car needed, and the turn then ends
+ * with no advance at all. DESIGN.md 6 tells the CPU never to do it; the player was told nothing
+ * until the turn was already gone.
+ */
+describe('warning before a Boost strands the car', () => {
+  const MIATA = 'mazda-mx-5-miata'
+
+  it('warns when spending the fuel would drop the car below what it needs', () => {
+    // Fuel Dump costs 1. At exactly the car's cost, spending it means no advance.
+    const state = scenario({
+      players: [
+        { cars: [{ id: MIATA, fuel: 1 }], hand: ['fuel-dump'] },
+        { cars: ['porsche-911-carrera-s'] },
+      ],
+    })
+    const warning = stallWarning(state, 0, 'fuel-dump')
+    expect(warning).toContain('would drop below')
+  })
+
+  it('says nothing when there is fuel to spare', () => {
+    const state = scenario({
+      players: [
+        { cars: [{ id: MIATA, fuel: 4 }], hand: ['fuel-dump'] },
+        { cars: ['porsche-911-carrera-s'] },
+      ],
+    })
+    expect(stallWarning(state, 0, 'fuel-dump')).toBeNull()
+  })
+
+  it('says nothing about a Boost that costs no fuel, or about a Part', () => {
+    const state = scenario({
+      players: [
+        { cars: [{ id: MIATA, fuel: 1 }], hand: ['power-shift', 'turbo-kit'] },
+        { cars: ['porsche-911-carrera-s'] },
+      ],
+    })
+    expect(stallWarning(state, 0, 'power-shift')).toBeNull()
+    expect(stallWarning(state, 0, 'turbo-kit')).toBeNull()
   })
 })

@@ -242,6 +242,7 @@ export interface TargetResult {
 export function checkTargets(report: SimulationReport): TargetResult[] {
   const maxType = Math.max(...[...report.byType.values()].map(rate))
   const maxTier = Math.max(...[...report.byTier.values()].map(rate))
+  const minTier = Math.min(...[...report.byTier.values()].map(rate))
   const dailyHyper = rate(report.dailyVsHyper)
   const medianTurns = median(report.lengthsRandom)
   const first = rate(report.firstPlayer)
@@ -272,6 +273,15 @@ export function checkTargets(report: SimulationReport): TargetResult[] {
       name: 'First player wins between 47% and 55%',
       value: pct(first),
       pass: first >= 0.47 && first <= 0.55,
+    },
+    {
+      // The floor, which nothing measured until now. The four caps above stop any one garage
+      // running away with it and say nothing about a tier nobody can win with; a pack puts
+      // 55% of its car slots in the Common band, so a band that cannot win is most of what a
+      // player opens. This one does not pass today: see docs/balance-log.md.
+      name: 'No single-tier garage wins less than 20% against the field',
+      value: pct(minTier),
+      pass: minTier >= 0.2,
     },
   ]
 }
