@@ -2,7 +2,7 @@ import { LEVELS, LEVEL_LABEL, type Level } from '../cpu/levels.ts'
 import { playCpuMatch } from '../cpu/play.ts'
 import { STARTERS } from '../data/starters.ts'
 import { nextUint32, seedRng, type RngState } from '../engine/index.ts'
-import { randomGarage, starterGarage, type GarageSpec } from './garages.ts'
+import { randomGarage, starterGarage, type GarageSpec } from '../data/garages.ts'
 
 /**
  * `npm run sim -- --levels`: every CPU level against every other, once over random garages and

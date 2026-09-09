@@ -11,7 +11,7 @@ import {
   singleTypeGarage,
   starterGarage,
   type GarageSpec,
-} from './garages.ts'
+} from '../data/garages.ts'
 import { analyzeMatch, mean, median, percentile, rate, tally, type Tally } from './stats.ts'
 
 /**

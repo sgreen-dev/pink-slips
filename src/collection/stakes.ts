@@ -38,14 +38,23 @@ export function isStakedCar(id: string): boolean {
  * collections, so they need two: hotseat shares one and is refused, Rookie is refused because
  * it can be farmed, and a garage of the player's own on the CPU side is refused because every
  * car it could lose is a car the player already holds, so a win would only add a duplicate.
+ *
+ * Random garages are refused for the reason loaner cars are exempt: they are not owned. Their
+ * cars are ordinary roster cars, so nothing here would treat them as free, and beating a random
+ * garage holding three Hypers would write those cars into a collection that never opened them
+ * while the other side, owning none of it, lost nothing.
  */
 export function stakesAllowed(opts: {
   mode: 'cpu' | 'hotseat'
   level: 'rookie' | 'street' | 'pro'
   /** True when the CPU's garage is one the player built from cards they own. */
   cpuGarageIsOwn: boolean
+  /** True when either side is racing a garage the game dealt rather than one that is owned. */
+  randomGarages: boolean
 }): boolean {
-  return opts.mode === 'cpu' && opts.level !== 'rookie' && !opts.cpuGarageIsOwn
+  return (
+    opts.mode === 'cpu' && opts.level !== 'rookie' && !opts.cpuGarageIsOwn && !opts.randomGarages
+  )
 }
 
 /** The cars in a list that stakes can move, capped at the pink slips one match can hold. */

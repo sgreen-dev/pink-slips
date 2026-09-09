@@ -48,7 +48,7 @@ Every browser read and write goes through a try/catch wrapper (`src/ui/storage.t
 | Module | Does | Entry |
 |---|---|---|
 | `src/engine` | The rules. Pure, immutable, deterministic. | `createMatch`, `legalActions`, `apply`, `isOver` |
-| `src/data` | The cars and mods, validated by tests. | `CARS`, `MODS`, `STARTERS`, `INTRO_SET` |
+| `src/data` | The cars and mods, validated by tests, and the garage generators over them. | `CARS`, `MODS`, `STARTERS`, `INTRO_SET`, `randomGarage` |
 | `src/cpu` | The opponent. Reads only what a player could see. | `chooseAction` |
 | `src/sim` | Runs CPU against CPU and prints balance reports. | `npm run sim` |
 | `src/collection` | What a player owns, packs, stakes transfers. | `openPack`, `introCollection` |

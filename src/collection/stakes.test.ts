@@ -99,7 +99,12 @@ describe('keepsakes under stakes', () => {
 })
 
 describe('when a match can be played for stakes (DESIGN.md 12)', () => {
-  const cpu = { mode: 'cpu', level: 'street', cpuGarageIsOwn: false } as const
+  const cpu = {
+    mode: 'cpu',
+    level: 'street',
+    cpuGarageIsOwn: false,
+    randomGarages: false,
+  } as const
 
   it('allows a Street or Pro CPU racing a loaner', () => {
     expect(stakesAllowed(cpu)).toBe(true)
@@ -119,5 +124,15 @@ describe('when a match can be played for stakes (DESIGN.md 12)', () => {
   it('refuses a CPU garage the player built from cards they own', () => {
     expect(stakesAllowed({ ...cpu, cpuGarageIsOwn: true })).toBe(false)
     expect(stakesAllowed({ ...cpu, level: 'pro', cpuGarageIsOwn: true })).toBe(false)
+  })
+
+  // A dealt garage is not owned, so its cars can be neither won nor lost, exactly as a loaner
+  // car cannot. Without this a win would write cars into a collection that never opened them.
+  it('refuses a garage the game dealt, at every level', () => {
+    expect(stakesAllowed({ ...cpu, randomGarages: true })).toBe(false)
+    expect(stakesAllowed({ ...cpu, level: 'pro', randomGarages: true })).toBe(false)
+    expect(stakesAllowed({ ...cpu, level: 'rookie', randomGarages: true })).toBe(false)
+    // And it is refused on its own, not only alongside the other reasons.
+    expect(stakesAllowed({ ...cpu })).toBe(true)
   })
 })

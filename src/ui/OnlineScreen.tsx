@@ -7,6 +7,10 @@ import { MAX_NAME_LENGTH } from '../protocol/messages.ts'
 import { AccountContext, QueueClient, queueUrl, type QueueStatus } from './account.ts'
 import { garageOptions, type GarageOption } from './builder.ts'
 import { GaragePicker } from './GaragePicker.tsx'
+import { RandomGarages } from './RandomGarages.tsx'
+import { dealGarage } from './randomGarages.ts'
+import type { GarageSpec } from '../data/garages.ts'
+import { newSeed } from './seed.ts'
 import {
   clearOnlineSeat,
   createRoom,
@@ -48,6 +52,9 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
   const [saved, setSaved] = useState<OnlineSeat | null>(() => loadOnlineSeat())
   const [name, setName] = useState(account?.data.profile.name ?? saved?.name ?? 'Player')
   const [garage, setGarage] = useState(0)
+  // A garage the game deals for this seat alone: the other seat is a person who picks their own
+  // (DESIGN.md 5). Not owned, so it cannot play for stakes and cannot queue for a rating.
+  const [dealt, setDealt] = useState<GarageSpec | null>(null)
   const [code, setCode] = useState(prefillCode ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -58,6 +65,7 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
 
   const cleanName = name.trim().slice(0, MAX_NAME_LENGTH) || 'Player'
   const config = (): PlayerConfig | null => {
+    if (dealt) return { garage: dealt.garage, deck: dealt.deck }
     const option = options[garage]
     return option ? { garage: option.cars, deck: option.deck } : null
   }
@@ -179,21 +187,52 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
         />
       </label>
       <div className="start__pickers start__pickers--one">
-        <GaragePicker label="Your garage" options={options} value={garage} onChange={setGarage} />
+        {/* The control sits with the picker it replaces, since it acts on it (DESIGN.md 8). */}
+        <div className="start__deal">
+          <button
+            type="button"
+            className={`button button--small ${dealt ? 'button--on' : ''}`}
+            aria-pressed={dealt !== null}
+            onClick={() => {
+              const next = dealt ? null : dealGarage(newSeed())
+              setDealt(next)
+              if (next) setStakes(false)
+            }}
+          >
+            Random garage
+          </button>
+          <span className="online__status">
+            {dealt
+              ? 'Dealt from the whole roster. Not from your collection, so no stakes and no rating.'
+              : 'Race something you did not build, in a room with a friend.'}
+          </span>
+        </div>
+        {dealt ? (
+          <RandomGarages
+            garages={[dealt]}
+            labels={['Your garage']}
+            onReroll={() => setDealt(dealGarage(newSeed()))}
+          />
+        ) : (
+          <GaragePicker label="Your garage" options={options} value={garage} onChange={setGarage} />
+        )}
       </div>
       {account && (
         <div className="stakes">
           <label className="stakes__toggle">
             <input
               type="checkbox"
-              checked={stakes}
+              checked={stakes && !dealt}
+              disabled={dealt !== null}
               onChange={(event) => setStakes(event.target.checked)}
             />
             Play for stakes
           </label>
           <span className="stakes__note">
-            Captured cars change hands for real, both ways; loaner cars never do. Both players need
-            it on.
+            {dealt
+              ? 'A dealt garage is not owned, so its cars can be neither won nor lost.'
+              : `Captured cars change hands for real, both ways; loaner cars never do. Both players need
+            it on.`}
           </span>
         </div>
       )}
@@ -214,12 +253,15 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
               <button
                 type="button"
                 className="button button--primary button--big"
+                disabled={dealt !== null}
                 onClick={findOpponent}
               >
                 Find an opponent
               </button>
               <span className="online__status">
-                Rating {account.data.profile.rating}. Wins and losses move it.
+                {dealt
+                  ? 'A rating measures the garage you built as well as how you play, so a dealt one races friends only.'
+                  : `Rating ${account.data.profile.rating}. Wins and losses move it.`}
               </span>
             </div>
           )

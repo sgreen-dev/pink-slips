@@ -639,6 +639,63 @@ h2 {
   gap: 0.4rem;
   margin: 1rem auto 0;
 }
+/* The dealt-garage control, on the row of the pickers it replaces (DESIGN.md 8). */
+.start__deal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1.5rem 0 0;
+}
+
+/* The garages the game dealt: read-only, so no radio and no option frame. */
+.dealt {
+  display: grid;
+  /* minmax(0, …) and the min-width below: a row of five cards is wider than a phone, and a
+     grid or flex item refuses to shrink under its content without them, so the page itself
+     would scroll sideways instead of the row (DESIGN.md 8). */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  justify-items: center;
+  margin: 1rem 0 1.5rem;
+}
+.dealt__garage {
+  width: 100%;
+  min-width: 0;
+  padding: 0.6rem;
+  border-radius: 0.6rem;
+  background: var(--asphalt-2);
+  border: 2px solid var(--line);
+}
+.dealt__label {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+.dealt__shape {
+  margin: 0.1rem 0 0.4rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.dealt__cars {
+  display: flex;
+  min-width: 0;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 0.3rem 0.1rem;
+}
+.dealt__cars .card {
+  --w: 6rem;
+}
+.dealt__note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
 .start__pickers {
   display: grid;
   grid-template-columns: 1fr 1fr;

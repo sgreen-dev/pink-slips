@@ -7,6 +7,10 @@ import { AccountContext } from './account.ts'
 import { garageOptions, type GarageOption } from './builder.ts'
 import { Backdrop } from './Backdrop.tsx'
 import { GaragePicker } from './GaragePicker.tsx'
+import { RandomGarages } from './RandomGarages.tsx'
+import { dealGarages } from './randomGarages.ts'
+import type { GarageSpec } from '../data/garages.ts'
+import { newSeed } from './seed.ts'
 import type { Mode } from './Match.tsx'
 import { MatchCounter } from './MatchCounter.tsx'
 import type { PlayerView } from './PlayerDialog.tsx'
@@ -53,26 +57,34 @@ export function StartScreen({
   const [stakes, setStakes] = useState(false)
   const [first, setFirst] = useState(0)
   const [second, setSecond] = useState(1)
+  // A garage the game deals rather than one that is owned (DESIGN.md 5). Null when off; a
+  // reroll takes a new seed and deals both sides again, so the match stays symmetric.
+  const [dealt, setDealt] = useState<[GarageSpec, GarageSpec] | null>(null)
   // A garage of your own on the CPU side stakes your collection against itself: every car you
   // win is a car you already hold, so a win only ever adds a duplicate. That is the same reason
   // hotseat cannot play for stakes (DESIGN.md 12), so a loaner is what the CPU has to race.
   const cpuGarageIsYours = options[second]?.custom === true
-  const canStake = allowStakes({ mode, level, cpuGarageIsOwn: cpuGarageIsYours })
+  const canStake = allowStakes({
+    mode,
+    level,
+    cpuGarageIsOwn: cpuGarageIsYours,
+    randomGarages: dealt !== null,
+  })
   const [confirmOut, setConfirmOut] = useState(false)
   const labels: [string, string] =
     mode === 'cpu' ? ['Your garage', 'CPU garage'] : ['Player 1 garage', 'Player 2 garage']
   const start = () => {
-    const a = options[first]
-    const b = options[second]
+    const picked = dealt
+      ? [
+          { garage: dealt[0].garage, deck: dealt[0].deck },
+          { garage: dealt[1].garage, deck: dealt[1].deck },
+        ]
+      : [options[first], options[second]].map((o) => (o ? { garage: o.cars, deck: o.deck } : null))
+    const [a, b] = picked
     if (!a || !b) return
     onStart(
       mode,
-      {
-        players: [
-          { garage: a.cars, deck: a.deck },
-          { garage: b.cars, deck: b.deck },
-        ],
-      },
+      { players: [a, b] },
       mode === 'cpu'
         ? [account?.data.profile.name ?? 'Player', `${LEVEL_LABEL[level]} CPU`]
         : ['Player 1', 'Player 2'],
@@ -188,16 +200,42 @@ export function StartScreen({
           <span className="stakes__note">
             {canStake
               ? 'Captured cars change hands for real, both ways. Loaner cars never do.'
-              : cpuGarageIsYours && mode === 'cpu' && level !== 'rookie'
-                ? 'Stakes need a loaner on the CPU side. Your own garage would only win you cards you already hold.'
-                : 'Stakes need the Street or Pro CPU.'}
+              : dealt
+                ? 'Dealt garages are not owned, so their cars can be neither won nor lost.'
+                : cpuGarageIsYours && mode === 'cpu' && level !== 'rookie'
+                  ? 'Stakes need a loaner on the CPU side. Your own garage would only win you cards you already hold.'
+                  : 'Stakes need the Street or Pro CPU.'}
           </span>
         </div>
       )}
-      <div className="start__pickers">
-        <GaragePicker label={labels[0]} options={options} value={first} onChange={setFirst} />
-        <GaragePicker label={labels[1]} options={options} value={second} onChange={setSecond} />
+      {/* The control sits with the pickers it replaces, since it acts on them (DESIGN.md 8). */}
+      <div className="start__deal">
+        <button
+          type="button"
+          className={`button button--small ${dealt ? 'button--on' : ''}`}
+          aria-pressed={dealt !== null}
+          onClick={() => setDealt(dealt ? null : dealGarages(newSeed()))}
+        >
+          Random garages
+        </button>
+        <span className="start__level-note">
+          {dealt
+            ? 'Both sides race a garage the game dealt. Nothing here is from your collection.'
+            : 'Race something you did not build: five cars and a deck, dealt to both sides.'}
+        </span>
       </div>
+      {dealt ? (
+        <RandomGarages
+          garages={dealt}
+          labels={labels}
+          onReroll={() => setDealt(dealGarages(newSeed()))}
+        />
+      ) : (
+        <div className="start__pickers">
+          <GaragePicker label={labels[0]} options={options} value={first} onChange={setFirst} />
+          <GaragePicker label={labels[1]} options={options} value={second} onChange={setSecond} />
+        </div>
+      )}
       <button type="button" className="button button--primary button--big" onClick={start}>
         Start the match
       </button>

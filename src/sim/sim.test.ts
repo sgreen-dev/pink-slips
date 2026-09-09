@@ -10,7 +10,7 @@ import {
   singleTierGarage,
   singleTypeGarage,
   starterGarage,
-} from './garages.ts'
+} from '../data/garages.ts'
 import { checkTargets, formatReport, runSimulation } from './run.ts'
 import { median, percentile } from './stats.ts'
 
