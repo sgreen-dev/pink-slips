@@ -54,4 +54,4 @@ Neither worker reports which commit it is running, so `deploy:check` proves thin
 Two consequences worth knowing:
 
 - `src/protocol/messages.ts` is the wire format for both sides, and the two deploys are not atomic. In the gap, an old client talks to a new room or the reverse. Both ends shape-check and drop what they do not recognise, so the failure is a quietly missing feature rather than a crash.
-- CI does not type-check the room worker. The root `tsconfig.json` references `tsconfig.app.json` and `tsconfig.node.json` only, and `server/tsconfig.json` is referenced by nothing, so a type error in `server/worker.ts` passes a green build and surfaces at `wrangler deploy`.
+- The room worker is type-checked by `npm run build`, so a type error in `server/worker.ts` now fails CI rather than waiting for `wrangler deploy`. What CI still cannot tell you is whether the deployed worker is the one this commit built, which is why you deploy it every time.

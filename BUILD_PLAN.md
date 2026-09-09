@@ -50,6 +50,7 @@
 | 31 | Button order across every screen | done | 2c6ff81 |
 | 32 | Report a browser that will not store | done | 081b66b |
 | 33 | Test scrapping and buying on both sides | done | 3c067ed |
+| 34 | Type-check the room worker in CI | done | (pending) |
 
 ---
 

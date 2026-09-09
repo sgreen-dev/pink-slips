@@ -122,7 +122,7 @@ Where a row says no rationale is recorded, that is a gap in the record, not an e
 | `npm run deploy:check` | Says whether the site and both workers answer |
 | `npm run online:smoke -- <url>` | Plays a real ranked match against a deployment |
 
-CI runs lint, format, tests and build on every push to `main`, then deploys the site. It does **not** deploy either worker, and two gaps are worth knowing: the root `tsconfig.json` references only the app and node configs, so `server/worker.ts` is never type-checked by CI, and ESLint is scoped to `.ts`/`.tsx`, so `counter/worker.js` is unlinted. Both surface only at `wrangler deploy`.
+CI runs lint, format, tests and build on every push to `main`, then deploys the site. It does **not** deploy either worker. `npm run build` type-checks the room worker along with the app: the root `tsconfig.json` references `./server`, whose project holds `server/worker.ts` and everything it bundles to the same strictness as the rest of the source. Gaps that remain: ESLint is scoped to `.ts`/`.tsx`, so `counter/worker.js` is unlinted and unchecked; `scripts/*.ts` and `eslint.config.js` are in no project either; and CI runs on pushes to `main` only, never on a pull request, so every check happens after the code has landed. See `docs/backlog.md`.
 
 A build is about 394 KB of JavaScript and 30 KB of CSS, roughly 118 KB and 7 KB gzipped.
 
