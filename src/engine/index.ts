@@ -5,6 +5,8 @@ export {
   concede,
   forfeit,
   createMatch,
+  isModPlay,
+  keepsTakeBack,
   currentPlayer,
   fuelCost,
   isLegal,

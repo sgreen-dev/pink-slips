@@ -19,7 +19,6 @@ const DEBUG =
  */
 export function SoundProvider({ children }: { children: ReactNode }) {
   const [settings, setSettingsState] = useState<SoundSettings>(loadSoundSettings)
-  const [played, setPlayed] = useState(0)
   const [player] = useState(() => new MusicPlayer(AUDIO_BASE, newSeed()))
 
   useEffect(() => {
@@ -51,7 +50,6 @@ export function SoundProvider({ children }: { children: ReactNode }) {
       if (!effects) return
       playEffect(name, intensity)
       player.duck()
-      setPlayed((n) => n + 1)
     },
     [effects, player],
   )
@@ -59,8 +57,10 @@ export function SoundProvider({ children }: { children: ReactNode }) {
   const setScene = useCallback((scene: Scene) => player.setScene(scene), [player])
 
   const handle = useMemo<SoundHandle>(
-    () => ({ settings, setSettings, play, setScene, played }),
-    [settings, setSettings, play, setScene, played],
+    // Nothing that changes per effect belongs in here: this value is read by App, Match, Board,
+    // OnlineMatch, PackReveal and SoundButton, so a new one re-renders the tree.
+    () => ({ settings, setSettings, play, setScene }),
+    [settings, setSettings, play, setScene],
   )
   return (
     <SoundContext value={handle}>

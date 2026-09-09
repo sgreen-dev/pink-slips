@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { parseClientMessage } from './messages.ts'
-import { isNameAllowed, nameProblem, normalizeName, safeDisplayName } from './names.ts'
+import {
+  isNameAllowed,
+  nameProblem,
+  normalizeName,
+  safeDisplayName,
+  stripInvisible,
+} from './names.ts'
 
 describe('the name filter', () => {
   it('lets ordinary names through, including ones that contain a blocked word', () => {
@@ -82,5 +88,32 @@ describe('the name filter', () => {
       JSON.stringify({ type: 'join', name: 'Bo', garage: { garage: ['a'], deck: ['b'] } }),
     )
     expect(fine?.type === 'join' && fine.name).toBe('Bo')
+  })
+})
+
+describe('names that hide what they are', () => {
+  // The filter used to be Latin-only: anything outside [a-z] became a space, which split the
+  // word rather than matching it, so a look-alike from another script walked through.
+  it('refuses a banned word spelled with look-alikes from another script', () => {
+    const cyrillic = 'ѕhіt' // Cyrillic dze and dotted i
+    expect(normalizeName(cyrillic)).toBe('shit')
+    expect(nameProblem(cyrillic)).not.toBeNull()
+    const fullwidth = 'ｓｈｉｔ'
+    expect(normalizeName(fullwidth)).toBe('shit')
+    expect(nameProblem(fullwidth)).not.toBeNull()
+  })
+
+  it('still lets an ordinary name through, in any script', () => {
+    expect(nameProblem('Ann')).toBeNull()
+    expect(nameProblem('Zoë Müller')).toBeNull()
+    expect(nameProblem('Ольга')).toBeNull()
+    expect(nameProblem('Νίκος')).toBeNull()
+  })
+
+  it('cuts the characters that only rearrange what is around them', () => {
+    expect(stripInvisible('Ann‮evil​')).toBe('Annevil')
+    expect(stripInvisible('Ann Smith')).toBe('Ann Smith')
+    expect(stripInvisible('Zoë Müller')).toBe('Zoë Müller')
+    expect(stripInvisible('')).toBe('')
   })
 })

@@ -661,13 +661,19 @@ h2 {
 }
 .picker__option {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.2rem 0.6rem;
-  align-items: center;
+  gap: 0.2rem;
   padding: 0.6rem;
   border-radius: 0.6rem;
   background: var(--asphalt-2);
   border: 2px solid var(--line);
+}
+/* The words and the radio. The cards sit below it, outside the label, so they keep their own
+   detail buttons without those becoming part of the radio's name. */
+.picker__label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.6rem;
+  align-items: center;
   cursor: pointer;
 }
 .picker__option--selected {
@@ -690,7 +696,6 @@ h2 {
   font-style: italic;
 }
 .picker__cars {
-  grid-column: 1 / -1;
   display: flex;
   gap: 0.4rem;
   overflow-x: auto;

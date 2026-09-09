@@ -153,7 +153,16 @@ export interface GarageOption {
   loaner: boolean
 }
 
-export function garageOptions(saved: readonly SavedGarage[]): GarageOption[] {
+/**
+ * The garages the start and online screens offer: the three loaners, then any saved garage that
+ * still builds, newest first.
+ *
+ * `owned` is what the player holds. Without it a saved garage that lost a car -- to a stakes
+ * loss, or to a lap -- stayed in the picker and was raceable, which `DESIGN.md` 12 says twice
+ * it should not be and the collection screen tells the player it is not. The builder already
+ * applied the same rule to a car it does not own; this is that rule, one screen later.
+ */
+export function garageOptions(saved: readonly SavedGarage[], owned?: Collection): GarageOption[] {
   const loaners = STARTERS.map((s) => ({
     id: s.id,
     name: s.name,
@@ -167,7 +176,8 @@ export function garageOptions(saved: readonly SavedGarage[]): GarageOption[] {
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .filter(
       (g) =>
-        validateDraft({ id: g.id, name: g.name, cars: g.cars, deck: g.deck }).errors.length === 0,
+        validateDraft({ id: g.id, name: g.name, cars: g.cars, deck: g.deck }, owned).errors
+          .length === 0,
     )
     .map((g) => ({
       id: g.id,

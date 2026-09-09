@@ -14,27 +14,33 @@ export function GaragePicker({ label, options, value, onChange }: GaragePickerPr
     <fieldset className="picker">
       <legend className="picker__legend">{label}</legend>
       {options.map((option, index) => (
-        <label
+        <div
           key={option.id}
           className={`picker__option ${index === value ? 'picker__option--selected' : ''}`}
         >
-          <input
-            type="radio"
-            name={label}
-            checked={index === value}
-            onChange={() => onChange(index)}
-          />
-          <span className="picker__title">{option.name}</span>
-          <span className="picker__style">{option.style}</span>
-          {option.loaner ? (
-            <span className="picker__loaner">Loaner. These cars are not in your collection.</span>
-          ) : null}
+          {/* The label wraps only the words. The cards below it each carry their own detail
+              button, and interactive content inside a label is invalid: it swallowed all five
+              card names into the radio's own name and gave the start screen thirty tab stops
+              that each toggled the radio they sat in (DESIGN.md 8). */}
+          <label className="picker__label">
+            <input
+              type="radio"
+              name={label}
+              checked={index === value}
+              onChange={() => onChange(index)}
+            />
+            <span className="picker__title">{option.name}</span>
+            <span className="picker__style">{option.style}</span>
+            {option.loaner ? (
+              <span className="picker__loaner">Loaner. These cars are not in your collection.</span>
+            ) : null}
+          </label>
           <span className="picker__cars">
             {option.cars.map((carId) => (
               <CarCard key={carId} carId={carId} size="sm" />
             ))}
           </span>
-        </label>
+        </div>
       ))}
     </fieldset>
   )

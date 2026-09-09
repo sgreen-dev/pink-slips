@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import { App } from './ui/App.tsx'
+import { ErrorBoundary } from './ui/ErrorBoundary.tsx'
 import { SoundProvider } from './ui/sound/SoundContext.tsx'
 
 const root = document.getElementById('root')
@@ -11,8 +12,10 @@ if (!root) {
 
 createRoot(root).render(
   <StrictMode>
-    <SoundProvider>
-      <App />
-    </SoundProvider>
+    <ErrorBoundary>
+      <SoundProvider>
+        <App />
+      </SoundProvider>
+    </ErrorBoundary>
   </StrictMode>,
 )

@@ -3,6 +3,7 @@ import { getMod } from '../data/mods.ts'
 import { CAR_TYPE_LABEL, type CarType, type ModEffect } from '../data/types.ts'
 import {
   currentPlayer,
+  fuelCost,
   TUNABLES,
   windowApplies,
   type Action,
@@ -29,6 +30,29 @@ function lockLabel(type: CarType): string {
  * is not theirs to play from: outside their own mod step the prompt says what to do instead.
  * The checks follow the engine's own order in `modActions`.
  */
+/**
+ * A caution on a card that is playable but would strand the staged car: a Boost with a fuel
+ * cost can take the last fuel the car needed to move, and the turn then ends with no advance at
+ * all. The CPU is told never to do this (DESIGN.md 6); the player was told nothing until after
+ * the turn was gone, with only a log line and the take-back to escape it.
+ */
+export function stallWarning(state: MatchState, player: PlayerIndex, modId: string): string | null {
+  if (state.phase.kind !== 'turn' || state.turn.player !== player) return null
+  if (state.turn.step !== 'mods') return null
+  if (modIntent(state, player, modId).kind === 'unplayable') return null
+  const mod = getMod(modId)
+  if (mod.family !== 'boost') return null
+  const cost = mod.fuelCost ?? 0
+  if (cost <= 0) return null
+  const me = state.players[player]
+  const staged = me.garage.find((car) => car.carId === me.stagedCarId)
+  if (!staged) return null
+  const needs = fuelCost(staged)
+  return staged.fuel - cost < needs
+    ? `Costs ${cost} fuel: your car would drop below the ${needs} it needs and not advance.`
+    : null
+}
+
 export function blockedReason(
   state: MatchState,
   player: PlayerIndex,

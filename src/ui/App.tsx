@@ -69,6 +69,7 @@ export function App() {
   const [data, setData] = useState<AccountData | null>(null)
   // Bumped when a player signs in or out so screens re-read the mirrored storage.
   const [generation, setGeneration] = useState(0)
+  const [sessionKept, setSessionKept] = useState(true)
   // The player pop-up: making a player, recovering one, or reading a recovery code.
   const [dialog, setDialog] = useState<{ view: PlayerView; code: string | null } | null>(null)
 
@@ -121,13 +122,17 @@ export function App() {
 
   /** A player was made or recovered in the pop-up: from now on this browser holds it. */
   const signedIn = useCallback((fresh: string) => {
-    saveSession(fresh)
+    // A browser that refuses the token leaves the player signed in on this page and a guest on
+    // the next visit, so the code view is told and says so while the code is still on screen.
+    setSessionKept(saveSession(fresh))
     setData(null)
     setToken(fresh)
   }, [])
 
   const account: AccountHandle | null =
-    ENDPOINT && token && data ? { endpoint: ENDPOINT, token, data, update, signOut } : null
+    ENDPOINT && token && data
+      ? { endpoint: ENDPOINT, token, data, update, replaceToken: signedIn, signOut }
+      : null
   const toStart = () => setScreen({ kind: 'start' })
   const toOnline = () => setScreen({ kind: 'online', prefill: null })
   const openPlayer = (view: PlayerView, code: string | null = null) => setDialog({ view, code })
@@ -196,6 +201,7 @@ export function App() {
       </DetailProvider>
       {dialog && ENDPOINT && (
         <PlayerDialog
+          sessionKept={sessionKept}
           endpoint={ENDPOINT}
           view={dialog.view}
           code={dialog.code}

@@ -1,12 +1,11 @@
 import { useCallback, useContext, useEffect, useReducer, useRef, useState } from 'react'
 import { packsEarned } from '../collection/collection.ts'
 import { addPacks, loadCollection } from '../collection/persist.ts'
-import { currentPlayer, isOver, type Action, type PlayerIndex } from '../engine/index.ts'
+import { currentPlayer, isModPlay, isOver, type Action, type PlayerIndex } from '../engine/index.ts'
 import { EMPTY_TRANSFER, type Transfer } from '../collection/stakes.ts'
 import { AccountContext, fetchMe } from './account.ts'
 import { copyText } from './clipboard.ts'
 import { Board } from './Board.tsx'
-import { isModPlay } from './celebration.ts'
 import { recordMatch } from './counter.ts'
 import { NO_SELECTION, type Selection } from './interaction.ts'
 import {
@@ -46,6 +45,19 @@ const CLOCK_URGENT_S = 15
  * and draws whatever view comes back, holding the race-end moment the same way the local
  * match does. When the match ends, the room's result message says what the account earned.
  */
+/**
+ * What the turn clock says to a screen reader. Urgency is a colour on screen, which is no
+ * signal at all to anyone who cannot see it, and running out forfeits a rated match.
+ */
+function clockLabel(left: number, yours: boolean): string {
+  const whose = yours ? 'your turn' : "your opponent's turn"
+  if (left <= CLOCK_URGENT_S) return `${left} seconds left on ${whose}`
+  const minutes = Math.floor(left / 60)
+  const seconds = left % 60
+  const time = minutes > 0 ? `${minutes} minutes ${seconds} seconds` : `${seconds} seconds`
+  return `${time} left on ${whose}`
+}
+
 export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchProps) {
   const account = useContext(AccountContext)
   const [session, dispatch] = useReducer(reduceOnline, entry, (e) => startOnline(e.code, e.name))
@@ -329,9 +341,15 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
         {left !== null && (
           <span
             className={`online__bar__clock${left <= CLOCK_URGENT_S ? ' online__bar__clock--urgent' : ''}`}
-            aria-hidden="true"
+            // The digits redraw every second, so reading them out would be unbearable. The
+            // label carries the time in words and only the last fifteen seconds are announced,
+            // which is the point at which the clock costs the match (DESIGN.md 13).
+            aria-label={clockLabel(left, yourTurn)}
+            role={left <= CLOCK_URGENT_S && yourTurn ? 'alert' : undefined}
           >
-            {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}
+            <span aria-hidden="true">
+              {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}
+            </span>
           </span>
         )}
         {conceding ? (

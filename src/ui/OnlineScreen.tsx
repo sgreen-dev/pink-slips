@@ -15,6 +15,7 @@ import {
   type OnlineSeat,
 } from './online.ts'
 import { loadGarages } from '../browser/storage.ts'
+import { loadCollection } from '../collection/persist.ts'
 
 /**
  * How a player enters a room: a fresh join with a garage, a resume with a saved token, or a
@@ -41,7 +42,9 @@ interface OnlineScreenProps {
 export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineScreenProps) {
   const account = useContext(AccountContext)
   const rules = useRef<HTMLDialogElement>(null)
-  const [options] = useState<GarageOption[]>(() => garageOptions(loadGarages()))
+  const [options] = useState<GarageOption[]>(() =>
+    garageOptions(loadGarages(), loadCollection().owned),
+  )
   const [saved, setSaved] = useState<OnlineSeat | null>(() => loadOnlineSeat())
   const [name, setName] = useState(account?.data.profile.name ?? saved?.name ?? 'Player')
   const [garage, setGarage] = useState(0)

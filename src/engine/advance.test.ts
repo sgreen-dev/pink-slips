@@ -80,6 +80,17 @@ describe('advance formula (DESIGN.md 3.3)', () => {
     expect(result.finalFt).toBe(Math.floor(base * result.wearMultiplier))
   })
 
+  // A weight reduction bigger than the car itself is a divide by zero without the floor the
+  // code applies and DESIGN.md 3.3 now states.
+  it('floors effective weight at 1 lb, so a huge reduction cannot divide by zero', () => {
+    const car = getCar('mazda-mx-5-miata')
+    const result = plain(car.id, { weightReductionLb: car.weightLb + 10_000 })
+    expect(Number.isFinite(result.finalFt)).toBe(true)
+    expect(result.finalFt).toBeGreaterThan(0)
+    // Exactly the car's own weight leaves 1 lb, not 0.
+    expect(Number.isFinite(plain(car.id, { weightReductionLb: car.weightLb }).finalFt)).toBe(true)
+  })
+
   it('never goes below 0 feet', () => {
     expect(plain('honda-civic-si', { wear: 50 }).finalFt).toBe(0)
     expect(
@@ -93,6 +104,23 @@ describe('advance formula (DESIGN.md 3.3)', () => {
     const result = computeAdvance({ car, wear: 8, startFt: 0, isFirstAdvanceOfRace: false })
     expect(result.baseFt).toBe(100)
     expect(result.finalFt).toBe(20)
+  })
+})
+
+/**
+ * The per-type multipliers, written out rather than read from the tunable. Every other test
+ * here computes its expectation from `TUNABLES.typeDistanceMultiplier`, which is tautological:
+ * changing Luxury or Off-road would leave all of them green while quietly rebalancing two of
+ * the six types (DESIGN.md 3.3 step 3).
+ */
+it('pins each type multiplier to the number DESIGN.md 3.3 states', () => {
+  expect(TUNABLES.typeDistanceMultiplier).toEqual({
+    sports: 1,
+    luxury: 1.1,
+    muscle: 1,
+    jdm: 1.2,
+    ev: 1,
+    offroad: 1.2,
   })
 })
 

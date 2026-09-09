@@ -147,6 +147,24 @@ function newTurn(player: PlayerIndex, number: number, boostBlocked: boolean): Tu
  * state is what a real match is given, since a number is only 32 bits of choice however wide
  * the generator behind it (DESIGN.md 13).
  */
+/**
+ * Whether an action leaves the last mod play takeable back (DESIGN.md 3.2). It lives here
+ * because three places answer it -- the hotseat and CPU screens, the online screens, and the
+ * room -- and when they were three copies they drifted: the screens kept the stack through the
+ * fuel placement Extra Tank owes and the room did not, so the same match behaved differently
+ * online. The take-back itself is not an engine action; this is only the rule it follows.
+ */
+export function keepsTakeBack(state: MatchState, action: Action): boolean {
+  if (state.phase.kind !== 'turn' || state.turn.step !== 'mods') return false
+  // A mod play, or the fuel placement Extra Tank owes inside the step, which does not end it.
+  return isModPlay(action) || action.type === 'fuel'
+}
+
+/** True for the three actions that put a mod on the table. */
+export function isModPlay(action: Action): boolean {
+  return action.type === 'playPart' || action.type === 'playBoost' || action.type === 'playSabotage'
+}
+
 export function createMatch(config: MatchConfig, seed: number | RngState): MatchState {
   validatePlayerConfig(config.players[0], 'Player 1')
   validatePlayerConfig(config.players[1], 'Player 2')

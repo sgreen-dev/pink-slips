@@ -58,6 +58,8 @@
 | 39 | Write a room only once someone joins | done | cc3aad8 |
 | 40 | Keep sessions under a hash | done | 8e8a9c7 |
 | 41 | Take the session token from the header | done | 80c47b7 |
+| 42 | Sweep the backlog: security and accessibility | done | 4b3413b |
+| 43 | Sweep the backlog: gameplay, tests and tooling | done | 2f7d5eb |
 
 ---
 

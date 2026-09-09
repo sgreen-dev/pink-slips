@@ -55,7 +55,12 @@ function Tokens({ state }: { state: CarState }) {
   const wearIcon = iconUrl('wear')
   return (
     <div className="card__tokens">
-      <span className="card__fuel" title={`Fuel ${state.fuel} of ${cost}`}>
+      <span
+        className="card__fuel"
+        title={`Fuel ${state.fuel} of ${cost}`}
+        role="img"
+        aria-label={`Fuel ${state.fuel} of ${cost}`}
+      >
         {Array.from({ length: pips }, (_, i) => (
           <span
             key={i}
@@ -65,7 +70,12 @@ function Tokens({ state }: { state: CarState }) {
         ))}
       </span>
       {state.wear > 0 && (
-        <span className="card__wear" title={`Wear ${state.wear}`}>
+        <span
+          className="card__wear"
+          title={`Wear ${state.wear}`}
+          role="img"
+          aria-label={`Wear ${state.wear}`}
+        >
           {wearIcon
             ? Array.from({ length: state.wear }, (_, i) => (
                 <img key={i} className="card__wear-icon" src={wearIcon} alt="" />
@@ -198,7 +208,7 @@ export function CarCard({
         <button
           type="button"
           className="card__info"
-          aria-label={`Details for ${car.name}`}
+          aria-label={dimmed ? `Details for ${car.name}, not owned` : `Details for ${car.name}`}
           onClick={() => openDetail({ kind: 'car', id: carId })}
         >
           i
@@ -212,7 +222,7 @@ export function CarCard({
         type="button"
         className={`${className} card--detail`}
         style={frameStyle}
-        aria-label={`Details for ${car.name}`}
+        aria-label={dimmed ? `Details for ${car.name}, not owned` : `Details for ${car.name}`}
         onClick={() => openDetail({ kind: 'car', id: carId })}
       >
         {body}

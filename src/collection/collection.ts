@@ -398,12 +398,19 @@ export function cardPrice(id: string, t = TUNABLES): number | null {
 }
 
 /**
- * Buys one copy of a card the player does not own. Null when the id is not a card, the player
- * already owns it, or the credits do not cover it.
+ * Buys one copy of a card, up to the copies a deck could actually hold: one of a car, three of
+ * a common mod, one of a rare one. Null when the id is not a card, the player already holds
+ * every copy they could play, or the credits do not cover it.
+ *
+ * Buying stops at that limit rather than at the first copy because packs were otherwise the
+ * only way to a second or third copy of a mod a deck needs, which `DESIGN.md` 12 never said and
+ * left credits unable to finish a deck. It stops there rather than nowhere because a copy past
+ * it is spare the moment it arrives, and scrapping pays less than buying costs.
  */
 export function buyCard(state: CollectionState, id: string, t = TUNABLES): CollectionState | null {
   const price = cardPrice(id, t)
-  if (price === null || owns(state.owned, id)) return null
+  if (price === null) return null
+  if (copiesOwned(state.owned, id) >= usefulCopies(id, t)) return null
   if (state.credits < price) return null
   return { ...state, owned: grant(state.owned, [id]), credits: state.credits - price }
 }

@@ -17,6 +17,7 @@ import type { CollectionState } from '../protocol/records.ts'
 import {
   CPU_RESULT_GAP_MS,
   Directory,
+  LEADERBOARD_CACHE_MS,
   recoveryCodeFrom,
   SESSION_RENEW_MS,
   SESSION_TTL_MS,
@@ -112,10 +113,33 @@ describe('directory', () => {
     const ann = await directory.createPlayer('Ann')
     const fresh = await directory.rotateRecovery(ann.token)
     expect(fresh).not.toBeNull()
-    expect(fresh).not.toBe(ann.recoveryCode)
+    expect(fresh?.recoveryCode).not.toBe(ann.recoveryCode)
     expect(await directory.recover(ann.recoveryCode)).toBeNull()
-    expect((await directory.recover(fresh ?? ''))?.data.profile.id).toBe(ann.data.profile.id)
+    expect((await directory.recover(fresh?.recoveryCode ?? ''))?.data.profile.id).toBe(
+      ann.data.profile.id,
+    )
     expect(await directory.rotateRecovery('nope')).toBeNull()
+  })
+
+  /**
+   * Rotating is what a player does when they think the old code got out, so it has to take the
+   * sessions that code opened with it. Otherwise whoever used it keeps a signed-in browser that
+   * renews itself for a year, and rotation -- the only remedy the design offers -- fixes nothing.
+   */
+  it('ends the sessions a replaced code opened, and keeps the owner signed in', async () => {
+    const { directory, tick } = setUp()
+    const ann = await directory.createPlayer('Ann')
+    // Someone else used the code and holds a session of their own.
+    const theirs = await directory.recover(ann.recoveryCode)
+    expect(await directory.accountFor(theirs?.token ?? '')).not.toBeNull()
+    tick(1000)
+    const fresh = await directory.rotateRecovery(ann.token)
+    expect(fresh).not.toBeNull()
+    // The session opened with the old code is gone, and so is the one used to rotate.
+    expect(await directory.accountFor(theirs?.token ?? '')).toBeNull()
+    expect(await directory.accountFor(ann.token)).toBeNull()
+    // The owner is handed a working one in its place rather than being signed out.
+    expect((await directory.accountFor(fresh?.token ?? ''))?.name).toBe('Ann')
   })
 
   it('refuses a blocked name at creation, on rename, and masks one already stored', async () => {
@@ -360,6 +384,39 @@ describe('directory', () => {
       expect(await directory.accountFor(token)).not.toBeNull()
       tick(SESSION_TTL_MS + 1)
       expect(await directory.accountFor(token)).toBeNull()
+    })
+  })
+
+  describe('the leaderboard', () => {
+    it('is built once and reused, and rebuilt when a rating moves', async () => {
+      const { directory, store, tick } = setUp()
+      const ann = await directory.createPlayer('Ann')
+      const bo = await directory.createPlayer('Bo')
+      const annId = (await directory.accountFor(ann.token))?.id ?? ''
+      const boId = (await directory.accountFor(bo.token))?.id ?? ''
+      await directory.recordResult(annId, boId, true, true)
+      // Count the account scans, which is what the open route costs.
+      let scans = 0
+      const realList = store.list.bind(store)
+      store.list = async <T>(prefix: string) => {
+        if (prefix === 'acct:') scans += 1
+        return realList<T>(prefix)
+      }
+      const first = await directory.leaderboard()
+      expect(first.length).toBe(2)
+      expect(scans).toBe(1)
+      // Repeating the request inside the window does not read the accounts again.
+      for (let i = 0; i < 20; i++) await directory.leaderboard()
+      expect(scans).toBe(1)
+      // A result moves ratings, so the next request rebuilds rather than serving stale places.
+      await directory.recordResult(boId, annId, true, true)
+      const after = await directory.leaderboard()
+      expect(scans).toBe(2)
+      expect(after[0]?.id).toBe(boId)
+      // And it rebuilds once the window passes, even with nothing written.
+      tick(LEADERBOARD_CACHE_MS + 1)
+      await directory.leaderboard()
+      expect(scans).toBe(3)
     })
   })
 

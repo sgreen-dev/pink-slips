@@ -68,6 +68,46 @@ const RESERVED: readonly string[] = [
   'pinkslips',
 ]
 
+/**
+ * Letters from other scripts that read as Latin ones. Only the ones that actually look alike,
+ * so an ordinary name written in Cyrillic or Greek is not mangled into a false match.
+ */
+const CONFUSABLES: Readonly<Record<string, string>> = {
+  // Cyrillic
+  а: 'a',
+  в: 'b',
+  с: 'c',
+  е: 'e',
+  ѕ: 's',
+  і: 'i',
+  ј: 'j',
+  к: 'k',
+  м: 'm',
+  н: 'h',
+  о: 'o',
+  р: 'p',
+  т: 't',
+  у: 'y',
+  х: 'x',
+  ѐ: 'e',
+  ї: 'i',
+  // Greek
+  α: 'a',
+  β: 'b',
+  ε: 'e',
+  ι: 'i',
+  κ: 'k',
+  ν: 'v',
+  ο: 'o',
+  ρ: 'p',
+  τ: 't',
+  υ: 'u',
+  χ: 'x',
+  ω: 'w',
+  η: 'n',
+  μ: 'm',
+}
+
 const LOOKALIKES: Readonly<Record<string, string>> = {
   '0': 'o',
   '1': 'i',
@@ -83,9 +123,39 @@ const LOOKALIKES: Readonly<Record<string, string>> = {
   '+': 't',
 }
 
-/** Lower case, accents stripped, look-alikes mapped, everything but letters turned to spaces. */
+/**
+ * Lower case, accents stripped, look-alikes mapped, everything but letters turned to spaces.
+ *
+ * NFKD rather than NFD, and a Cyrillic and Greek pass before it, because the old normaliser was
+ * Latin-only: a Cyrillic с or a fullwidth ｃ matched no rule and was turned into a space, which
+ * split the word and let it through. NFKD folds the fullwidth and other compatibility forms;
+ * the table folds the letters that only look Latin.
+ */
+/**
+ * Characters that do not draw anything but change how the rest reads: control codes, the bidi
+ * overrides, zero-width joiners and spaces. React escapes a name so none of this is an
+ * injection, but they let one name pretend to be another on the leaderboard, so they are cut
+ * from what is stored rather than only from what is checked (DESIGN.md 13).
+ */
+const INVISIBLE = new RegExp(
+  '[' +
+    '\u0000-\u001f\u007f-\u009f' + // control codes
+    '\u00ad' + // soft hyphen
+    '\u200b-\u200f' + // zero width and the directional marks
+    '\u202a-\u202e\u2066-\u2069' + // bidi embedding and isolates
+    '\ufeff' + // byte order mark
+    ']',
+  'g',
+)
+
+/** A name as it will be stored and shown: no characters that only rearrange what is around them. */
+export function stripInvisible(raw: string): string {
+  return raw.replace(INVISIBLE, '')
+}
+
 export function normalizeName(raw: string): string {
-  const plain = raw.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  const folded = [...raw.toLowerCase()].map((ch) => CONFUSABLES[ch] ?? ch).join('')
+  const plain = folded.normalize('NFKD').replace(/[̀-ͯ]/g, '')
   let out = ''
   for (const ch of plain) {
     const mapped = LOOKALIKES[ch] ?? ch

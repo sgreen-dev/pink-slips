@@ -327,11 +327,13 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
           </aside>
 
           <section className="builder__browse">
-            <div className="builder__tabs" role="tablist">
+            {/* Two buttons that swap a grid, not a tab widget: there is no tabpanel, no
+              aria-controls and no arrow-key movement, so announcing one would be a promise the
+              markup does not keep. */}
+            <div className="builder__tabs" role="group" aria-label="Show">
               <button
                 type="button"
-                role="tab"
-                aria-selected={tab === 'cars'}
+                aria-pressed={tab === 'cars'}
                 className={`button ${tab === 'cars' ? 'button--on' : ''}`}
                 onClick={() => setTab('cars')}
               >
@@ -339,8 +341,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
               </button>
               <button
                 type="button"
-                role="tab"
-                aria-selected={tab === 'mods'}
+                aria-pressed={tab === 'mods'}
                 className={`button ${tab === 'mods' ? 'button--on' : ''}`}
                 onClick={() => setTab('mods')}
               >

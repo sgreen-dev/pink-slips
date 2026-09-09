@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { createMatch, redact } from '../engine/index.ts'
+import { starterConfig } from '../engine/test-helpers.ts'
 import { STARTERS } from '../data/starters.ts'
 import { parseClientMessage, parseServerMessage } from './messages.ts'
 
@@ -38,7 +40,25 @@ describe('stakes on the wire', () => {
 })
 
 describe('the turn clock on the wire', () => {
-  const base = { type: 'state', view: { any: 'shape' }, names: ['Ann', 'Bo'], plates: [0, 0] }
+  // A real redacted view: the shape is checked now, so any old object is refused.
+  const base = {
+    type: 'state',
+    view: redact(createMatch(starterConfig(), 3), 0),
+    names: ['Ann', 'Bo'],
+    plates: [0, 0],
+  }
+
+  it('refuses a view that is not one, rather than casting it at the board', () => {
+    expect(parseServerMessage(JSON.stringify({ ...base, view: {} }))).toBeNull()
+    expect(parseServerMessage(JSON.stringify({ ...base, view: { any: 'shape' } }))).toBeNull()
+    expect(
+      parseServerMessage(JSON.stringify({ ...base, view: { ...base.view, players: [] } })),
+    ).toBeNull()
+    expect(
+      parseServerMessage(JSON.stringify({ ...base, view: { ...base.view, rng: 7 } })),
+    ).toBeNull()
+    expect(parseServerMessage(JSON.stringify(base))).not.toBeNull()
+  })
 
   it('reads a remainder when the room sends one', () => {
     expect(parseServerMessage(JSON.stringify({ ...base, turnMsLeft: 42_000 }))).toMatchObject({

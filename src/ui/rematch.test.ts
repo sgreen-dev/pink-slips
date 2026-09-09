@@ -12,12 +12,16 @@ describe('rematch on the client', () => {
       accepted: [true, false],
     })
     expect(parseServerMessage('{"type":"rematch","accepted":[true]}')).toBeNull()
-    expect(parseServerMessage('{"type":"state","view":{},"names":["a","b"]}')).toMatchObject({
+    // A view is now shape-checked like every other message rather than cast, so an empty one
+    // is dropped instead of reaching the board and crashing it.
+    expect(parseServerMessage('{"type":"state","view":{},"names":["a","b"]}')).toBeNull()
+    const view = JSON.stringify(redact(createMatch(starterConfig(), 3), 0))
+    expect(parseServerMessage(`{"type":"state","view":${view},"names":["a","b"]}`)).toMatchObject({
       plates: [0, 0],
       turnMsLeft: null,
     })
     expect(
-      parseServerMessage('{"type":"state","view":{},"names":["a","b"],"plates":[2,0]}'),
+      parseServerMessage(`{"type":"state","view":${view},"names":["a","b"],"plates":[2,0]}`),
     ).toMatchObject({ plates: [2, 0] })
   })
 

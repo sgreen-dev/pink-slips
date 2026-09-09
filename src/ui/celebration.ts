@@ -4,6 +4,7 @@ import {
   createMatch,
   currentPlayer,
   isOver,
+  keepsTakeBack,
   otherPlayer,
   TUNABLES,
   type Action,
@@ -71,11 +72,6 @@ export interface Session {
   history: MatchState[]
 }
 
-/** A mod play during the mod step can be taken back; anything else makes plays final. */
-export function isModPlay(action: Action): boolean {
-  return action.type === 'playPart' || action.type === 'playBoost' || action.type === 'playSabotage'
-}
-
 /** True when the viewer can take back the last mod they played this step. */
 export function canUndo(session: Session, viewer: PlayerIndex): boolean {
   const { match, raceEnd, history } = session
@@ -127,10 +123,7 @@ function step(session: Session, action: Action): Session {
   if (session.raceEnd !== null) return session
   const match = apply(session.match, action)
   const before = session.match
-  // The mod step has not ended while it is still the mod step, so a fuel placement owed inside
-  // it -- what Extra Tank forces -- keeps the stack rather than clearing it (DESIGN.md 3.2).
-  const inModStep = before.phase.kind === 'turn' && before.turn.step === 'mods'
-  const keep = inModStep && (isModPlay(action) || action.type === 'fuel')
+  const keep = keepsTakeBack(before, action)
   const history = keep ? [...session.history, before] : []
   return { match, raceEnd: raceEndBetween(before, match), history }
 }

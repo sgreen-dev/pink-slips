@@ -481,6 +481,32 @@ describe('scrapping and buying', () => {
     expect(buyCard(rich, 'not-a-card')).toBeNull()
   })
 
+  // Packs used to be the only way to a second or third copy of a mod, so credits could not
+  // finish a deck. Buying now goes up to the copies a deck can hold and stops there.
+  it('buys up to the copies a deck can hold, and no further', () => {
+    const mod = MODS.find((m) => modRarity(m) !== 'rare')
+    if (!mod) throw new Error('no common mod')
+    const limit = TUNABLES.maxCopiesPerMod
+    const price = must(cardPrice(mod.id), 'a price')
+    let state = base({ [mod.id]: 0 }, price * (limit + 2))
+    for (let held = 0; held < limit; held++) {
+      const next = buyCard(state, mod.id)
+      expect(next, `copy ${held + 1}`).not.toBeNull()
+      state = next ?? state
+      expect(copiesOwned(state.owned, mod.id)).toBe(held + 1)
+    }
+    // At the limit it is refused, with credits still in hand.
+    expect(state.credits).toBeGreaterThanOrEqual(price)
+    expect(buyCard(state, mod.id)).toBeNull()
+  })
+
+  it('still buys a car only once, since a garage holds one of each', () => {
+    const price = must(cardPrice(outsideCar), 'a price')
+    const bought = buyCard(base({}, price * 3), outsideCar)
+    expect(bought).not.toBeNull()
+    expect(buyCard(bought ?? base({}), outsideCar)).toBeNull()
+  })
+
   it('keeps credits across a lap, the way unopened packs are kept', () => {
     const everything = grant(
       intro,
@@ -599,9 +625,8 @@ describe('scrapping and buying, guest side and service side', () => {
     expect(owns(next.state.owned, other.id)).toBe(true)
     expect(next.saved).toBe(true)
     expect(loadCollection(store)).toEqual(next.state)
-    // Now owned, so the same buy is refused; so is a card that does not exist, and one the
-    // credits no longer stretch to. The already-owned rule is what the code does today, not
-    // something DESIGN.md 12 states; backlog G13 asks whether it should stay.
+    // A car is useful at one copy, so the same buy is refused; so is a card that does not
+    // exist, and one the credits no longer stretch to.
     expect(buyLocally(other.id, store)).toBeNull()
     expect(buyLocally('not-a-card', store)).toBeNull()
     expect(buyLocally(daily.id, store)).toBeNull()

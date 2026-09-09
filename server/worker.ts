@@ -149,7 +149,11 @@ export default {
         return text('Expected a WebSocket', 426, headers)
       }
       if (!originAllowed(request)) return text('Origin not allowed', 403, headers)
-      return directoryOf(env).fetch(request)
+      // Carried the same way the creation limit carries it: set here, never forwarded, so a
+      // client cannot claim to be somewhere else and pair with itself.
+      const forwarded = new Request(request)
+      forwarded.headers.set('X-Address', request.headers.get('CF-Connecting-IP') ?? 'unknown')
+      return directoryOf(env).fetch(forwarded)
     }
 
     const match = /^\/room\/([A-Z0-9]+)$/.exec(path)
@@ -332,8 +336,10 @@ export class AccountDirectory extends DurableObject<Env> {
       return data ? json(data, 200, headers) : text('', 401, headers)
     }
     if (path === '/me/recovery' && request.method === 'POST') {
-      const recoveryCode = await this.directory.rotateRecovery(token)
-      return recoveryCode ? json({ recoveryCode }, 200, headers) : text('', 401, headers)
+      // Rotating ends every session opened before it, so the answer carries a fresh token for
+      // the browser doing the rotating; without it the owner signs themselves out.
+      const rotated = await this.directory.rotateRecovery(token)
+      return rotated ? json(rotated, 200, headers) : text('', 401, headers)
     }
     if (path === '/me/packs/open' && request.method === 'POST') {
       const seed = crypto.getRandomValues(new Uint32Array(1))[0] ?? 1
@@ -369,6 +375,7 @@ export class AccountDirectory extends DurableObject<Env> {
       rating: account.rating,
       since: Date.now(),
       stakes: new URL(request.url).searchParams.get('stakes') === '1',
+      address: request.headers.get('X-Address') ?? 'unknown',
     }
     server.serializeAttachment(waiting)
     send(server, { type: 'waiting' })
@@ -563,6 +570,14 @@ export class MatchRoom extends DurableObject<Env> {
         }),
       })
       if (response.ok) outcome = (await response.json()) as typeof outcome
+      else {
+        // The match really happened, so its packs, ratings and cars are not dropped because one
+        // subrequest failed. The room takes the result back and the next message or alarm
+        // reports it again; the seats are told nothing yet rather than told nulls.
+        room.retryResult()
+        await this.persist()
+        return
+      }
     }
     this.broadcast(result.winnerSeat, {
       type: 'result',
@@ -590,6 +605,8 @@ export class MatchRoom extends DurableObject<Env> {
     const now = Date.now()
     const expiresAt = (await this.ctx.storage.get<number>('expiresAt')) ?? 0
     if (!this.room || now >= expiresAt) {
+      // Last chance for a result that could not be reported when it happened.
+      if (this.room) await this.report(this.room)
       await this.ctx.storage.deleteAll()
       this.room = null
       return

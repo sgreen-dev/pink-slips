@@ -26,11 +26,17 @@ export function loadSession(store: StorageLike | null = browserStorage()): strin
   }
 }
 
-export function saveSession(token: string, store: StorageLike | null = browserStorage()): void {
+/**
+ * Keeps the session token. Returns false when the browser refused it, which matters more here
+ * than anywhere else: the player is signed in on this page and a guest on the next visit, and
+ * without the recovery code, which is shown once, the player is gone.
+ */
+export function saveSession(token: string, store: StorageLike | null = browserStorage()): boolean {
   try {
     store?.setItem(SESSION_KEY, token)
+    return store !== null
   } catch {
-    // A store that refuses the token means the next visit starts signed out.
+    return false
   }
 }
 
@@ -105,19 +111,23 @@ export async function recoverPlayer(
   return body
 }
 
-/** Replaces the recovery code and returns the new one, shown once. */
+/**
+ * Replaces the recovery code and returns the new one, shown once, with the session token that
+ * replaces this browser's. Rotating ends every session opened before it, this one included, so
+ * the caller has to store the new token or the player signs themselves out.
+ */
 export function rotateRecovery(
   endpoint: string,
   token: string,
   fetcher: Fetcher | undefined = globalThis.fetch,
-): Promise<string | null> {
-  return call<{ recoveryCode: string }>(
+): Promise<{ recoveryCode: string; token: string } | null> {
+  return call<{ recoveryCode: string; token: string }>(
     endpoint,
     '/me/recovery',
     token,
     { method: 'POST' },
     fetcher,
-  ).then((r) => r.body?.recoveryCode ?? null)
+  ).then((r) => r.body ?? null)
 }
 
 /** Scraps the account's surplus for credits; 'refused' when there is nothing spare. */
@@ -292,6 +302,8 @@ export interface AccountHandle {
   data: AccountData
   /** Replaces the account data after the service answered with a fresh copy. */
   update: (data: AccountData) => void
+  /** Takes a replacement session token, which rotating the recovery code hands back. */
+  replaceToken: (token: string) => void
   signOut: () => void
 }
 
