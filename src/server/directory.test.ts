@@ -284,6 +284,85 @@ describe('directory', () => {
     })
   })
 
+  /**
+   * A session is the stronger of the two credentials: it needs no second step and it renews
+   * itself. It is now kept under a hash of the token, the way a recovery code always was, so a
+   * read of this object's storage is not a signed-in browser for every player at once.
+   */
+  describe('how a session is stored', () => {
+    // setUp's fake hash echoes what it is given, so a key made with it contains the token by
+    // construction. This one digests instead, so finding the token anywhere would be a real leak.
+    it('never writes the token itself, as a key or in a value', async () => {
+      const store = new MemoryStore()
+      let n = 0
+      const directory = new Directory(
+        store,
+        () => `tok${(n += 1)}`.padEnd(32, '0'),
+        async (text) => {
+          let d = 0
+          for (const ch of text) d = (Math.imul(d, 31) + ch.charCodeAt(0)) | 0
+          return `d${(d >>> 0).toString(36)}`
+        },
+        () => 1_000_000,
+      )
+      const { token } = await directory.createPlayer('Ann')
+      expect(await directory.accountFor(token)).not.toBeNull()
+      const everything = JSON.stringify([...store.data.keys(), ...store.data.values()])
+      expect(everything.includes(token)).toBe(false)
+      // And a session really is there under some other key.
+      expect([...store.data.keys()].some((k) => k.startsWith('sess:'))).toBe(true)
+    })
+
+    it('keeps a session opened by recovery the same way', async () => {
+      const { directory, store } = setUp()
+      const ann = await directory.createPlayer('Ann')
+      const back = await directory.recover(ann.recoveryCode)
+      expect(back).not.toBeNull()
+      expect(await directory.accountFor(back?.token ?? '')).not.toBeNull()
+      expect(store.data.has(`sess:${back?.token ?? ''}`)).toBe(false)
+    })
+
+    // Sessions last a year, so the ones open when this shipped had to keep working rather than
+    // signing everyone out of an account most of them cannot recover without their code.
+    it('moves a session written under the plain token across on first use', async () => {
+      const { directory, store } = setUp()
+      const { token } = await directory.createPlayer('Ann')
+      const account = await directory.accountFor(token)
+      const hashed = `sess:hash(${token})`
+      const session = store.data.get(hashed)
+      // Put it back the old way, as a browser signed in before the change would have it.
+      store.data.delete(hashed)
+      store.data.set(`sess:${token}`, session)
+      expect((await directory.accountFor(token))?.id).toBe(account?.id)
+      // And it has been moved, so the plain key does not linger.
+      expect(store.data.has(`sess:${token}`)).toBe(false)
+      expect(store.data.has(hashed)).toBe(true)
+    })
+
+    it('signs out a session whichever way it was stored', async () => {
+      const { directory, store } = setUp()
+      const { token } = await directory.createPlayer('Ann')
+      const session = store.data.get(`sess:hash(${token})`)
+      store.data.delete(`sess:hash(${token})`)
+      store.data.set(`sess:${token}`, session)
+      await directory.signOut(token)
+      expect(await directory.accountFor(token)).toBeNull()
+      expect(store.data.has(`sess:${token}`)).toBe(false)
+    })
+
+    it('still expires and still renews', async () => {
+      const { directory, tick } = setUp()
+      const { token } = await directory.createPlayer('Ann')
+      tick(SESSION_TTL_MS - SESSION_RENEW_MS + 1)
+      expect(await directory.accountFor(token)).not.toBeNull()
+      // Reading it renewed it, so a full TTL from now is still inside the window.
+      tick(SESSION_TTL_MS - 1)
+      expect(await directory.accountFor(token)).not.toBeNull()
+      tick(SESSION_TTL_MS + 1)
+      expect(await directory.accountFor(token)).toBeNull()
+    })
+  })
+
   // Scrapping and buying on the service side (DESIGN.md 12). The pure rules are tested in
   // src/collection/collection.test.ts; these cover the wrappers that read a token, store the
   // result, and answer 'refused' rather than throwing.

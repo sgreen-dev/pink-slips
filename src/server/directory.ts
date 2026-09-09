@@ -302,28 +302,51 @@ export class Directory {
     return this.dataOf(next)
   }
 
+  /**
+   * Sessions are stored under a hash of the token, never the token itself, so a read of this
+   * object's storage is not a signed-in browser for every player at once. That is how recovery
+   * codes have always been kept and a session is the stronger credential of the two: it needs
+   * no second step and it renews itself.
+   */
+  private async sessionKey(token: string): Promise<string> {
+    return `${SESSION}${await this.hash(token)}`
+  }
+
   private async openSession(accountId: string): Promise<string> {
     const token = this.random()
     const session: Session = { accountId, expiresAt: this.now() + SESSION_TTL_MS }
-    await this.store.put(`${SESSION}${token}`, session)
+    await this.store.put(await this.sessionKey(token), session)
     return token
   }
 
   async accountFor(token: string): Promise<Account | null> {
-    const session = await this.store.get<Session>(`${SESSION}${token}`)
-    if (!session) return null
+    const key = await this.sessionKey(token)
+    let session = await this.store.get<Session>(key)
+    if (!session) {
+      // A session opened before the keys were hashed still sits under the token itself. It is
+      // moved across on first use rather than dropped, so nobody is signed out by this change;
+      // a browser that never comes back keeps its old row until the expiry sweeps it.
+      const legacyKey = `${SESSION}${token}`
+      const legacy = await this.store.get<Session>(legacyKey)
+      if (!legacy) return null
+      await this.store.delete(legacyKey)
+      await this.store.put(key, legacy)
+      session = legacy
+    }
     const now = this.now()
     if (session.expiresAt <= now) {
-      await this.store.delete(`${SESSION}${token}`)
+      await this.store.delete(key)
       return null
     }
     if (session.expiresAt - now < SESSION_TTL_MS - SESSION_RENEW_MS) {
-      await this.store.put(`${SESSION}${token}`, { ...session, expiresAt: now + SESSION_TTL_MS })
+      await this.store.put(key, { ...session, expiresAt: now + SESSION_TTL_MS })
     }
     return this.load(session.accountId)
   }
 
   async signOut(token: string): Promise<void> {
+    await this.store.delete(await this.sessionKey(token))
+    // A session that predates hashing may still be under the token; ending one ends both.
     await this.store.delete(`${SESSION}${token}`)
   }
 
