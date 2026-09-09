@@ -433,7 +433,7 @@ describe('3.6 coin flips', () => {
     const a = createMatch(starterConfig(), 9)
     const b = createMatch(starterConfig(), 9)
     expect(a.firstPlayer).toBe(b.firstPlayer)
-    expect(a.rng).toBe(b.rng)
+    expect(a.rng).toEqual(b.rng)
   })
 })
 

@@ -1,4 +1,5 @@
 import { DurableObject } from 'cloudflare:workers'
+import type { RngState } from '../src/engine/index.ts'
 import {
   CODE_ALPHABET,
   CODE_LENGTH,
@@ -490,8 +491,14 @@ export class MatchRoom extends DurableObject<Env> {
     return new Response(null, { status: 101, webSocket: client })
   }
 
-  private seed(): number {
-    return crypto.getRandomValues(new Uint32Array(1))[0] ?? 1
+  /**
+   * A room's first match is seeded with the generator's full width. One 32-bit word would leave
+   * every shuffle in the room inside a search a player could run offline against their own
+   * opening hand, whatever the generator behind it (DESIGN.md 13).
+   */
+  private seed(): RngState {
+    const words = crypto.getRandomValues(new Uint32Array(4))
+    return [words[0] ?? 1, words[1] ?? 2, words[2] ?? 3, words[3] ?? 4]
   }
 
   override async webSocketMessage(ws: WebSocket, data: string | ArrayBuffer): Promise<void> {

@@ -22,7 +22,16 @@ export {
   partSlots,
 } from './mods.ts'
 export type { PartModifiers } from './mods.ts'
-export { flipCoin, nextFloat, nextInt, nextUint32, seedRng, shuffle } from './rng.ts'
+export {
+  flipCoin,
+  nextFloat,
+  nextInt,
+  nextUint32,
+  rngFromHex,
+  seedRng,
+  shuffle,
+  ZERO_RNG,
+} from './rng.ts'
 export type { RngState } from './rng.ts'
 export { HIDDEN_CARD, isHidden, redact } from './redact.ts'
 export { TUNABLES } from './tunables.ts'

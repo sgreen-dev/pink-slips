@@ -83,7 +83,7 @@ See `DESIGN.md` section 13 for rooms, accounts, ranking and the turn timer.
 
 ## Determinism
 
-The engine is deterministic given a seed. The generator is mulberry32 and its state is a single integer living inside `MatchState`, so every engine function stays pure — each call returns a value and the next state rather than mutating anything (`src/engine/rng.ts`).
+The engine is deterministic given a seed. The generator is xoshiro128\*\*, whose state is four 32-bit words living inside `MatchState`, so every engine function stays pure — each call returns a value and the next state rather than mutating anything (`src/engine/rng.ts`). Four words rather than one because online play redacts the state, and that redaction is only worth the size of what it hides: a player sees their own opening hand, which is the front of a shuffle of a deck they chose, so a 32-bit state could be searched offline until it reproduced that hand. A number seed still names a run for the tests and the simulator; a real match is seeded with the full width from the platform's random source.
 
 Four things depend on that: the simulator can replay a run exactly, tests can assert on outcomes, pack opening is reproducible from a seed, and redaction can zero the random state without breaking anything.
 

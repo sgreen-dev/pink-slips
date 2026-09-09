@@ -1,4 +1,5 @@
 import { otherPlayer } from './match.ts'
+import { ZERO_RNG } from './rng.ts'
 import type { MatchState, PlayerIndex, PlayerState } from './types.ts'
 
 /**
@@ -26,7 +27,7 @@ export function redact(state: MatchState, viewer: PlayerIndex): MatchState {
     deck: them.deck.map(() => HIDDEN_CARD),
   }
   const players: MatchState['players'] = viewer === 0 ? [own, theirs] : [theirs, own]
-  return { ...state, players, rng: 0 }
+  return { ...state, players, rng: ZERO_RNG }
 }
 
 /** True when a card id stands for a hidden card in a view. */

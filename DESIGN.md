@@ -370,7 +370,7 @@ A player may concede at any point of a started match, on or off turn, and the ot
 
 ### 3.6 Coin flips
 
-A coin flip is a 50/50 result from the engine's seeded random number generator. The first player of a match is the winner of a coin flip, except in a rematch (section 13), where the room names the first player and no flip is made. The Sports type identity forces the first flip a Sports car makes each race to heads.
+A coin flip is a 50/50 result from the engine's seeded random number generator, xoshiro128\*\* over a four-word state. The first player of a match is the winner of a coin flip, except in a rematch (section 13), where the room names the first player and no flip is made. The Sports type identity forces the first flip a Sports car makes each race to heads.
 
 ---
 
@@ -669,7 +669,7 @@ Sixteen mods at two copies each, thirty-two copies for a thirty-card deck. Every
 
 ## 13. Online play
 
-**Shape** (phase 14). The room service is the only holder of a match. A client never runs the engine forward: it sends an `Action` and draws whatever view comes back. `redact(state, viewer)` in `src/engine/` makes the view. The viewer's own hand and garage stay as they are; the opponent's hand and both decks are replaced by `?` placeholders of the right length; the viewer's own deck is sorted so draw order never leaks; the random state is zeroed so the future cannot be simulated; the log stays, since it never carried hidden card ids. A view has the shape of a `MatchState`, so the board and the legality helpers run on it unchanged, and the legal actions from a view equal the legal actions from the full state.
+**Shape** (phase 14). The room service is the only holder of a match. A client never runs the engine forward: it sends an `Action` and draws whatever view comes back. `redact(state, viewer)` in `src/engine/` makes the view. The viewer's own hand and garage stay as they are; the opponent's hand and both decks are replaced by `?` placeholders of the right length; the viewer's own deck is sorted so draw order never leaks; the random state is zeroed so the future cannot be simulated; the log stays, since it never carried hidden card ids. Zeroing the state is only worth the width of the state it hides, so the generator carries four 32-bit words and a real match is seeded with all four from the platform's random source: a player sees their own opening hand, which is the front of a shuffle of a deck they chose, and a 32-bit state could be searched offline until it reproduced that hand and then run forward to read the opponent's deck and every coin flip left. A rematch takes fresh randomness rather than a seed derived from the last match, so reading one match would not read the next. A view has the shape of a `MatchState`, so the board and the legality helpers run on it unchanged, and the legal actions from a view equal the legal actions from the full state.
 
 **Protocol** (`src/protocol/messages.ts`, shared by the service and the client). Plain JSON over one WebSocket per client. Client to server: `join {name, garage}`, `resume {token}`, `act {action}`. Server to client: `welcome {code, seat, token}`, `waiting`, `state {view, names, plates, turnMsLeft}`, `presence {opponentConnected}`, `error {reason}`. Every inbound message is shape-checked before the room sees it, and the room checks the seat, the turn, and `isLegal` before `apply`. A rejected message changes nothing and answers with a reason.
 

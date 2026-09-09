@@ -142,10 +142,16 @@ function newTurn(player: PlayerIndex, number: number, boostBlocked: boolean): Tu
   }
 }
 
-export function createMatch(config: MatchConfig, seed: number): MatchState {
+/**
+ * Starts a match. A number seed names a run and is what the tests and the simulator use; a
+ * state is what a real match is given, since a number is only 32 bits of choice however wide
+ * the generator behind it (DESIGN.md 13).
+ */
+export function createMatch(config: MatchConfig, seed: number | RngState): MatchState {
   validatePlayerConfig(config.players[0], 'Player 1')
   validatePlayerConfig(config.players[1], 'Player 2')
-  const [p0, rng1] = setupPlayer(config.players[0], seedRng(seed))
+  const start = typeof seed === 'number' ? seedRng(seed) : seed
+  const [p0, rng1] = setupPlayer(config.players[0], start)
   const [p1, rng2] = setupPlayer(config.players[1], rng1)
   // A rematch names the first player (DESIGN.md 13); otherwise a coin flip decides.
   const forced = config.firstPlayer

@@ -22,11 +22,14 @@ describe('seeded random number generator', () => {
 
   it('never mutates its input state', () => {
     const state = seedRng(7)
+    // A copy of the words as they were, so an in-place write to the array would show here.
+    const before = [...state]
     nextFloat(state)
     nextInt(state, 10)
     flipCoin(state)
     shuffle(state, [1, 2, 3])
-    expect(state).toBe(seedRng(7))
+    expect([...state]).toEqual(before)
+    expect(state).toEqual(seedRng(7))
   })
 
   it('keeps floats in [0, 1) and ints in range', () => {

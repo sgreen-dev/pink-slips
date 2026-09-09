@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createMatch, legalActions } from './match.ts'
 import { HIDDEN_CARD, redact } from './redact.ts'
+import { ZERO_RNG } from './rng.ts'
 import { playOutRandomly, starterConfig } from './test-helpers.ts'
 import type { MatchState, PlayerIndex } from './types.ts'
 
@@ -34,7 +35,7 @@ describe('redact', () => {
           const mine = view.players[viewer]
           expect(mine.hand).toEqual(state.players[viewer].hand)
           expect([...mine.deck]).toEqual([...state.players[viewer].deck].sort())
-          expect(view.rng).toBe(0)
+          expect(view.rng).toEqual(ZERO_RNG)
           expect(JSON.stringify(view.log)).not.toContain(HIDDEN_CARD)
         }
       }

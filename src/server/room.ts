@@ -7,11 +7,14 @@ import {
   isLegal,
   isOver,
   redact,
+  rngFromHex,
+  seedRng,
   TUNABLES,
   type Action,
   type MatchState,
   type PlayerConfig,
   type PlayerIndex,
+  type RngState,
 } from '../engine/index.ts'
 import { stakesTransfer, type Transfer } from '../collection/stakes.ts'
 import type { ClientMessage, ServerMessage } from '../protocol/messages.ts'
@@ -49,7 +52,8 @@ export interface Seat {
 
 export interface RoomSnapshot {
   code: string
-  seed: number
+  /** The first match's generator state. Older snapshots carry a plain number. */
+  seed: RngState | number
   seats: readonly [Seat | null, Seat | null]
   state: MatchState | null
   tickets?: readonly [Ticket, Ticket] | null
@@ -58,7 +62,7 @@ export interface RoomSnapshot {
   history?: readonly { seat: PlayerIndex; state: MatchState }[]
   /** True when the room plays for stakes (DESIGN.md 12). */
   stakes?: boolean
-  /** Matches started in this room; a rematch adds one and advances the seed by it. */
+  /** Matches started in this room. */
   matches?: number
   /** Which seats have asked for a rematch of the finished match. */
   rematch?: readonly [boolean, boolean]
@@ -136,12 +140,21 @@ export class Room {
   private graceLeft: number
   private readonly t: typeof TUNABLES
   readonly code: string
-  readonly seed: number
+  readonly seed: RngState
 
-  constructor(code: string, seed: number, snapshot?: RoomSnapshot, t: typeof TUNABLES = TUNABLES) {
+  /** A number seed names a run, for the tests; a real room is opened with a full state. */
+  constructor(
+    code: string,
+    seed: RngState | number,
+    snapshot?: RoomSnapshot,
+    t: typeof TUNABLES = TUNABLES,
+  ) {
     this.t = t
     this.code = snapshot?.code ?? code
-    this.seed = snapshot?.seed ?? seed
+    // A room opened before the generator widened stored a number; expand it rather than
+    // dropping the room, which would strand a match in progress.
+    const saved = snapshot?.seed ?? seed
+    this.seed = typeof saved === 'number' ? seedRng(saved) : saved
     this.seats = snapshot ? [snapshot.seats[0], snapshot.seats[1]] : [null, null]
     this.state = snapshot?.state ?? null
     this.tickets = snapshot?.tickets ? [snapshot.tickets[0], snapshot.tickets[1]] : null
@@ -316,7 +329,7 @@ export class Room {
       case 'concede':
         return this.concede(from, now)
       case 'rematch':
-        return this.rematch(from, now)
+        return this.rematch(from, newToken, now)
     }
   }
 
@@ -442,10 +455,14 @@ export class Room {
 
   /**
    * Another match in the same room (DESIGN.md 13): once both seats ask, the same garages race
-   * again with the seed advanced and the first move given to the other seat. A ranked room
+   * again with fresh randomness and the first move given to the other seat. A ranked room
    * queues again instead, and a stakes room makes a new room, since its cars changed hands.
+   *
+   * The state comes from `newToken`, the platform randomness the room is handed, and not from
+   * the previous match's: a derived seed would mean that reading one match reads every rematch
+   * after it (DESIGN.md 13).
    */
-  private rematch(from: PlayerIndex | null, now: number): Outbound[] {
+  private rematch(from: PlayerIndex | null, newToken: () => string, now: number): Outbound[] {
     if (from === null) return [fail(REASONS.notSeated)]
     const state = this.state
     if (!state) return [fail(REASONS.notStarted)]
@@ -463,7 +480,7 @@ export class Room {
     this.matches += 1
     this.state = createMatch(
       { players: [a.garage, b.garage], firstPlayer: otherSeat(state.firstPlayer) },
-      this.seed + this.matches - 1,
+      rngFromHex(newToken()),
     )
     this.history = []
     this.reported = false
