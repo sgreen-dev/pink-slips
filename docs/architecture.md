@@ -140,3 +140,4 @@ A build is about 394 KB of JavaScript and 30 KB of CSS, roughly 118 KB and 7 KB 
 | How to deploy and check it | `docs/deploy.md` |
 | Why a number changed | `docs/balance-log.md` |
 | What was built when | `BUILD_PLAN.md`, `changelog/CHANGELOG.md` |
+| What is still open, worst first | `docs/backlog.md` |

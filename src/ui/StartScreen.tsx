@@ -1,5 +1,6 @@
 import { useContext, useRef, useState } from 'react'
 import { loadCollection } from '../collection/persist.ts'
+import { stakesAllowed as allowStakes } from '../collection/stakes.ts'
 import { LEVELS, LEVEL_BLURB, LEVEL_LABEL, type Level } from '../cpu/index.ts'
 import type { MatchConfig } from '../engine/index.ts'
 import { AccountContext } from './account.ts'
@@ -48,10 +49,13 @@ export function StartScreen({
   const [mode, setMode] = useState<Mode>('cpu')
   const [level, setLevel] = useState<Level>('street')
   const [stakes, setStakes] = useState(false)
-  // Stakes need a real opponent's collection to move cars with and a level that cannot be farmed.
-  const stakesAllowed = mode === 'cpu' && level !== 'rookie'
   const [first, setFirst] = useState(0)
   const [second, setSecond] = useState(1)
+  // A garage of your own on the CPU side stakes your collection against itself: every car you
+  // win is a car you already hold, so a win only ever adds a duplicate. That is the same reason
+  // hotseat cannot play for stakes (DESIGN.md 12), so a loaner is what the CPU has to race.
+  const cpuGarageIsYours = options[second]?.custom === true
+  const canStake = allowStakes({ mode, level, cpuGarageIsOwn: cpuGarageIsYours })
   const [confirmOut, setConfirmOut] = useState(false)
   const labels: [string, string] =
     mode === 'cpu' ? ['Your garage', 'CPU garage'] : ['Player 1 garage', 'Player 2 garage']
@@ -71,7 +75,7 @@ export function StartScreen({
         ? [account?.data.profile.name ?? 'Player', `${LEVEL_LABEL[level]} CPU`]
         : ['Player 1', 'Player 2'],
       level,
-      stakesAllowed && stakes,
+      canStake && stakes,
     )
   }
   return (
@@ -94,17 +98,17 @@ export function StartScreen({
               <span className="account__note">You will need your recovery code to come back.</span>
               <button
                 type="button"
-                className="button button--small button--primary"
-                onClick={account.signOut}
-              >
-                Sign out
-              </button>
-              <button
-                type="button"
                 className="button button--small button--ghost"
                 onClick={() => setConfirmOut(false)}
               >
                 Stay
+              </button>
+              <button
+                type="button"
+                className="button button--small button--primary"
+                onClick={account.signOut}
+              >
+                Sign out
               </button>
             </>
           ) : (
@@ -173,16 +177,18 @@ export function StartScreen({
           <label className="stakes__toggle">
             <input
               type="checkbox"
-              checked={stakesAllowed && stakes}
-              disabled={!stakesAllowed}
+              checked={canStake && stakes}
+              disabled={!canStake}
               onChange={(event) => setStakes(event.target.checked)}
             />
             Play for stakes
           </label>
           <span className="stakes__note">
-            {stakesAllowed
+            {canStake
               ? 'Captured cars change hands for real, both ways. Loaner cars never do.'
-              : 'Stakes need the Street or Pro CPU.'}
+              : cpuGarageIsYours && mode === 'cpu' && level !== 'rookie'
+                ? 'Stakes need a loaner on the CPU side. Your own garage would only win you cards you already hold.'
+                : 'Stakes need the Street or Pro CPU.'}
           </span>
         </div>
       )}

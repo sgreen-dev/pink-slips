@@ -801,59 +801,6 @@
 
 ## Backlog
 
-Anything new goes here first and becomes a phase when picked up. Items sit in value order within their tier, judged by how many players feel them and how often; a new item goes to the tier that fits, at the end. Numbers never change, since the design and past commits refer to them. A finished item leaves its tier for the Done list at the end, with the phase and the commits that closed it.
+Moved to [`docs/backlog.md`](docs/backlog.md), which holds everything open — defects, risks, gaps and features — as one table sorted worst first, with a state on each row. Item numbers carried over unchanged.
 
-### High value: felt in every session by most players
-
-   *Why here:* Every race, every pack, every finish; the largest change in feel still open.
-   *Why here:* A public leaderboard for an audience that includes kids; one bad name is seen by everyone.
-13. Race animation. On each advance the car slides along its lane over a short time instead of jumping, a played mod card flies from the hand to the table, and a sabotage lands on the opponent's car with a shake. All CSS transitions keyed off the log entries the race-end moment already reads, off under reduced motion, and never delaying an action. A section 8 addendum
-
-21. A use for surplus fuel. Fuel is never spent by advancing, one token must be placed every turn, and fuel stays on a car between races, so once every car in the garage sits at its cost each further token has nowhere to go; only Nitrous Shot and Fuel Dump spend it. Shapes considered: a pit stop action in the mod step, once per turn, spending 2 fuel above a car's cost to remove 1 wear (the recommendation: it uses the wear system that exists, makes a repair-or-fuel-the-bench choice, and sits behind a tunable cost); a burnout before advancing, up to 2 surplus fuel for +50 ft each (direct, but it shortens races and competes with Fuel Dump); a pit crew action, 2 surplus fuel to draw a card (quiet, least effect on pace); or new Boosts that convert fuel with no core rule. Whichever is chosen needs an engine action with a section 3 rule and test, a CPU rule, a tunable for its cost, and the sim's targets re-run. Tabled on 2026-09-04 for more thought
-   *Why here:* Surplus fuel shows up in most matches, and a sink turns dead turns into decisions.
-
-### Medium value: felt often by some players
-
-8. Deleting a player from the profile page: a two-step confirm, then the service removes the account, its sessions, its recovery code, and its leaderboard row, and the browser goes back to guest play with its local collection. Needs a `DELETE /me` route on the directory, a test that a deleted player cannot be recovered, and a `DESIGN.md` section 13 line
-   *Why here:* Rare, but the one time it is wanted it matters, and a player should own their data.
-3. Seasonal starter garages built from the collection's most-opened cards
-   *Why here:* Freshness for returning players; nothing for a first visit.
-7. Linking an outside sign-in (GitHub, Google) to a player as a second way to recover it, if lost recovery codes turn out to be common
-   *Why here:* Insurance against lost recovery codes; only worth it if losses turn out to be common.
-15. Match history and car records. The profile lists the last twenty matches with opponent, result, and rating change, and each car's wins and losses across the player's matches, so a player sees which cars work for them. The directory records a summary at result time; the room passes the winner's staged cars and the pink slips. Needs a bounded history per account, a test that the list is capped, and a section 13 line
-16. Daily first-win pack. The first win of each calendar day, against the CPU or online, earns one extra pack, with the day boundary taken from the browser's clock for guests and the service's for players. A small badge set for milestones (first Ultra Rare, ten ranked wins, a full type) shown on the profile. A tunable for the bonus, a test that the second win of a day earns nothing extra, and a section 12 addendum
-17. Challenge a friend by name, online. From the online screen, type a player's name to send an invite; the invited player sees it on their start screen while signed in and accepts into a private room. The seed of a friends list, which would follow. Needs an invite store on the directory with expiry, two protocol messages, and a section 13 line
-18. Installable app. A web app manifest and a service worker that caches the built site and the card art, so the game installs to a phone's home screen and CPU and hotseat play work with no connection. Online play still needs one and says so. Needs the manifest, icons at the standard sizes drawn from the pink-slip mark, a cache that updates on deploy, and a section 9 line
-
-### Low value: nice to have
-
-2. Spectating a friend's online match
-   *Why here:* A friend's match to watch; a small audience.
-5. Card art for the Ford Mustang Mach 1 (2021) and the Ford Shelby GT500 (2020), the two roster-expansion cars still on the silhouette placeholder: no photograph under an accepted license was on Commons when the other 48 were sourced. Add a row to `scripts/art/sources.csv` and run `scripts/art/make_art.py <id>` when one appears
-   *Why here:* Two cards out of 102, visible only when drawn.
-
-### Done
-
-9. Sound: original music, synthesized effects, and one control. Phase 16, 2026-09-04 (8847fb6, 3902484); the music start on phones fixed the same day (5c1aa6a).
-
-6. A filter on player names. Phase 17, 2026-09-04 (fc4ab82, 12cd7a4).
-
-11. Concede online. Phase 18, 2026-09-04 (b260d88, 0f45f13).
-
-19. Card detail view. Phase 19, 2026-09-04 (83f5775, 20aec61).
-
-20. Music on phones started on the first tap most of the time but not every time. Resolved 2026-09-04: the tracks stream and start on the tap (5c1aa6a, 9c888b8).
-
-4. Stakes mode, in every mode but hotseat, with starter cars exempt. Phase 20, 2026-09-04 (312f4d8, the commit that marks it done).
-
-12. Guided first match, on phones and desktop. Phase 24, 2026-09-08 (3743945, a73be60).
-
-22. Refused plays explained. Phase 25, 2026-09-08 (9bd2052, 30879cd).
-
-14. Rematch in the same room, online, for friend matches played for no stakes. Phase 26, 2026-09-08 (35ca95a, af9c762).
-
-23. Laps: complete the roster, keep a keepsake in Chrome, start over with bigger packs and a plate. Phase 27, 2026-09-08 (75242bb, the commit that marks it done).
-
-10. Turn timer with forfeit, online. Phase 29, 2026-09-09 (afaddab, the commit that marks it done).
-
-1. Trading duplicates, or converting them. Converting done as phase 30, 2026-09-09 (267b1f7); trading between players is still open and needs a population first.
+This file keeps the phase order: what was built, in what sequence, and the commit that closed each phase. A backlog item becomes a phase when it is picked up.

@@ -33,6 +33,21 @@ export function isStakedCar(id: string): boolean {
   return CAR_IDS.has(id) && !LOANER_CAR_IDS.has(id)
 }
 
+/**
+ * Whether a match can be played for stakes (DESIGN.md 12). Stakes move cars between two
+ * collections, so they need two: hotseat shares one and is refused, Rookie is refused because
+ * it can be farmed, and a garage of the player's own on the CPU side is refused because every
+ * car it could lose is a car the player already holds, so a win would only add a duplicate.
+ */
+export function stakesAllowed(opts: {
+  mode: 'cpu' | 'hotseat'
+  level: 'rookie' | 'street' | 'pro'
+  /** True when the CPU's garage is one the player built from cards they own. */
+  cpuGarageIsOwn: boolean
+}): boolean {
+  return opts.mode === 'cpu' && opts.level !== 'rookie' && !opts.cpuGarageIsOwn
+}
+
 /** The cars in a list that stakes can move, capped at the pink slips one match can hold. */
 function staked(ids: readonly string[]): string[] {
   return ids.filter(isStakedCar).slice(0, TUNABLES.pinkSlipsToWin)

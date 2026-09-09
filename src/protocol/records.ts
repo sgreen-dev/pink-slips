@@ -89,6 +89,11 @@ export function isCounts(value: unknown): value is Collection {
   )
 }
 
+/** A whole number at or above zero, or absent. Older records lack the newer fields. */
+function isOptionalCount(value: unknown): boolean {
+  return value === undefined || (typeof value === 'number' && Number.isInteger(value) && value >= 0)
+}
+
 export function isCollectionState(value: unknown): value is CollectionState {
   if (typeof value !== 'object' || value === null) return false
   const record = value as Record<string, unknown>
@@ -102,9 +107,10 @@ export function isCollectionState(value: unknown): value is CollectionState {
     isCounts(variants['foil']) &&
     isCounts(variants['holo']) &&
     (variants['chrome'] === undefined || isCounts(variants['chrome'])) &&
-    (record['laps'] === undefined ||
-      (typeof record['laps'] === 'number' &&
-        Number.isInteger(record['laps']) &&
-        record['laps'] >= 0))
+    isOptionalCount(record['laps']) &&
+    // Credits are a balance the service adds to an account on claim, so a record that carries a
+    // string, a negative or a fraction has to be refused here rather than fixed up downstream.
+    isOptionalCount(record['credits']) &&
+    isOptionalCount(record['grantVersion'])
   )
 }
