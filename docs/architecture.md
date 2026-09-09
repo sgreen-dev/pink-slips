@@ -53,7 +53,8 @@ Every browser read and write goes through a try/catch wrapper (`src/ui/storage.t
 | `src/sim` | Runs CPU against CPU and prints balance reports. | `npm run sim` |
 | `src/collection` | What a player owns, packs, stakes transfers. | `openPack`, `introCollection` |
 | `src/protocol` | The online message shapes, shared by both sides. | `parseClientMessage`, `parseServerMessage` |
-| `src/server` | The room and the account directory, with no platform code. | `Room`, `Directory` |
+| `src/server` | The room and the account directory, with no platform code, and the HTTP shapes and id helpers both workers share. | `Room`, `Directory`, `corsHeaders`, `newCode` |
+| `server` | The Cloudflare adapter, one job per file: `worker.ts` routes, `accounts.ts` and `rooms.ts` are the two Durable Objects, `env.ts` and `sockets.ts` hold what they share. | `MatchRoom`, `AccountDirectory` |
 | `src/ui` | React screens plus pure logic modules that are tested. | `App.tsx` |
 | `server/` | Cloudflare Worker: sockets, Durable Objects, storage. | `worker.ts` |
 | `counter/` | Cloudflare Worker: one number in KV. Standalone. | `worker.ts` |
@@ -122,7 +123,7 @@ Where a row says no rationale is recorded, that is a gap in the record, not an e
 | `npm run deploy:check` | Says whether the site and both workers answer |
 | `npm run online:smoke -- <url>` | Plays a real ranked match against a deployment |
 
-CI runs lint, format, tests and build on every push to `main`, then deploys the site. It does **not** deploy either worker. `npm run build` type-checks the room worker along with the app: the root `tsconfig.json` references `./server`, whose project holds `server/worker.ts` and everything it bundles to the same strictness as the rest of the source. The counter worker is checked the same way, by its own project, and `scripts/*.ts` and `eslint.config.js` belong to the node project, so every line of TypeScript and JavaScript in the repo is type-checked by `npm run build`. The Python under `scripts/art/` and `scripts/audio/` is deliberately outside all of it: it runs by hand on the owner's machine to encode art and audio, never in CI and never in the browser, so it carries no linter, no type checker and no tests by choice rather than by oversight. See `docs/backlog.md` for what is still open.
+CI runs lint, format, tests and build on every push to `main`, then deploys the site. It does **not** deploy either worker. `npm run build` type-checks the room worker along with the app: the root `tsconfig.json` references `./server`, whose project holds `server/*.ts` and everything it bundles to the same strictness as the rest of the source. The counter worker is checked the same way, by its own project, and `scripts/*.ts` and `eslint.config.js` belong to the node project, so every line of TypeScript and JavaScript in the repo is type-checked by `npm run build`. The Python under `scripts/art/` and `scripts/audio/` is deliberately outside all of it: it runs by hand on the owner's machine to encode art and audio, never in CI and never in the browser, so it carries no linter, no type checker and no tests by choice rather than by oversight. See `docs/backlog.md` for what is still open.
 
 A build is about 394 KB of JavaScript and 30 KB of CSS, roughly 118 KB and 7 KB gzipped.
 
