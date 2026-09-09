@@ -20,7 +20,10 @@
     "data:report": "node src/data/report.ts",
     "sim": "node src/sim/cli.ts",
     "online:smoke": "node scripts/online-smoke.ts",
-    "deploy:check": "node scripts/deploy-check.ts"
+    "deploy:check": "node scripts/deploy-check.ts",
+    "deploy:rooms": "node scripts/deploy-worker.ts rooms",
+    "deploy:counter": "node scripts/deploy-worker.ts counter",
+    "errors": "node scripts/errors.ts"
   },
   "dependencies": {
     "react": "^19.2.8",
@@ -29,6 +32,8 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260904.1",
     "@eslint/js": "^10.0.1",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
@@ -38,6 +43,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.5",
     "globals": "^17.12.0",
+    "happy-dom": "^20.14.3",
     "prettier": "^3.9.6",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.69.0",

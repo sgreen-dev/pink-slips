@@ -98,6 +98,119 @@ describe('the matches counter', () => {
     expect(await countOf(await from('5.6.7.8'))).toBe(2)
   })
 
+  it('says which commit it was deployed from, without touching the count', async () => {
+    // The deploy check reads this to tell a stale worker from a current one (backlog Q36).
+    const { env, data } = fakeKv({ matches: '7' })
+    const withCommit = { ...env, COMMIT: 'abc1234' } as Env
+    const response = await worker.fetch(new Request(`${URL_}version`), withCommit)
+    expect(await response.json()).toEqual({ commit: 'abc1234' })
+    expect(data.get('matches')).toBe('7')
+  })
+
+  it('says the commit is unknown when it was deployed without one', async () => {
+    const response = await worker.fetch(new Request(`${URL_}version`), fakeKv().env)
+    expect(await response.json()).toEqual({ commit: 'unknown' })
+  })
+
+  it('records a crash, keeping only what finds the bug', async () => {
+    const { env, data } = fakeKv()
+    const response = await worker.fetch(
+      new Request(`${URL_}error`, {
+        method: 'POST',
+        headers: { Origin: SITE, 'CF-Connecting-IP': '1.2.3.4' },
+        body: JSON.stringify({
+          message: 'the board blew up',
+          stack: 'at Board',
+          commit: 'abc1234',
+        }),
+      }),
+      env,
+    )
+    expect(response.status).toBe(200)
+    const stored = JSON.parse(data.get('errors') ?? '[]') as { message: string; commit: string }[]
+    expect(stored).toHaveLength(1)
+    expect(stored[0]?.message).toBe('the board blew up')
+    expect(stored[0]?.commit).toBe('abc1234')
+  })
+
+  it('refuses a report from an origin that is not the game', async () => {
+    const { env, data } = fakeKv()
+    const response = await worker.fetch(
+      new Request(`${URL_}error`, {
+        method: 'POST',
+        headers: { Origin: 'https://elsewhere.example' },
+        body: JSON.stringify({ message: 'x' }),
+      }),
+      env,
+    )
+    expect(response.status).toBe(403)
+    expect(data.get('errors')).toBeUndefined()
+  })
+
+  it('keeps only the most recent reports, so one bad day cannot fill the store', async () => {
+    const { env, data } = fakeKv()
+    for (let i = 0; i < 30; i++) {
+      vi.setSystemTime(1_000_000 + i * 20_000)
+      await worker.fetch(
+        new Request(`${URL_}error`, {
+          method: 'POST',
+          headers: { Origin: SITE, 'CF-Connecting-IP': '1.2.3.4' },
+          body: JSON.stringify({ message: `crash ${i}` }),
+        }),
+        env,
+      )
+    }
+    const stored = JSON.parse(data.get('errors') ?? '[]') as { message: string }[]
+    expect(stored).toHaveLength(25)
+    // Newest first, so the last crash is the one at the top.
+    expect(stored[0]?.message).toBe('crash 29')
+  })
+
+  it('cuts a huge message and stack down rather than storing them whole', async () => {
+    const { env, data } = fakeKv()
+    await worker.fetch(
+      new Request(`${URL_}error`, {
+        method: 'POST',
+        headers: { Origin: SITE, 'CF-Connecting-IP': '1.2.3.4' },
+        body: JSON.stringify({ message: 'm'.repeat(5000), stack: 's'.repeat(50_000) }),
+      }),
+      env,
+    )
+    const stored = JSON.parse(data.get('errors') ?? '[]') as { message: string; stack: string }[]
+    expect(stored[0]?.message.length).toBe(300)
+    expect(stored[0]?.stack.length).toBe(2000)
+  })
+
+  it('drops a report with no message, and never lets a bad body throw', async () => {
+    const { env, data } = fakeKv()
+    const send = (body: string) =>
+      worker.fetch(
+        new Request(`${URL_}error`, {
+          method: 'POST',
+          headers: { Origin: SITE, 'CF-Connecting-IP': '9.9.9.9' },
+          body,
+        }),
+        env,
+      )
+    expect((await send('not json at all')).status).toBe(200)
+    vi.setSystemTime(1_100_000)
+    expect((await send(JSON.stringify({ stack: 'only a stack' }))).status).toBe(200)
+    expect(data.get('errors')).toBeUndefined()
+  })
+
+  it('adds a match without disturbing the crash reports, and the other way round', async () => {
+    // The two share a namespace but not a gap, so one must never crowd the other out.
+    const { env, data } = fakeKv({ matches: '4' })
+    const head = { Origin: SITE, 'CF-Connecting-IP': '1.2.3.4' }
+    await worker.fetch(
+      new Request(`${URL_}error`, { method: 'POST', headers: head, body: '{"message":"x"}' }),
+      env,
+    )
+    const counted = await worker.fetch(new Request(URL_, { method: 'POST', headers: head }), env)
+    expect(await countOf(counted)).toBe(5)
+    expect(JSON.parse(data.get('errors') ?? '[]')).toHaveLength(1)
+  })
+
   it('turns away any other method', async () => {
     const response = await call(fakeKv().env, 'DELETE', { Origin: SITE })
     expect(response.status).toBe(405)
