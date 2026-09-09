@@ -40,7 +40,9 @@ npm run dev
 | `npm run sim -- --matches 5000 --seed 1`   | play CPU against CPU and print the balance report |
 | `npm run data:report`                      | print the roster grid by tier and type          |
 
-Pushes to `main` build and deploy to GitHub Pages automatically.
+## Deploy
+
+Pushes to `main` build and deploy the site to GitHub Pages automatically. **The room worker does not: deploy it by hand on every release**, with `cd server && npx wrangler deploy`, or the site ships against a service running older code. `npm run deploy:check` confirms every deployed part answers. The full checklist is in [docs/deploy.md](docs/deploy.md).
 
 The matches-played counter on the start screen is optional. It reads a small Cloudflare Worker in `counter/`; deploy it with `npx wrangler deploy` from that directory after creating a KV namespace, then set the worker URL as the repository variable `VITE_COUNTER_URL`. Without the variable the counter is simply absent.
 

@@ -590,7 +590,7 @@ The engine is deterministic given a seed. Every rule in section 3 is a unit test
 
 **Camera**: `src/ui/scroll.ts` holds the moves, `scrollRowBack` and `reveal`, which settles on the scroll's end or a timeout and returns a cancel, with the two timings; `src/ui/interaction.ts` holds the pure checks `handedOver` and `opponentAdvanced`, tested; `Board.tsx` counts both with its render-time adjustment and dispatches an advance from `reveal`'s callback, holding the buttons meanwhile. `scrollPageTop` and `scrollPanelTop` are the instant moves, called from `Board` when the race-end banner closes, from `ResultScreen` when it mounts and when the pack pop-up closes, and from `PackDialog` when a pack opens.
 
-**Stack**: TypeScript, React, Vite, Vitest. Deployed as a static site to GitHub Pages.
+**Stack**: TypeScript, React, Vite, Vitest. The site is a static build deployed to GitHub Pages by Actions on every push to `main`; the two workers are deployed by hand with `wrangler`, and the room worker bundles `src/protocol`, `src/server`, `src/engine`, `src/data` and two files from `src/collection`, so it goes out with every release rather than only when `server/` changes. The checklist is `docs/deploy.md`.
 
 ---
 
