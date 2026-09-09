@@ -46,7 +46,7 @@ import {
   saveDraft,
   upsertGarage,
   type SavedGarage,
-} from './storage.ts'
+} from '../browser/storage.ts'
 
 interface BuilderScreenProps {
   onBack: () => void

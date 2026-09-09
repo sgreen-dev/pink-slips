@@ -7,7 +7,7 @@ import type { CollectionState } from '../protocol/records.ts'
 import type { AccountData, LeaderboardRow } from '../server/directory.ts'
 import type { SocketLike, SocketFactory } from './online.ts'
 import { newSeed } from './seed.ts'
-import { browserStorage, saveGarages, type StorageLike } from './storage.ts'
+import { browserStorage, saveGarages, type StorageLike } from '../browser/storage.ts'
 
 /**
  * The player account (DESIGN.md 13). A player is made from a name and lives on the service,

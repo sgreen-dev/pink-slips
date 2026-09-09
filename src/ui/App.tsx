@@ -26,7 +26,7 @@ import { ProfileScreen } from './ProfileScreen.tsx'
 import { newSeed } from './seed.ts'
 import { useSound } from './sound/useSound.ts'
 import { StartScreen } from './StartScreen.tsx'
-import { loadGarages } from './storage.ts'
+import { loadGarages } from '../browser/storage.ts'
 
 type Screen =
   | { kind: 'start' }

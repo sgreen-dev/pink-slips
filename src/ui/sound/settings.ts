@@ -1,4 +1,4 @@
-import { browserStorage, readRecord, writeRecord, type StorageLike } from '../storage.ts'
+import { browserStorage, readRecord, writeRecord, type StorageLike } from '../../browser/storage.ts'
 
 /** Which sounds the player wants (DESIGN.md 8). Both on unless turned off; remembered. */
 export interface SoundSettings {

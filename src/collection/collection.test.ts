@@ -7,7 +7,7 @@ import { createMatch, seedRng, TUNABLES } from '../engine/index.ts'
 import { starterConfig } from '../engine/test-helpers.ts'
 import type { CollectionState } from '../protocol/records.ts'
 import { Directory, type Store } from '../server/directory.ts'
-import { GARAGES_KEY, type StorageLike } from '../ui/storage.ts'
+import { GARAGES_KEY, type StorageLike } from '../browser/storage.ts'
 import {
   copiesOwned,
   countIds,

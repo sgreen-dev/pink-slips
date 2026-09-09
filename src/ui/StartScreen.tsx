@@ -12,7 +12,7 @@ import { MatchCounter } from './MatchCounter.tsx'
 import type { PlayerView } from './PlayerDialog.tsx'
 import { RulesButton, RulesDialog } from './RulesDialog.tsx'
 import { SoundButton } from './sound/SoundButton.tsx'
-import { loadGarages } from './storage.ts'
+import { loadGarages } from '../browser/storage.ts'
 
 interface StartScreenProps {
   onStart: (

@@ -14,7 +14,7 @@ import {
   normalizeCode,
   type OnlineSeat,
 } from './online.ts'
-import { loadGarages } from './storage.ts'
+import { loadGarages } from '../browser/storage.ts'
 
 /**
  * How a player enters a room: a fresh join with a garage, a resume with a saved token, or a

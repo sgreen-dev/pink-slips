@@ -28,10 +28,18 @@ export default defineConfig([
     },
   },
   {
-    // The engine, CPU, simulator, server and protocol are pure TypeScript and never import
-    // from the UI. Note `src/collection` and `src/data` reach the worker too but are not listed
-    // here; see backlog Q28.
-    files: ['src/engine/**', 'src/cpu/**', 'src/sim/**', 'src/server/**', 'src/protocol/**'],
+    // Everything the room worker bundles is pure TypeScript and never imports from the UI.
+    // `src/collection` and `src/data` are on this list because the worker reaches them too; the
+    // browser's storage wrapper lives in `src/browser` rather than `src/ui` so that holds.
+    files: [
+      'src/engine/**',
+      'src/cpu/**',
+      'src/sim/**',
+      'src/server/**',
+      'src/protocol/**',
+      'src/collection/**',
+      'src/data/**',
+    ],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -39,8 +47,7 @@ export default defineConfig([
           patterns: [
             {
               group: ['**/ui', '**/ui/**', 'react', 'react-dom'],
-              message:
-                'Engine, CPU, simulator, server and protocol code must not depend on the UI.',
+              message: 'Code the room worker bundles must not depend on the UI.',
             },
           ],
         },

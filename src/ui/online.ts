@@ -8,7 +8,7 @@ import {
   type ServerMessage,
 } from '../protocol/messages.ts'
 import { raceEndBetween, type RaceEnd } from './celebration.ts'
-import { browserStorage, readRecord, writeRecord, type StorageLike } from './storage.ts'
+import { browserStorage, readRecord, writeRecord, type StorageLike } from '../browser/storage.ts'
 
 /**
  * The client side of online play (DESIGN.md 13): where the room service is, the socket that

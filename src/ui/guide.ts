@@ -6,7 +6,7 @@
 
 import { currentPlayer, TUNABLES, type MatchState, type PlayerIndex } from '../engine/index.ts'
 import type { RaceEnd } from './celebration.ts'
-import { browserStorage, readRecord, writeRecord, type StorageLike } from './storage.ts'
+import { browserStorage, readRecord, writeRecord, type StorageLike } from '../browser/storage.ts'
 
 export const GUIDE_KEY = 'pink-slips.guide.v1'
 
