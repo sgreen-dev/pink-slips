@@ -1,6 +1,7 @@
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { backdropUrl } from './artwork.ts'
 import { Backdrop } from './Backdrop.tsx'
+import { RulesButton, RulesDialog } from './RulesDialog.tsx'
 import { CarCard } from './CarCard.tsx'
 import { Plate } from './Plate.tsx'
 import { MAX_NAME_LENGTH } from '../protocol/messages.ts'
@@ -28,6 +29,7 @@ export function ProfileScreen({ onBack, onShowCode }: ProfileScreenProps) {
   const account = useContext(AccountContext)
   // The cars kept through laps, in chrome (DESIGN.md 12, Laps).
   const keepsakes = Object.keys(account?.data.collection.variants.chrome ?? {})
+  const rules = useRef<HTMLDialogElement>(null)
   const [rows, setRows] = useState<LeaderboardRow[] | null>(null)
   const [name, setName] = useState(account?.data.profile.name ?? '')
   const [busy, setBusy] = useState<'name' | 'code' | null>(null)
@@ -86,9 +88,11 @@ export function ProfileScreen({ onBack, onShowCode }: ProfileScreenProps) {
     <main className="start profile">
       <Backdrop image={backdropUrl('profile')} />
       <header className="builder__header">
+        <span className="board__brand">Pink Slips</span>
         <h1 className="builder__title">{profile ? profile.name : 'Profile'}</h1>
+        <RulesButton dialogRef={rules} label="Rules" small />
         <button type="button" className="button" onClick={onBack}>
-          Back
+          Back to start
         </button>
       </header>
       {profile ? (
@@ -182,15 +186,15 @@ export function ProfileScreen({ onBack, onShowCode }: ProfileScreenProps) {
                   Sign out of this browser? You will need your recovery code to get this player
                   back.
                 </span>
-                <button type="button" className="button button--primary" onClick={account.signOut}>
-                  Sign out
-                </button>
                 <button
                   type="button"
                   className="button button--ghost"
                   onClick={() => setConfirmOut(false)}
                 >
                   Stay
+                </button>
+                <button type="button" className="button button--primary" onClick={account.signOut}>
+                  Sign out
                 </button>
               </>
             ) : (
@@ -243,6 +247,7 @@ export function ProfileScreen({ onBack, onShowCode }: ProfileScreenProps) {
           </table>
         )}
       </section>
+      <RulesDialog dialogRef={rules} />
     </main>
   )
 }

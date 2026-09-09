@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react'
+import { useContext, useRef, useState } from 'react'
 import { backdropUrl } from './artwork.ts'
 import { Backdrop } from './Backdrop.tsx'
 import {
@@ -52,6 +52,7 @@ import { CarCard } from './CarCard.tsx'
 import { Filter } from './Filter.tsx'
 import { ModCard } from './ModCard.tsx'
 import { PackReveal } from './PackReveal.tsx'
+import { RulesButton, RulesDialog } from './RulesDialog.tsx'
 
 interface CollectionScreenProps {
   onBack: () => void
@@ -73,6 +74,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const account = useContext(AccountContext)
   const [state, setState] = useState<CollectionState>(() => loadCollection())
   const [opened, setOpened] = useState<Opened | null>(null)
+  const rules = useRef<HTMLDialogElement>(null)
   const [tab, setTab] = useState<'cars' | 'mods'>('cars')
   const [type, setType] = useState<CarType | 'all'>('all')
   const [tier, setTier] = useState<Tier | 'all'>('all')
@@ -211,6 +213,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
       <header className="builder__header">
         <span className="board__brand">Pink Slips</span>
         <h1 className="builder__title">Collection</h1>
+        <RulesButton dialogRef={rules} label="Rules" small />
         <button type="button" className="button" onClick={onBack}>
           Back to start
         </button>
@@ -240,9 +243,85 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         )}
         <p className="collection__summary">
           You own {ownedCount(owned)} of {ALL_CARD_IDS.length} cards.
-          {state.credits > 0 ? ' ' + state.credits + ' credits.' : ''}
           <Plate laps={state.laps} size="md" />
         </p>
+        <button
+          type="button"
+          className="button button--primary button--big"
+          disabled={state.packs === 0}
+          onClick={() => void open()}
+        >
+          {state.packs === 0
+            ? 'No packs to open'
+            : `Open a pack (${state.packs} ${state.packs === 1 ? 'pack' : 'packs'} waiting)`}
+        </button>
+        <p className="builder__hint">
+          Finishing a match earns {packsPerMatch} pack. Beating the CPU earns {packsPerCpuWin}. A
+          pack holds {packCarCount(state.laps)} cars and {TUNABLES.collection.packMods} mods.
+        </p>
+        {opened && <PackReveal pack={opened.pack} fresh={opened.fresh} />}
+        {(spareCount > 0 || state.credits > 0) && (
+          <div className="collection__scrap">
+            {/* Credits sit beside the controls that earn and spend them, not up in the summary. */}
+            <p>
+              <strong>
+                {state.credits} {state.credits === 1 ? 'credit' : 'credits'}.
+              </strong>{' '}
+              {spareCount > 0
+                ? `You hold ${spareCount} spare ${spareCount === 1 ? 'card' : 'cards'} past what any deck can use. Scrapping them costs you nothing you could play, and never touches a card with a finish.`
+                : 'Spend them on any card you do not own.'}
+            </p>
+            {state.credits > 0 && (
+              <div className="collection__row">
+                <label className="collection__buy">
+                  Buy{' '}
+                  <select value={wanted} onChange={(event) => setWanted(event.target.value)}>
+                    <option value="">a card you do not own</option>
+                    {missing.map((card) => (
+                      <option key={card.id} value={card.id}>
+                        {card.name} — {card.price}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  className="button button--primary"
+                  disabled={wanted === '' || (cardPrice(wanted) ?? 0) > state.credits}
+                  onClick={() => void doBuy()}
+                >
+                  {wanted === '' ? 'Pick a card' : `Buy for ${cardPrice(wanted) ?? 0} credits`}
+                </button>
+              </div>
+            )}
+            {spareCount > 0 &&
+              (confirmScrap ? (
+                <span className="board__confirm">
+                  Scrap them?
+                  <button
+                    type="button"
+                    className="button button--ghost"
+                    onClick={() => setConfirmScrap(false)}
+                  >
+                    Keep them
+                  </button>
+                  <button
+                    type="button"
+                    className="button button--primary"
+                    onClick={() => void doScrap()}
+                  >
+                    Scrap for {spareValue} credits
+                  </button>
+                </span>
+              ) : (
+                <button type="button" className="button" onClick={() => setConfirmScrap(true)}>
+                  Scrap {spareCount} spare {spareCount === 1 ? 'card' : 'cards'}
+                </button>
+              ))}
+            {scrapError && <p className="builder__notice">{scrapError}</p>}
+            {boughtNote && <p className="builder__hint">{boughtNote}</p>}
+          </div>
+        )}
         {complete && (
           <div className="collection__lap">
             <p>
@@ -262,13 +341,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
             </label>
             {confirmLap ? (
               <span className="board__confirm">
-                <button
-                  type="button"
-                  className="button button--primary"
-                  onClick={() => void takeLap()}
-                >
-                  Take lap {state.laps + 1}
-                </button>
+                Start over?
                 <button
                   type="button"
                   className="button button--ghost"
@@ -276,91 +349,22 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
                 >
                   Not yet
                 </button>
+                <button
+                  type="button"
+                  className="button button--primary"
+                  onClick={() => void takeLap()}
+                >
+                  Take lap {state.laps + 1}
+                </button>
               </span>
             ) : (
-              <button
-                type="button"
-                className="button button--primary"
-                onClick={() => setConfirmLap(true)}
-              >
+              <button type="button" className="button" onClick={() => setConfirmLap(true)}>
                 Take the lap
               </button>
             )}
             {lapError && <p className="builder__notice">{lapError}</p>}
           </div>
         )}
-        {(spareCount > 0 || state.credits > 0) && (
-          <div className="collection__scrap">
-            <p>
-              You hold {spareCount} spare {spareCount === 1 ? 'card' : 'cards'} past what any deck
-              can use. Scrapping them costs you nothing you could play, and never touches a card
-              with a finish.
-            </p>
-            {confirmScrap ? (
-              <span className="board__confirm">
-                <button
-                  type="button"
-                  className="button button--primary"
-                  onClick={() => void doScrap()}
-                >
-                  Scrap for {spareValue} credits
-                </button>
-                <button
-                  type="button"
-                  className="button button--ghost"
-                  onClick={() => setConfirmScrap(false)}
-                >
-                  Keep them
-                </button>
-              </span>
-            ) : (
-              <button
-                type="button"
-                className="button button--primary"
-                disabled={spareCount === 0}
-                onClick={() => setConfirmScrap(true)}
-              >
-                Scrap {spareCount} spare {spareCount === 1 ? 'card' : 'cards'}
-              </button>
-            )}
-            <label className="collection__buy">
-              Buy{' '}
-              <select value={wanted} onChange={(event) => setWanted(event.target.value)}>
-                <option value="">a card you do not own</option>
-                {missing.map((card) => (
-                  <option key={card.id} value={card.id}>
-                    {card.name} — {card.price}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              className="button"
-              disabled={wanted === '' || (cardPrice(wanted) ?? 0) > state.credits}
-              onClick={() => void doBuy()}
-            >
-              {wanted === '' ? 'Pick a card' : `Buy for ${cardPrice(wanted) ?? 0} credits`}
-            </button>
-            {scrapError && <p className="builder__notice">{scrapError}</p>}
-            {boughtNote && <p className="builder__hint">{boughtNote}</p>}
-          </div>
-        )}
-        <button
-          type="button"
-          className="button button--primary button--big"
-          disabled={state.packs === 0}
-          onClick={() => void open()}
-        >
-          {state.packs === 0
-            ? 'No packs to open'
-            : `Open a pack (${state.packs} ${state.packs === 1 ? 'pack' : 'packs'} waiting)`}
-        </button>
-        <p className="builder__hint">
-          Finishing a match earns {packsPerMatch} pack. Beating the CPU earns {packsPerCpuWin}. A
-          pack holds {packCarCount(state.laps)} cars and {TUNABLES.collection.packMods} mods.
-        </p>
-        {opened && <PackReveal pack={opened.pack} fresh={opened.fresh} />}
       </section>
 
       <section className="builder__browse">
@@ -369,7 +373,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
             type="button"
             role="tab"
             aria-selected={tab === 'cars'}
-            className={`button ${tab === 'cars' ? 'button--primary' : ''}`}
+            className={`button ${tab === 'cars' ? 'button--on' : ''}`}
             onClick={() => setTab('cars')}
           >
             Cars ({CARS.filter((car) => copiesOwned(owned, car.id) > 0).length}/{CARS.length})
@@ -378,7 +382,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
             type="button"
             role="tab"
             aria-selected={tab === 'mods'}
-            className={`button ${tab === 'mods' ? 'button--primary' : ''}`}
+            className={`button ${tab === 'mods' ? 'button--on' : ''}`}
             onClick={() => setTab('mods')}
           >
             Mods ({MODS.filter((mod) => copiesOwned(owned, mod.id) > 0).length}/{MODS.length})
@@ -446,6 +450,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
           </>
         )}
       </section>
+      <RulesDialog dialogRef={rules} />
     </main>
   )
 }

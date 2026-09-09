@@ -137,7 +137,7 @@ export function StartScreen({
       <div className="start__modes" role="group" aria-label="Mode">
         <button
           type="button"
-          className={`button ${mode === 'cpu' ? 'button--primary' : ''}`}
+          className={`button ${mode === 'cpu' ? 'button--on' : ''}`}
           aria-pressed={mode === 'cpu'}
           onClick={() => setMode('cpu')}
         >
@@ -145,25 +145,12 @@ export function StartScreen({
         </button>
         <button
           type="button"
-          className={`button ${mode === 'hotseat' ? 'button--primary' : ''}`}
+          className={`button ${mode === 'hotseat' ? 'button--on' : ''}`}
           aria-pressed={mode === 'hotseat'}
           onClick={() => setMode('hotseat')}
         >
           Hotseat: two players, one screen
         </button>
-        {onOnline && (
-          <button type="button" className="button" onClick={onOnline}>
-            Play online
-          </button>
-        )}
-        <button type="button" className="button button--ghost" onClick={onBuilder}>
-          Deck builder
-        </button>
-        <button type="button" className="button button--ghost" onClick={onCollection}>
-          Collection{packs > 0 ? ` · ${packs} ${packs === 1 ? 'pack' : 'packs'} to open` : ''}
-        </button>
-        <RulesButton dialogRef={rules} />
-        <SoundButton />
       </div>
       {mode === 'cpu' && (
         <div className="start__levels" role="group" aria-label="CPU level">
@@ -171,7 +158,7 @@ export function StartScreen({
             <button
               key={option}
               type="button"
-              className={`button button--small ${level === option ? 'button--primary' : ''}`}
+              className={`button button--small ${level === option ? 'button--on' : ''}`}
               aria-pressed={level === option}
               onClick={() => setLevel(option)}
             >
@@ -206,6 +193,23 @@ export function StartScreen({
       <button type="button" className="button button--primary button--big" onClick={start}>
         Start the match
       </button>
+      {/* Everything that leaves this screen, plus the utilities. Kept out of the Mode group so a
+          screen reader does not announce the speaker as a way to play (DESIGN.md 8). */}
+      <div className="start__nav">
+        {onOnline && (
+          <button type="button" className="button" onClick={onOnline}>
+            Play online
+          </button>
+        )}
+        <button type="button" className="button button--ghost" onClick={onBuilder}>
+          Deck builder
+        </button>
+        <button type="button" className="button button--ghost" onClick={onCollection}>
+          Collection{packs > 0 ? ` · ${packs} ${packs === 1 ? 'pack' : 'packs'} to open` : ''}
+        </button>
+        <RulesButton dialogRef={rules} />
+        <SoundButton />
+      </div>
       <MatchCounter />
       <RulesDialog dialogRef={rules} />
     </main>

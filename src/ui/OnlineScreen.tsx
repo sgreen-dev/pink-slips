@@ -1,6 +1,7 @@
 import { useContext, useEffect, useRef, useState } from 'react'
 import { backdropUrl } from './artwork.ts'
 import { Backdrop } from './Backdrop.tsx'
+import { RulesButton, RulesDialog } from './RulesDialog.tsx'
 import type { PlayerConfig } from '../engine/index.ts'
 import { MAX_NAME_LENGTH } from '../protocol/messages.ts'
 import { AccountContext, QueueClient, queueUrl, type QueueStatus } from './account.ts'
@@ -39,6 +40,7 @@ interface OnlineScreenProps {
 
 export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineScreenProps) {
   const account = useContext(AccountContext)
+  const rules = useRef<HTMLDialogElement>(null)
   const [options] = useState<GarageOption[]>(() => garageOptions(loadGarages()))
   const [saved, setSaved] = useState<OnlineSeat | null>(() => loadOnlineSeat())
   const [name, setName] = useState(account?.data.profile.name ?? saved?.name ?? 'Player')
@@ -126,9 +128,11 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
     <main className="start online">
       <Backdrop image={backdropUrl('online')} />
       <header className="builder__header">
+        <span className="board__brand">Pink Slips</span>
         <h1 className="builder__title">Play online</h1>
+        <RulesButton dialogRef={rules} label="Rules" small />
         <button type="button" className="button" onClick={onBack}>
-          Back
+          Back to start
         </button>
       </header>
       <p className="start__tagline">
@@ -263,6 +267,7 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
           {error}
         </p>
       )}
+      <RulesDialog dialogRef={rules} />
     </main>
   )
 }

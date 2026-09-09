@@ -47,6 +47,7 @@
 | 28 | Loaner garages and the intro set | done | d965d6e |
 | 29 | Turn timer with forfeit, online | done | afaddab |
 | 30 | Scrapping duplicates for credits | done | 267b1f7 |
+| 31 | Button order across every screen | done | (pending) |
 
 ---
 

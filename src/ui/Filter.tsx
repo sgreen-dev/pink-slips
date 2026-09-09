@@ -12,7 +12,7 @@ export function Filter<T extends string>({ label, value, options, onChange }: Fi
       <span className="filters__label">{label}</span>
       <button
         type="button"
-        className={`button button--small ${value === 'all' ? 'button--primary' : ''}`}
+        className={`button button--small ${value === 'all' ? 'button--on' : ''}`}
         onClick={() => onChange('all')}
       >
         All
@@ -21,7 +21,7 @@ export function Filter<T extends string>({ label, value, options, onChange }: Fi
         <button
           key={key}
           type="button"
-          className={`button button--small ${value === key ? 'button--primary' : ''}`}
+          className={`button button--small ${value === key ? 'button--on' : ''}`}
           onClick={() => onChange(key)}
         >
           {text}

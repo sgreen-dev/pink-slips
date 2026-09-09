@@ -69,6 +69,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
   const [family, setFamily] = useState<ModFamily | 'all'>('all')
   const [notice, setNotice] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
   const rules = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
@@ -115,10 +116,6 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
 
   const remove = () => {
     if (!draft.id) return
-    if (!confirmDelete) {
-      setConfirmDelete(true)
-      return
-    }
     if (deleteGarage(draft.id)) {
       setSaved(loadGarages())
       sync()
@@ -140,6 +137,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
   const reset = () => {
     update(emptyDraft())
     clearDraft()
+    setConfirmReset(false)
   }
 
   return (
@@ -252,14 +250,61 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
                   Save as new
                 </button>
               )}
-              {draft.id && (
-                <button type="button" className="button" onClick={remove}>
-                  {confirmDelete ? 'Confirm delete' : 'Delete'}
+              {/* Both of these destroy work, so each arms a pair and the second click lands on a
+                  different button, the way every other confirm in the app does. */}
+              {confirmReset ? (
+                <span className="board__confirm">
+                  Clear the draft?
+                  <button
+                    type="button"
+                    className="button button--ghost"
+                    onClick={() => setConfirmReset(false)}
+                  >
+                    Keep it
+                  </button>
+                  <button type="button" className="button button--primary" onClick={reset}>
+                    Clear it
+                  </button>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className="button button--ghost"
+                  onClick={() => {
+                    setConfirmDelete(false)
+                    setConfirmReset(true)
+                  }}
+                >
+                  Start empty
                 </button>
               )}
-              <button type="button" className="button button--ghost" onClick={reset}>
-                Start empty
-              </button>
+              {draft.id &&
+                (confirmDelete ? (
+                  <span className="board__confirm">
+                    Delete this garage?
+                    <button
+                      type="button"
+                      className="button button--ghost"
+                      onClick={() => setConfirmDelete(false)}
+                    >
+                      Keep it
+                    </button>
+                    <button type="button" className="button button--primary" onClick={remove}>
+                      Delete it
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    className="button button--ghost"
+                    onClick={() => {
+                      setConfirmReset(false)
+                      setConfirmDelete(true)
+                    }}
+                  >
+                    Delete
+                  </button>
+                ))}
             </div>
             {notice && <p className="builder__notice">{notice}</p>}
 
@@ -285,7 +330,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
                 type="button"
                 role="tab"
                 aria-selected={tab === 'cars'}
-                className={`button ${tab === 'cars' ? 'button--primary' : ''}`}
+                className={`button ${tab === 'cars' ? 'button--on' : ''}`}
                 onClick={() => setTab('cars')}
               >
                 Cars ({CARS.length})
@@ -294,7 +339,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
                 type="button"
                 role="tab"
                 aria-selected={tab === 'mods'}
-                className={`button ${tab === 'mods' ? 'button--primary' : ''}`}
+                className={`button ${tab === 'mods' ? 'button--on' : ''}`}
                 onClick={() => setTab('mods')}
               >
                 Mods ({MODS.length})

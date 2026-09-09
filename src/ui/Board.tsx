@@ -257,17 +257,17 @@ export function Board({
               Leave this match? It will not count.
               <button
                 type="button"
-                className="button button--small button--primary"
-                onClick={onExit}
-              >
-                Leave
-              </button>
-              <button
-                type="button"
                 className="button button--small button--ghost"
                 onClick={() => setConfirmExit(false)}
               >
                 Stay
+              </button>
+              <button
+                type="button"
+                className="button button--small button--primary"
+                onClick={onExit}
+              >
+                Leave
               </button>
             </span>
           ) : (

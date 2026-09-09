@@ -71,6 +71,12 @@ h2 {
   background: var(--pink-2);
   border-color: var(--pink-2);
 }
+/* A toggle that is on: a tab, a filter chip, a level. Distinct from the main action. */
+.button--on {
+  background: var(--asphalt-3, #2b2b31);
+  border-color: var(--pink);
+  color: var(--paper-ink);
+}
 .button--ghost {
   background: transparent;
 }
@@ -619,10 +625,19 @@ h2 {
   margin: 0.5rem auto 1.5rem;
 }
 .start__modes {
+  display: grid;
+  justify-content: center;
+  justify-items: stretch;
+  gap: 0.4rem;
+}
+/* Everything that leaves the start screen, plus Rules and sound. */
+.start__nav {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
   gap: 0.4rem;
+  margin: 1rem auto 0;
 }
 .start__soon {
   color: var(--muted);
@@ -989,7 +1004,8 @@ h2 {
     min-height: 2.6rem;
   }
   .controls__buttons .button,
-  .guide__actions .button {
+  .guide__actions .button,
+  .builder__actions .button {
     flex: 1 1 auto;
   }
   .track {
@@ -1403,7 +1419,7 @@ h2 {
 .collection__scrap {
   display: grid;
   gap: 0.5rem;
-  justify-items: start;
+  justify-items: center;
   margin: 0.5rem 0;
   padding: 0.75rem 1rem;
   border: 2px solid var(--line);
@@ -1418,9 +1434,17 @@ h2 {
   margin-left: 0.3rem;
   max-width: 18rem;
 }
+.collection__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
 .collection__lap {
   display: grid;
   gap: 0.5rem;
+  justify-items: center;
   margin: 0.5rem 0;
   padding: 0.75rem 1rem;
   border: 2px solid var(--gold);
@@ -1708,11 +1732,6 @@ h2 {
   border-radius: 0.5rem;
   text-align: left;
   white-space: nowrap;
-}
-.start__modes .sound__menu {
-  right: auto;
-  left: 50%;
-  transform: translateX(-50%);
 }
 .sound__switch {
   display: flex;
