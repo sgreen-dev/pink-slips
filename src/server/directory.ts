@@ -21,6 +21,7 @@ import {
 import {
   applyTransfer,
   protectKeepsakes,
+  losesOnly,
   sanitizeTransfer,
   type Transfer,
 } from '../collection/stakes.ts'
@@ -475,8 +476,13 @@ export class Directory {
       return { packs: 0, stakes: null, data: this.dataOf(account) }
     }
     const packs = packsEarned(mode as Mode, won === true, this.t)
-    // Stakes against the CPU are trusted the way the result is: once a minute, real cars only.
-    const transfer = mode === 'cpu' ? sanitizeTransfer(stakes) : null
+    // Stakes against the CPU move cars one way only, so only the losses are taken from the
+    // client. Stakes need a loaner garage on the CPU side (DESIGN.md 12), every car in one is
+    // exempt from stakes, and so a won CPU match cannot hand the player a card. A report that
+    // claims otherwise is either an old client or an invention; either way its gains are
+    // dropped rather than minting cards a match could never have produced. Losses stay
+    // trusted, since a client that lies about them only robs itself.
+    const transfer = mode === 'cpu' ? losesOnly(sanitizeTransfer(stakes)) : null
     const owned = transfer
       ? applyTransfer(account.collection.owned, transfer)
       : account.collection.owned

@@ -54,6 +54,17 @@ function staked(ids: readonly string[]): string[] {
 }
 
 /**
+ * The same transfer with nothing gained. A CPU match runs in the browser, so the service takes
+ * its word for the result; this is what keeps that word from being worth cards. Stakes against
+ * the CPU need a loaner garage on its side and every loaner car is exempt, so a real CPU match
+ * never moves a car to the player and only the losses are worth reading (DESIGN.md 12).
+ */
+export function losesOnly(transfer: Transfer | null): Transfer | null {
+  if (!transfer) return null
+  return { gained: [], lost: transfer.lost }
+}
+
+/**
  * Each seat's transfer at the end of a match: what it took, and what the other seat took
  * from it. Seat 0 first, as the players are.
  */

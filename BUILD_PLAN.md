@@ -52,6 +52,7 @@
 | 33 | Test scrapping and buying on both sides | done | 3c067ed |
 | 34 | Type-check the room worker in CI | done | 214a800 |
 | 35 | Check and test the counter worker | done | 041911e |
+| 36 | Bound what a CPU result can mint | done | (pending) |
 
 ---
 

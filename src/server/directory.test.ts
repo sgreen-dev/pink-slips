@@ -9,6 +9,7 @@ import {
   ownedCount,
   owns,
 } from '../collection/collection.ts'
+import { LOANER_CAR_IDS } from '../collection/stakes.ts'
 import { CARS } from '../data/cars.ts'
 import { TUNABLES } from '../engine/index.ts'
 import { normalizeRecoveryCode, RECOVERY_LENGTH } from '../protocol/messages.ts'
@@ -363,30 +364,78 @@ describe('stakes on the service', () => {
   const CHIRON = 'bugatti-chiron'
   const F40 = 'ferrari-f40'
 
-  it('applies a CPU stakes report once a minute, real cars only, starters exempt', async () => {
-    const { directory, tick } = setUp()
+  /**
+   * A CPU match runs in the browser, so the service takes the client's word for the result.
+   * These say what that word is worth: packs at one report a minute, losses as reported, and
+   * nothing gained, since stakes need a loaner on the CPU side and no loaner car can change
+   * hands (DESIGN.md 12).
+   */
+  it('takes the losses a CPU report claims but never the gains', async () => {
+    const { directory } = setUp()
     const { token } = await directory.createPlayer('Ann')
-    const starter = STARTERS[0]?.cars[0] ?? ''
+    await directory.claim(token, {
+      collection: {
+        owned: { ...introCollection(), [F40]: 1 },
+        packs: 0,
+        variants: NO_VARIANTS,
+        laps: 0,
+        grantVersion: GRANT_VERSION,
+        credits: 0,
+      } satisfies CollectionState,
+      garages: [],
+    })
     const first = await directory.cpuResult(token, 'cpu', true, {
-      gained: [CHIRON, starter, 'no-such-car'],
+      gained: [CHIRON, STARTERS[0]?.cars[0] ?? '', 'no-such-car'],
       lost: [F40],
     })
-    expect(first?.stakes).toEqual({ gained: [CHIRON], lost: [F40] })
-    expect(first?.data.collection.owned[CHIRON]).toBe(1)
-    expect(first?.data.collection.owned[starter]).toBe(1)
+    expect(first?.stakes).toEqual({ gained: [], lost: [F40] })
+    expect(first?.data.collection.owned[CHIRON] ?? 0).toBe(0)
+    expect(first?.data.collection.owned[F40]).toBe(0)
+    // The packs the match really earned still arrive; only the invented cars are dropped.
+    expect(first?.packs).toBe(packsPerCpuWin)
+  })
+
+  it('mints nothing however many cars a report claims, even at a minute apart', async () => {
+    const { directory, tick } = setUp()
+    const { token } = await directory.createPlayer('Ann')
+    const hypers = CARS.filter((car) => car.tier === 'hyper' && !LOANER_CAR_IDS.has(car.id))
+      .slice(0, 3)
+      .map((car) => car.id)
+    const before = (await directory.accountFor(token))?.collection.owned
+    for (let attempt = 0; attempt < 5; attempt++) {
+      await directory.cpuResult(token, 'cpu', true, { gained: hypers, lost: [] })
+      tick(CPU_RESULT_GAP_MS)
+    }
+    const after = await directory.accountFor(token)
+    expect(after?.collection.owned).toEqual(before)
+  })
+
+  it('applies a report once a minute and never for hotseat', async () => {
+    const { directory, tick } = setUp()
+    const { token } = await directory.createPlayer('Ann')
+    await directory.claim(token, {
+      collection: {
+        owned: { ...introCollection(), [CHIRON]: 1, [F40]: 1 },
+        packs: 0,
+        variants: NO_VARIANTS,
+        laps: 0,
+        grantVersion: GRANT_VERSION,
+        credits: 0,
+      } satisfies CollectionState,
+      garages: [],
+    })
+    expect(
+      (await directory.cpuResult(token, 'cpu', false, { gained: [], lost: [CHIRON] }))?.stakes,
+    ).toEqual({ gained: [], lost: [CHIRON] })
     // Within the minute nothing more is applied, packs or cars.
-    const repeat = await directory.cpuResult(token, 'cpu', true, { gained: [CHIRON], lost: [] })
+    const repeat = await directory.cpuResult(token, 'cpu', false, { gained: [], lost: [F40] })
     expect(repeat?.stakes).toBeNull()
-    expect(repeat?.data.collection.owned[CHIRON]).toBe(1)
-    tick(CPU_RESULT_GAP_MS)
-    const loss = await directory.cpuResult(token, 'cpu', false, { gained: [], lost: [CHIRON] })
-    expect(loss?.stakes).toEqual({ gained: [], lost: [CHIRON] })
-    expect(loss?.data.collection.owned[CHIRON]).toBe(0)
+    expect(repeat?.data.collection.owned[F40]).toBe(1)
     tick(CPU_RESULT_GAP_MS)
     // Hotseat has no stakes, whatever the client sends.
-    const hotseat = await directory.cpuResult(token, 'hotseat', true, { gained: [F40], lost: [] })
+    const hotseat = await directory.cpuResult(token, 'hotseat', true, { gained: [], lost: [F40] })
     expect(hotseat?.stakes).toBeNull()
-    expect(hotseat?.data.collection.owned[F40]).toBeUndefined()
+    expect(hotseat?.data.collection.owned[F40]).toBe(1)
   })
 
   it('moves the pink slips between two accounts at a match result', async () => {
