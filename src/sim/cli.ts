@@ -3,7 +3,7 @@ import { formatPackReport, runPackSimulation } from './packs.ts'
 import { formatReport, runSimulation } from './run.ts'
 
 /**
- * `npm run sim -- --matches 5000 --seed 1`, `npm run sim -- --packs 10000` for pack opening, or
+ * `npm run sim -- --matches 20000 --seed 1`, `npm run sim -- --packs 10000` for pack opening, or
  * `npm run sim -- --levels --matches 1000` for CPU level against level.
  */
 
@@ -38,7 +38,7 @@ if (process.argv.includes('--levels')) {
   }
 } else {
   const report = runSimulation({
-    matches: readArg('matches', 5000),
+    matches: readArg('matches', 20_000),
     seed: readArg('seed', 1),
   })
   console.log(formatReport(report))

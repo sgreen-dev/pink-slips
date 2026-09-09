@@ -32,7 +32,11 @@ export interface Profile {
   stageByAdvanceOnly: boolean
   /** Hold a first-advance stall until the opponent's staged car is fueled. */
   holdStalls: boolean
-  /** Fuel the bench car that can be ready by the time the current race ends. */
+  /**
+   * Fuel the bench car that can be ready by the time the current race ends. Off at every
+   * level: the rule was tried and dropped because it starved Hypers of fuel and cost Pro
+   * matches (DESIGN.md 6). Kept as the record of that, not as a level that exists.
+   */
   benchByRace: boolean
   /** How coin flips are read in forecasts. */
   coinFlips: CoinFlips

@@ -3,7 +3,6 @@ import { getMod } from '../data/mods.ts'
 import {
   currentPlayer,
   legalActions,
-  otherPlayer,
   type Action,
   type MatchState,
   type PlayerIndex,
@@ -181,10 +180,6 @@ export function turnSummary(state: MatchState, names: readonly [string, string])
   if (state.phase.kind === 'choice') return `${names[acting]} chooses a Part`
   const step = { fuel: 'fuel', mods: 'mods', advance: 'advance' }[state.turn.step]
   return `Race ${state.race.number} · Turn ${state.turn.number} · ${names[acting]} · ${step}`
-}
-
-export function opponentOf(player: PlayerIndex): PlayerIndex {
-  return otherPlayer(player)
 }
 
 /**

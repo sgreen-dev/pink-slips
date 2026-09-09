@@ -13,7 +13,7 @@ import {
   type GuideStepId,
 } from './guide.ts'
 import { NO_SELECTION, prompt } from './interaction.ts'
-import type { StorageLike } from './storage.ts'
+import type { StorageLike } from '../browser/storage.ts'
 
 const CIVIC = 'honda-civic-si'
 const MUSTANG = 'ford-mustang-gt'

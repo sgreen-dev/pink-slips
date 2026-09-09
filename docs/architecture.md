@@ -37,7 +37,7 @@ Three deployables, only the site automatic. See `docs/deploy.md`.
 | Browser `localStorage` | `collection.v1` cards, packs, finishes, laps; `garages.v1` saved garages; `draft.v1` builder draft; `session.v1` account token; `online.v1` room seat; `guide.v1`, `sound.v1`, `rebase.v1` flags | that browser only |
 | `MatchRoom` storage | `room` the match snapshot, `expiresAt` its day-long TTL | until the room expires |
 | `AccountDirectory` storage | `acct:` accounts, `sess:` sessions, `prov:` providers, `rec:` recovery codes | the account |
-| Counter KV | `matches`, plus `stamp:<address>` rate limits | forever |
+| Counter KV | `matches`, plus `stamp:<address>` rate limits | `matches` forever; a stamp for 60 seconds |
 
 All keys are prefixed `pink-slips.` in the browser. A guest's collection lives only in that browser; making a player copies it to the account, which is what carries it to another device.
 
@@ -58,7 +58,7 @@ Every browser read and write goes through a try/catch wrapper (`src/ui/storage.t
 | `server/` | Cloudflare Worker: sockets, Durable Objects, storage. | `worker.ts` |
 | `counter/` | Cloudflare Worker: one number in KV. Standalone. | `worker.ts` |
 
-`src/ui` splits deliberately: twenty `.ts` modules hold the logic, thirteen of them with their own unit tests, and the twenty-nine `.tsx` components stay thin. Vitest runs in a `node` environment with no DOM, so anything worth testing is moved out of the component rather than rendered in a test.
+`src/ui` splits deliberately: the logic sits in `.ts` modules with their own unit tests and the `.tsx` components stay thin. Counting `src/ui` and `src/ui/sound` together, that is 17 of 27 modules tested; the untested ten are React plumbing and the two audio players, which need a browser. Vitest runs in a `node` environment with no DOM, so anything worth testing is moved out of the component rather than rendered in a test.
 
 `DESIGN.md` section 9 has the folder map and the engine API shape.
 
@@ -122,7 +122,7 @@ Where a row says no rationale is recorded, that is a gap in the record, not an e
 | `npm run deploy:check` | Says whether the site and both workers answer |
 | `npm run online:smoke -- <url>` | Plays a real ranked match against a deployment |
 
-CI runs lint, format, tests and build on every push to `main`, then deploys the site. It does **not** deploy either worker. `npm run build` type-checks the room worker along with the app: the root `tsconfig.json` references `./server`, whose project holds `server/worker.ts` and everything it bundles to the same strictness as the rest of the source. The counter worker is checked the same way, by its own project. Gaps that remain: `scripts/*.ts` and `eslint.config.js` are in no project, and CI runs on pushes to `main` only, never on a pull request, so every check happens after the code has landed. See `docs/backlog.md`.
+CI runs lint, format, tests and build on every push to `main`, then deploys the site. It does **not** deploy either worker. `npm run build` type-checks the room worker along with the app: the root `tsconfig.json` references `./server`, whose project holds `server/worker.ts` and everything it bundles to the same strictness as the rest of the source. The counter worker is checked the same way, by its own project, and `scripts/*.ts` and `eslint.config.js` belong to the node project, so every line of TypeScript and JavaScript in the repo is type-checked by `npm run build`. The Python under `scripts/art/` and `scripts/audio/` is deliberately outside all of it: it runs by hand on the owner's machine to encode art and audio, never in CI and never in the browser, so it carries no linter, no type checker and no tests by choice rather than by oversight. Gaps that remain: `scripts/*.ts` and `eslint.config.js` are in no project, and CI runs on pushes to `main` only, never on a pull request, so every check happens after the code has landed. See `docs/backlog.md`.
 
 A build is about 394 KB of JavaScript and 30 KB of CSS, roughly 118 KB and 7 KB gzipped.
 

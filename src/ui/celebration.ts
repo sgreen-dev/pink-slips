@@ -127,7 +127,10 @@ function step(session: Session, action: Action): Session {
   if (session.raceEnd !== null) return session
   const match = apply(session.match, action)
   const before = session.match
-  const keep = isModPlay(action) && before.phase.kind === 'turn' && before.turn.step === 'mods'
+  // The mod step has not ended while it is still the mod step, so a fuel placement owed inside
+  // it -- what Extra Tank forces -- keeps the stack rather than clearing it (DESIGN.md 3.2).
+  const inModStep = before.phase.kind === 'turn' && before.turn.step === 'mods'
+  const keep = inModStep && (isModPlay(action) || action.type === 'fuel')
   const history = keep ? [...session.history, before] : []
   return { match, raceEnd: raceEndBetween(before, match), history }
 }

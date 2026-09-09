@@ -24,14 +24,7 @@ import {
   rebaseNoticePending,
   type CollectionState,
 } from '../collection/persist.ts'
-import {
-  AccountContext,
-  buyOnline,
-  claimLapOnline,
-  mirror,
-  openNext,
-  scrapOnline,
-} from './account.ts'
+import { AccountContext, buyOnline, claimLapOnline, openNext, scrapOnline } from './account.ts'
 import { detailTargetFor } from './detail.ts'
 import { useDetail } from './useDetail.ts'
 import { Plate } from './Plate.tsx'
@@ -124,7 +117,6 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         return
       }
       account.update(data)
-      mirror(data)
       applyCollection(data.collection)
     } else {
       const next = scrapLocally()
@@ -159,7 +151,6 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         return
       }
       account.update(data)
-      mirror(data)
       applyCollection(data.collection)
       showBought(bought)
     } else {
@@ -182,7 +173,6 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         return
       }
       account.update(data)
-      mirror(data)
       setState(data.collection)
     } else {
       const next = claimLapLocally(chosen)

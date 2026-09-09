@@ -639,10 +639,6 @@ h2 {
   gap: 0.4rem;
   margin: 1rem auto 0;
 }
-.start__soon {
-  color: var(--muted);
-  font-size: 0.85rem;
-}
 .start__pickers {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2117,9 +2113,6 @@ h2 {
   --w: 1.6rem;
   border-width: 2px;
   border-radius: 0.2rem;
-}
-.card-back--md {
-  --w: 11rem;
 }
 .garage__fan {
   display: inline-flex;

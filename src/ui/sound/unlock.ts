@@ -42,11 +42,6 @@ function silentClip(): string {
   return `data:audio/wav;base64,${btoa(binary)}`
 }
 
-/** True once the engine reports that it is running. */
-export function engineRunning(): boolean {
-  return audioContext()?.state === 'running'
-}
-
 /**
  * Called from a gesture handler. Resumes the engine and starts the silent loop. Safe to call
  * on every gesture: once everything runs it does nothing.

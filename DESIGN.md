@@ -325,7 +325,7 @@ Sabotage, Pit:
 2. Garages are face up for the whole match, including fuel, parts, and wear on every car. Hands are hidden.
 3. Each player shuffles their mod deck and draws 5.
 4. Coin flip decides who goes first.
-5. Each player stages one car from their garage. Both staged cars start at 0 ft.
+5. Each player stages one car from their garage, the first player choosing first. Both staged cars start at 0 ft. Staging is in turn and in the open, not simultaneous: whoever stages second sees what they are racing, which is an edge the Pro CPU is built to use (section 6) and a hotseat player gets in the same way.
 
 ### 3.2 Turn
 
@@ -352,13 +352,15 @@ Computed in this order. All results floor to whole feet, minimum 0.
 6. Apply wear: `× (1 − wearRate × wearCount)` where **wearRate = 0.10** (tunable). Luxury uses half the rate.
 7. If the car's distance reaches or passes **1320 ft**, the race ends immediately.
 
+Three details the seven steps above leave out, which the code fixes and a reader should not have to infer. A Boost that multiplies the advance, which is Redline, applies after the flat bonuses of step 4 and before the Sabotage of step 5, so a halving cuts the boosted number. Overdrive's second advance is a fraction applied after the wear of step 6, not before it. And that second advance carries the car's Part and type-identity bonuses but not the Boosts already spent on the turn, since a Boost is spent once. Effective weight is also floored at 1 lb, so weight reductions can never divide by zero.
+
 Worked example at K = 3000, no mods, using the verified figures in `src/data/cars.ts`: Civic Si (200 hp, 2,952 lb, JDM ×1.2) advances 243 ft and needs 6 advances. Mustang GT (460 hp, 3,705 lb) advances 372 ft and needs 4. Aventador SVJ (759 hp, 3,362 lb dry) advances 677 ft and needs 2. Rimac Nevera (1,914 hp, 5,071 lb) advances 1,132 ft and needs 2.
 
 ### 3.4 Race end
 
 1. The winning player takes the losing car as a **pink slip** into their prize pile. Its fuel and parts are discarded.
 2. The winning car gains **1 wear**.
-3. Both players may stage any car from their garage. The loser must, since their staged slot is empty. The winner may keep the same car or swap for free. Wear, fuel, and parts stay on the car they are on.
+3. Both players may stage any car from their garage, the loser first, since their staged slot is empty and the winner may keep the car they have. As at setup this is in turn and in the open, so the winner chooses knowing what they face. The winner may keep the same car or swap for free. Wear, fuel, and parts stay on the car they are on.
 4. Both staged cars reset to 0 ft. Pending sabotage is cleared.
 5. Play continues with the next turn in normal alternation.
 
@@ -437,11 +439,11 @@ One rule-based opponent, used both in play and by the simulator. It never cheats
 4. Attach Parts to the car with the most races likely left in it.
 5. Between races, stage the car with the highest ready advance, preferring lower wear.
 
-When none of those applies, the CPU still uses its turn. It attaches any Part that improves a car. It plays a Boost worth at least 50 ft on an advance it will make this turn, counting fuel and cards a Boost gives as worth something too, and a Sabotage that takes at least 50 ft off an advance the opponent is ready to make. It never plays a Boost that would leave its staged car unable to advance. It reads every coin flip as tails unless the Sports rule makes heads certain, and assumes the opponent's hand is empty. Exact ties between equal choices are broken by a seed, so the CPU is deterministic given a state and a seed.
+When none of those applies, the CPU still uses its turn. It attaches any Part that improves a car. It plays a Boost worth at least 50 ft on an advance it will make this turn, counting fuel and cards a Boost gives as worth something too, and a Sabotage that takes at least 50 ft off an advance the opponent is ready to make. It never plays a Boost that would leave its staged car unable to advance. It reads every coin flip as tails unless the Sports rule makes heads certain, and assumes the opponent's hand is empty. Reading tails means a card whose worth is all on heads is worth nothing to it: Rookie and Street never play Overdrive, and never play Nitrous Shot except behind the Sports rule, so the Overdrives in the EVs deck and the Nitrous Shots in Exotics sit in the CPU's hand at two of the three levels. Pro reads flips at their expected value and plays both. Exact ties between equal choices are broken by a seed, so the CPU is deterministic given a state and a seed.
 
 **Levels** (phase 13). Three levels, chosen at match start, default Street. *Rookie* fuels and stages by the rules above but never uses the win rule or the stop rule, spends a Boost or Sabotage only when it is worth twice the usual threshold, and stages by highest advance alone, ignoring fuel and wear. *Street* is the opponent described above, unchanged. *Pro* adds four things: it holds a first-advance stall such as Red Light until the opponent's staged car is fueled and about to make its first advance; it stages the car that finishes a race in the fewest turns with fueling counted, and when it stages second it takes the weakest car that still finishes first with a turn to spare, so a Hyper stays on the bench until it can move and the strong cars stay unworn; it reads coin flips at their expected value instead of as tails; and it values Boosts and Sabotage by the turns they take off its own finish or add to the opponent's rather than by feet, since in a turn-based race only the turn count decides. A rule that fueled only bench cars able to be ready by the end of the current race was tried and dropped: it starved Hypers of fuel and cost Pro matches. A level is a profile of switches the CPU reads and the engine never sees. Rookie cannot play for stakes (section 12).
 
-**Measured** (`npm run sim -- --levels`, 1,000 matches per pairing, seed 1): over random garages Street beats Rookie 77% and Pro beats Rookie 80%, while Pro and Street split 49 to 51, so on arbitrary garages Street already plays near the ceiling of this rule set. Over the starter pairings, the garages a new player races, Pro beats Street 62%, Street beats Rookie 74%, and Pro beats Rookie 81%. Every level takes about 0.01 ms per action. The next real step up for Pro would be a one-turn lookahead through the engine rather than more rules.
+**Measured** (`npm run sim -- --levels`, 4,000 matches per pairing, seed 1, re-taken in phase 42 after the roster grew and the generator widened): over random garages Street beats Rookie 72% and Pro beats Rookie 75%, while Pro and Street split 52 to 48, so on arbitrary garages Street already plays near the ceiling of this rule set. Over the starter pairings, the garages a new player races, Pro beats Street 61%, Street beats Rookie 75%, and Pro beats Rookie 83%. Every level takes about 0.01 ms per action. The next real step up for Pro would be a one-turn lookahead through the engine rather than more rules.
 
 ---
 
@@ -452,6 +454,7 @@ A headless command, `npm run sim`, that plays CPU against CPU for thousands of m
 **Reports**
 
 - Win rate by garage type composition and by tier composition
+- Win rate of the player who goes first, which a coin flip decides and a rematch alternates
 - Average match length in turns per player, and distribution
 - Mod play rates and win rate when played
 - Race outcomes by tier matchup

@@ -41,7 +41,8 @@ export function SoundProvider({ children }: { children: ReactNode }) {
 
   const setSettings = useCallback((next: SoundSettings) => {
     setSettingsState(next)
-    saveSoundSettings(next)
+    // Worst case the switches are back on next visit, which the player can simply set again.
+    void saveSoundSettings(next)
   }, [])
 
   const effects = settings.effects

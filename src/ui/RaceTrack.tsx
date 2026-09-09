@@ -16,7 +16,8 @@ interface RaceTrackProps {
   ref?: Ref<HTMLDivElement>
 }
 
-const MARKS = [0, 330, 660, 990, 1320]
+/** Quarter marks along the track, so the labels follow the tunable rather than repeat it. */
+const MARKS = [0, 0.25, 0.5, 0.75, 1].map((part) => Math.round(TUNABLES.trackLengthFt * part))
 
 /** Two lanes seen from above. Markers slide toward the finish line at 1320 ft. */
 export function RaceTrack({ state, names, lanes, frozen, ref }: RaceTrackProps) {

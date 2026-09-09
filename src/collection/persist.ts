@@ -7,7 +7,7 @@ import {
   saveGarages,
   writeRecord,
   type StorageLike,
-} from '../ui/storage.ts'
+} from '../browser/storage.ts'
 import {
   GRANT_VERSION,
   NO_VARIANTS,

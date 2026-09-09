@@ -7,7 +7,7 @@ import type { CollectionState } from '../protocol/records.ts'
 import type { AccountData, LeaderboardRow } from '../server/directory.ts'
 import type { SocketLike, SocketFactory } from './online.ts'
 import { newSeed } from './seed.ts'
-import { browserStorage, saveGarages, type StorageLike } from './storage.ts'
+import { browserStorage, saveGarages, type StorageLike } from '../browser/storage.ts'
 
 /**
  * The player account (DESIGN.md 13). A player is made from a name and lives on the service,
@@ -120,7 +120,6 @@ export function rotateRecovery(
   ).then((r) => r.body?.recoveryCode ?? null)
 }
 
-/** Renames the player. `refused` when the name is not allowed; null when unreachable. */
 /** Scraps the account's surplus for credits; 'refused' when there is nothing spare. */
 export async function scrapOnline(
   endpoint: string,
@@ -174,6 +173,7 @@ export async function claimLapOnline(
   return body
 }
 
+/** Renames the player. `refused` when the name is not allowed; null when unreachable. */
 export async function renamePlayer(
   endpoint: string,
   token: string,

@@ -99,7 +99,8 @@ export function Match({
   // The guide runs through a browser's first CPU match and is remembered once finished or skipped.
   const [guide, setGuide] = useState(() => cpu && !loadGuideDone())
   const endGuide = () => {
-    saveGuideDone()
+    // A refused write only means the guide is offered again next visit.
+    void saveGuideDone()
     setGuide(false)
   }
   const sound = useSound()

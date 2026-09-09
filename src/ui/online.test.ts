@@ -21,7 +21,7 @@ import {
   type SocketLike,
   type Status,
 } from './online.ts'
-import type { StorageLike } from './storage.ts'
+import type { StorageLike } from '../browser/storage.ts'
 
 function fakeStore(): StorageLike & { data: Map<string, string> } {
   const data = new Map<string, string>()

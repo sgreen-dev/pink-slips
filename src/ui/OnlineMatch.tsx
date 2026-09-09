@@ -4,6 +4,7 @@ import { addPacks, loadCollection } from '../collection/persist.ts'
 import { currentPlayer, isOver, type Action, type PlayerIndex } from '../engine/index.ts'
 import { EMPTY_TRANSFER, type Transfer } from '../collection/stakes.ts'
 import { AccountContext, fetchMe } from './account.ts'
+import { copyText } from './clipboard.ts'
 import { Board } from './Board.tsx'
 import { isModPlay } from './celebration.ts'
 import { recordMatch } from './counter.ts'
@@ -55,6 +56,7 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
   const [recorded, setRecorded] = useState(false)
   const [earned, setEarned] = useState(0)
   const [unstored, setUnstored] = useState(false)
+  const [seatUnstored, setSeatUnstored] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [settled, setSettled] = useState<Transfer | null>(null)
   const [copied, setCopied] = useState(false)
@@ -111,7 +113,13 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
     for (const event of events) sound.play(event.name, event.intensity)
   }, [view, seat, sound])
   useEffect(() => {
-    if (token !== null && seat !== null) saveOnlineSeat({ code, token, seat, name: entry.name })
+    if (token === null || seat === null) return
+    // The seat is what a refresh rejoins with, so a refused write costs the match rather than a
+    // convenience. Set from a callback, as the other write notices are.
+    const saved = saveOnlineSeat({ code, token, seat, name: entry.name })
+    void Promise.resolve(saved).then((ok) => {
+      if (!ok) setSeatUnstored(true)
+    })
   }, [code, token, seat, entry.name])
 
   // At the end, the room says what the account earned; a guest keeps the local rule.
@@ -197,12 +205,7 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
   if (view === null || seat === null) {
     const link = roomLink(session.code, window.location)
     const copy = async () => {
-      try {
-        await navigator.clipboard.writeText(link)
-        setCopied(true)
-      } catch {
-        setCopied(false)
-      }
+      setCopied(await copyText(link))
     }
     const status =
       session.status !== 'open'
@@ -310,7 +313,9 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
       ? 'Connection lost. Reconnecting…'
       : !session.opponentConnected
         ? `${opponentName} has dropped out. Waiting for them to come back…`
-        : (session.error ?? (yourTurn ? 'Your turn' : `${opponentName} is playing…`))
+        : seatUnstored
+          ? 'This browser is blocking storage, so a refresh will not bring you back to this room.'
+          : (session.error ?? (yourTurn ? 'Your turn' : `${opponentName} is playing…`))
 
   return (
     <VariantContext value={variantOf}>

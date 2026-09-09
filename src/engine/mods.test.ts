@@ -416,6 +416,18 @@ describe('Sabotage', () => {
     expect(moved.after.race.distanceFt[1]).toBe(baseFt(MIATA))
   })
 
+  // A skipped turn is not the advance a stacked sabotage was aimed at (DESIGN.md 2.5), so
+  // Red Light spends itself and leaves the rest waiting for the advance that does happen.
+  it('red-light spends only itself, leaving a stacked sabotage for the advance that happens', () => {
+    // Player 1 already carries a Wheelspin from an earlier turn when the Red Light lands.
+    const { after } = afterSabotage('red-light', { pending: { flatReductionFt: 100 } })
+    expect(after.log.some((e) => e.kind === 'advanceSkipped' && e.reason === 'redLight')).toBe(true)
+    expect(after.race.distanceFt[1]).toBe(0)
+    // The skip is spent; the 100 ft it did not apply to is still owed.
+    expect(after.players[1].pendingSabotage.skipAdvance).toBe(false)
+    expect(after.players[1].pendingSabotage.flatReductionFt).toBe(100)
+  })
+
   it('oil-slick takes 50 ft off, and 50 more on heads', () => {
     let state = sabotage(duel({ hand: ['oil-slick'] }, {}, { seed: seedFor(false) }), 'oil-slick')
     expect(state.players[1].pendingSabotage.flatReductionFt).toBe(50)

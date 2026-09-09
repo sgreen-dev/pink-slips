@@ -4,7 +4,7 @@ import { MOD_BY_ID, getMod } from '../data/mods.ts'
 import { STARTERS } from '../data/starters.ts'
 import type { ModFamily } from '../data/types.ts'
 import { copyLimit, TUNABLES } from '../engine/index.ts'
-import type { DraftRecord, SavedGarage } from './storage.ts'
+import type { DraftRecord, SavedGarage } from '../browser/storage.ts'
 
 /**
  * Rules and helpers for building a garage of 5 and a deck of 30 (DESIGN.md 3.1). Given a

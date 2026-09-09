@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { StorageLike } from '../storage.ts'
+import type { StorageLike } from '../../browser/storage.ts'
 import { DEFAULT_SOUND, loadSoundSettings, saveSoundSettings, SOUND_KEY } from './settings.ts'
 
 function fakeStore(): StorageLike & { data: Map<string, string> } {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { MAX_NAME_LENGTH, normalizeRecoveryCode } from '../protocol/messages.ts'
 import { nameProblem } from '../protocol/names.ts'
 import { createPlayer, recoverPlayer } from './account.ts'
+import { copyText } from './clipboard.ts'
 
 export type PlayerView = 'create' | 'recover' | 'code'
 
@@ -82,12 +83,7 @@ export function PlayerDialog({ endpoint, view, code, onSignedIn, onClose }: Play
   }
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(shown ?? '')
-      setCopied(true)
-    } catch {
-      setCopied(false)
-    }
+    setCopied(await copyText(shown ?? ''))
   }
 
   return (

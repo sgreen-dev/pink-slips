@@ -24,7 +24,7 @@ import {
   upsertGarage,
   type SavedGarage,
   type StorageLike,
-} from './storage.ts'
+} from '../browser/storage.ts'
 
 function fakeStorage(initial: Record<string, string> = {}, failWrites = false): StorageLike {
   const map = new Map(Object.entries(initial))

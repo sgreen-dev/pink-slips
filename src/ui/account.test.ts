@@ -16,7 +16,7 @@ import {
   type QueueStatus,
 } from './account.ts'
 import type { SocketLike } from './online.ts'
-import { GARAGES_KEY, type StorageLike } from './storage.ts'
+import { GARAGES_KEY, type StorageLike } from '../browser/storage.ts'
 
 function fakeStore(): StorageLike & { data: Map<string, string> } {
   const data = new Map<string, string>()
