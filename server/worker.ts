@@ -224,7 +224,12 @@ export class AccountDirectory extends DurableObject<Env> {
     const url = new URL(request.url)
     const headers = corsHeaders(request)
     const path = url.pathname
-    const token = bearer(request) ?? url.searchParams.get('session')
+    // A browser cannot set a header on a WebSocket, so the queue socket is the one route whose
+    // token may ride on the URL. Everywhere else takes the Authorization header only: a token
+    // in a query string lands in request logs, in anything between, and in browser history,
+    // and this one lasts a year and renews itself (DESIGN.md 13).
+    const token =
+      path === '/queue' ? (bearer(request) ?? url.searchParams.get('session')) : bearer(request)
 
     if (path === '/auth/player' && request.method === 'POST') {
       const body = (await readJson(request)) as Record<string, unknown> | null

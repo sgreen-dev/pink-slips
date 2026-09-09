@@ -57,6 +57,7 @@
 | 38 | Count new players on the directory | done | f92c4a8 |
 | 39 | Write a room only once someone joins | done | cc3aad8 |
 | 40 | Keep sessions under a hash | done | 8e8a9c7 |
+| 41 | Take the session token from the header | done | (pending) |
 
 ---
 
