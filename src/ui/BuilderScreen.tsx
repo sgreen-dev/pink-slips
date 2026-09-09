@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { backdropUrl } from './artwork.ts'
 import { Backdrop } from './Backdrop.tsx'
 import { AccountContext, pushGarages } from './account.ts'
@@ -62,7 +62,9 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
   }
   const [collection] = useState(() => loadCollection())
   const owned = collection.owned
-  const variantOf = lookupFrom(collection.variants)
+  // The value handed to VariantContext. Rebuilt per render it would be a new function every
+  // time, and every card below reads it, so nothing under here could ever skip a re-render.
+  const variantOf = useMemo(() => lookupFrom(collection.variants), [collection.variants])
   const [tab, setTab] = useState<'cars' | 'mods'>('cars')
   const [type, setType] = useState<CarType | 'all'>('all')
   const [tier, setTier] = useState<Tier | 'all'>('all')
@@ -78,13 +80,20 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
     void saveDraft(draft)
   }, [draft])
 
-  const validation = validateDraft(draft, owned)
-  const counts = deckCounts(draft.deck)
-  const cars = CARS.filter(
-    (car) => (type === 'all' || car.type === type) && (tier === 'all' || car.tier === tier),
+  const validation = useMemo(() => validateDraft(draft, owned), [draft, owned])
+  const counts = useMemo(() => deckCounts(draft.deck), [draft.deck])
+  const cars = useMemo(
+    () =>
+      CARS.filter(
+        (car) => (type === 'all' || car.type === type) && (tier === 'all' || car.tier === tier),
+      ),
+    [type, tier],
   )
-  const mods = MODS.filter((mod) => family === 'all' || mod.family === family)
-  const options = garageOptions(saved)
+  const mods = useMemo(
+    () => MODS.filter((mod) => family === 'all' || mod.family === family),
+    [family],
+  )
+  const options = useMemo(() => garageOptions(saved), [saved])
   const savedName = draft.id ? (saved.find((g) => g.id === draft.id)?.name ?? null) : null
 
   const update = (next: GarageDraft) => {

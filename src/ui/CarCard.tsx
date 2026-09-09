@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { memo, useState, type CSSProperties } from 'react'
 import { VARIANT_LABEL, type Variant } from '../collection/collection.ts'
 import { getCar } from '../data/cars.ts'
 import { getMod } from '../data/mods.ts'
@@ -101,7 +101,12 @@ function Tokens({ state }: { state: CarState }) {
   )
 }
 
-export function CarCard({
+/**
+ * Memoised: the collection draws 126 of these at once, so anything else on that screen changing
+ * — the buy picker, a scrap — would otherwise rebuild every card. Every prop is a string or a
+ * flag, and the two contexts a card reads are stable, so a shallow compare is enough.
+ */
+export const CarCard = memo(function CarCard({
   carId,
   state,
   size = 'md',
@@ -234,4 +239,4 @@ export function CarCard({
       {body}
     </div>
   )
-}
+})

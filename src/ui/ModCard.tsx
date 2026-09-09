@@ -1,5 +1,5 @@
 import { VARIANT_LABEL, type Variant } from '../collection/collection.ts'
-import type { CSSProperties } from 'react'
+import { memo, type CSSProperties } from 'react'
 import { getMod } from '../data/mods.ts'
 import { familyFrameUrl, iconUrl, modArtUrl } from './artwork.ts'
 import { useDetail } from './useDetail.ts'
@@ -23,7 +23,8 @@ interface ModCardProps {
 
 const FAMILY_LABEL = { part: 'Part', boost: 'Boost', sabotage: 'Sabotage' } as const
 
-export function ModCard({
+/** Memoised for the same reason as `CarCard`: the collection draws the whole mod list at once. */
+export const ModCard = memo(function ModCard({
   modId,
   playable,
   selected,
@@ -130,4 +131,4 @@ export function ModCard({
       {body}
     </div>
   )
-}
+})

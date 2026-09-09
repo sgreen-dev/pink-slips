@@ -1,4 +1,4 @@
-import { useContext, useRef, useState } from 'react'
+import { useContext, useMemo, useRef, useState } from 'react'
 import { backdropUrl } from './artwork.ts'
 import { Backdrop } from './Backdrop.tsx'
 import {
@@ -58,6 +58,13 @@ interface Opened {
   fresh: ReadonlySet<string>
 }
 
+/** The filter rows are fixed lists, so they are built once rather than on every render. */
+const TYPE_OPTIONS = CAR_TYPES.map((t) => [t, CAR_TYPE_LABEL[t]] as [CarType, string])
+const TIER_OPTIONS = TIERS.map((t) => [t, TIER_LABEL[t]] as [Tier, string])
+const FAMILY_OPTIONS = (['part', 'boost', 'sabotage'] as const).map(
+  (f) => [f, FAMILY_LABEL[f]] as [ModFamily, string],
+)
+
 /** A card name for either kind of id, for the picker and the line after a buy. */
 function nameOfCard(id: string): string {
   return CAR_BY_ID.get(id)?.name ?? MOD_BY_ID.get(id)?.name ?? id
@@ -83,10 +90,11 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const [confirmLap, setConfirmLap] = useState(false)
   const [lapError, setLapError] = useState<string | null>(null)
   const [packError, setPackError] = useState<string | null>(null)
-  const ownedCars = CARS.filter((car) => owns(owned, car.id))
-  const rarestFirst = [...TIERS].reverse()
-  const defaultKeepsake =
-    rarestFirst.flatMap((t) => ownedCars.filter((car) => car.tier === t))[0]?.id ?? ''
+  const ownedCars = useMemo(() => CARS.filter((car) => owns(owned, car.id)), [owned])
+  const defaultKeepsake = useMemo(() => {
+    const rarestFirst = [...TIERS].reverse()
+    return rarestFirst.flatMap((t) => ownedCars.filter((car) => car.tier === t))[0]?.id ?? ''
+  }, [ownedCars])
   const chosen = keepsake || defaultKeepsake
   // Scrapping spare copies for credits, and buying a card with them (DESIGN.md 12).
   const [confirmScrap, setConfirmScrap] = useState(false)
@@ -94,19 +102,33 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const [scrapError, setScrapError] = useState<string | null>(null)
   const [boughtNote, setBoughtNote] = useState<string | null>(null)
   const openDetail = useDetail()
-  const spare = surplus(state)
-  const spareCount = [...spare.values()].reduce((sum, n) => sum + n, 0)
-  const spareValue = scrapValue(state)
+  const ownedCarCount = useMemo(
+    () => CARS.filter((car) => copiesOwned(owned, car.id) > 0).length,
+    [owned],
+  )
+  const ownedModCount = useMemo(
+    () => MODS.filter((mod) => copiesOwned(owned, mod.id) > 0).length,
+    [owned],
+  )
+  const spare = useMemo(() => surplus(state), [state])
+  const spareCount = useMemo(() => [...spare.values()].reduce((sum, n) => sum + n, 0), [spare])
+  const spareValue = useMemo(() => scrapValue(state), [state])
   // Everything the credits could still add: a card not held at all, and a mod below the copies
   // a deck can hold, since packs used to be the only way to a second or third (DESIGN.md 12).
-  const missing = ALL_CARD_IDS.filter((id) => copiesOwned(owned, id) < usefulCopies(id))
-    .map((id) => ({
-      id,
-      name: nameOfCard(id),
-      held: copiesOwned(owned, id),
-      price: cardPrice(id) ?? 0,
-    }))
-    .sort((a, b) => a.price - b.price || a.name.localeCompare(b.name))
+  // Every card id, mapped and sorted. It answers only to what is owned, so it must not be
+  // rebuilt when the picker beside it changes, which is the whole cost of choosing a card to buy.
+  const missing = useMemo(
+    () =>
+      ALL_CARD_IDS.filter((id) => copiesOwned(owned, id) < usefulCopies(id))
+        .map((id) => ({
+          id,
+          name: nameOfCard(id),
+          held: copiesOwned(owned, id),
+          price: cardPrice(id) ?? 0,
+        }))
+        .sort((a, b) => a.price - b.price || a.name.localeCompare(b.name)),
+    [owned],
+  )
   const applyCollection = (next: CollectionState) => {
     setState(next)
     setConfirmScrap(false)
@@ -191,10 +213,17 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
     setKeepsake('')
     setOpened(null)
   }
-  const cars = CARS.filter(
-    (car) => (type === 'all' || car.type === type) && (tier === 'all' || car.tier === tier),
+  const cars = useMemo(
+    () =>
+      CARS.filter(
+        (car) => (type === 'all' || car.type === type) && (tier === 'all' || car.tier === tier),
+      ),
+    [type, tier],
   )
-  const mods = MODS.filter((mod) => family === 'all' || mod.family === family)
+  const mods = useMemo(
+    () => MODS.filter((mod) => family === 'all' || mod.family === family),
+    [family],
+  )
   const { packsPerMatch, packsPerCpuWin } = TUNABLES.collection
 
   const open = async () => {
@@ -413,7 +442,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
             className={`button ${tab === 'cars' ? 'button--on' : ''}`}
             onClick={() => setTab('cars')}
           >
-            Cars ({CARS.filter((car) => copiesOwned(owned, car.id) > 0).length}/{CARS.length})
+            Cars ({ownedCarCount}/{CARS.length})
           </button>
           <button
             type="button"
@@ -421,7 +450,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
             className={`button ${tab === 'mods' ? 'button--on' : ''}`}
             onClick={() => setTab('mods')}
           >
-            Mods ({MODS.filter((mod) => copiesOwned(owned, mod.id) > 0).length}/{MODS.length})
+            Mods ({ownedModCount}/{MODS.length})
           </button>
         </div>
         <p className="builder__hint">
@@ -430,18 +459,8 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
 
         {tab === 'cars' ? (
           <>
-            <Filter
-              label="Type"
-              value={type}
-              options={CAR_TYPES.map((t) => [t, CAR_TYPE_LABEL[t]] as [CarType, string])}
-              onChange={setType}
-            />
-            <Filter
-              label="Tier"
-              value={tier}
-              options={TIERS.map((t) => [t, TIER_LABEL[t]] as [Tier, string])}
-              onChange={setTier}
-            />
+            <Filter label="Type" value={type} options={TYPE_OPTIONS} onChange={setType} />
+            <Filter label="Tier" value={tier} options={TIER_OPTIONS} onChange={setTier} />
             <div className="browse__grid">
               {cars.map((car) => {
                 const have = copiesOwned(owned, car.id)
@@ -460,14 +479,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
           </>
         ) : (
           <>
-            <Filter
-              label="Family"
-              value={family}
-              options={(['part', 'boost', 'sabotage'] as const).map(
-                (f) => [f, FAMILY_LABEL[f]] as [ModFamily, string],
-              )}
-              onChange={setFamily}
-            />
+            <Filter label="Family" value={family} options={FAMILY_OPTIONS} onChange={setFamily} />
             <div className="browse__grid">
               {mods.map((mod) => {
                 const have = copiesOwned(owned, mod.id)
