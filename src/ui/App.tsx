@@ -127,7 +127,9 @@ export function App() {
   }, [])
 
   const account: AccountHandle | null =
-    ENDPOINT && token && data ? { endpoint: ENDPOINT, token, data, update, signOut } : null
+    ENDPOINT && token && data
+      ? { endpoint: ENDPOINT, token, data, update, replaceToken: signedIn, signOut }
+      : null
   const toStart = () => setScreen({ kind: 'start' })
   const toOnline = () => setScreen({ kind: 'online', prefill: null })
   const openPlayer = (view: PlayerView, code: string | null = null) => setDialog({ view, code })

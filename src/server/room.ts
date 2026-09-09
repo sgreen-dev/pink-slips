@@ -524,6 +524,15 @@ export class Room {
    * The finished match's result, once. Null while the match runs, and null again after it has
    * been taken, so the adapter reports each match one time.
    */
+  /**
+   * Puts a result back for another attempt. The adapter calls this when the directory could not
+   * be reached: the packs, ratings and cars a finished match earned are not something to drop
+   * because one subrequest failed, so the next message or alarm reports it again.
+   */
+  retryResult(): void {
+    this.reported = false
+  }
+
   takeResult(): RoomResult | null {
     if (!this.state || this.reported) return null
     const winner = isOver(this.state)

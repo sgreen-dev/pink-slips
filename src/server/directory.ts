@@ -33,7 +33,7 @@ import {
   RECOVERY_LENGTH,
   type RatingChange,
 } from '../protocol/messages.ts'
-import { MAX_NAME_LENGTH, nameProblem, safeDisplayName } from '../protocol/names.ts'
+import { MAX_NAME_LENGTH, nameProblem, safeDisplayName, stripInvisible } from '../protocol/names.ts'
 import {
   isCollectionState,
   isGarageList,
@@ -78,6 +78,11 @@ export interface Account {
   lastCpuResultAt: number
   /** Hash of the recovery code; the code itself is never stored. */
   recoveryHash?: string
+  /**
+   * Sessions opened before this are refused. Rotating the recovery code moves it, so a session
+   * opened with a code that has been replaced stops working (DESIGN.md 13).
+   */
+  sessionsFrom?: number
 }
 
 /** The public face of an account. */
@@ -125,6 +130,8 @@ export interface MatchOutcome {
 interface Session {
   accountId: string
   expiresAt: number
+  /** When this session was opened, against which `Account.sessionsFrom` is read. */
+  startedAt?: number
 }
 
 interface Stats {
@@ -138,6 +145,8 @@ export const SESSION_RENEW_MS = 24 * 60 * 60 * 1000
 /** Shortest gap between two CPU results from one account. */
 export const CPU_RESULT_GAP_MS = 60_000
 export const LEADERBOARD_SIZE = 50
+/** How long a built leaderboard is reused before the accounts are read again. */
+export const LEADERBOARD_CACHE_MS = 30_000
 
 const ACCOUNT = 'acct:'
 const PROVIDER = 'prov:'
@@ -148,7 +157,9 @@ const CREATIONS = 'made:'
 const STATS = 'stats'
 
 function cleanName(raw: string): string {
-  const name = raw.trim().slice(0, MAX_NAME_LENGTH)
+  // Invisible characters are cut before the trim, so a name that is only bidi marks becomes
+  // Player rather than something that draws as nothing (DESIGN.md 13).
+  const name = stripInvisible(raw).trim().slice(0, MAX_NAME_LENGTH)
   return name || 'Player'
 }
 
@@ -187,6 +198,8 @@ export class Directory {
   private readonly hash: (text: string) => Promise<string>
   private readonly now: () => number
   private readonly t: typeof TUNABLES
+  /** The last built leaderboard, reused for a moment and dropped when a rating moves. */
+  private board: { rows: LeaderboardRow[]; at: number; limit: number } | null = null
 
   constructor(
     store: Store,
@@ -281,16 +294,22 @@ export class Directory {
     return { token: await this.openSession(account.id), data: this.dataOf(account) }
   }
 
-  /** Replaces the recovery code; the old one stops working at once. */
-  async rotateRecovery(token: string): Promise<string | null> {
+  /**
+   * Replaces the recovery code. The old one stops working at once, and so does every session
+   * opened before now, including any opened with the code being replaced -- which is the point
+   * of rotating one. The caller is handed a fresh token, since otherwise the act of securing
+   * the account would sign the owner out of it.
+   */
+  async rotateRecovery(token: string): Promise<{ recoveryCode: string; token: string } | null> {
     const account = await this.accountFor(token)
     if (!account) return null
     const code = recoveryCodeFrom(this.random())
     const recoveryHash = await this.hash(code)
     if (account.recoveryHash) await this.store.delete(`${RECOVERY}${account.recoveryHash}`)
     await this.store.put(`${RECOVERY}${recoveryHash}`, account.id)
-    await this.save({ ...account, recoveryHash })
-    return formatRecoveryCode(code)
+    await this.save({ ...account, recoveryHash, sessionsFrom: this.now() })
+    await this.signOut(token)
+    return { recoveryCode: formatRecoveryCode(code), token: await this.openSession(account.id) }
   }
 
   async rename(token: string, name: unknown): Promise<AccountData | null> {
@@ -314,7 +333,11 @@ export class Directory {
 
   private async openSession(accountId: string): Promise<string> {
     const token = this.random()
-    const session: Session = { accountId, expiresAt: this.now() + SESSION_TTL_MS }
+    const session: Session = {
+      accountId,
+      expiresAt: this.now() + SESSION_TTL_MS,
+      startedAt: this.now(),
+    }
     await this.store.put(await this.sessionKey(token), session)
     return token
   }
@@ -341,7 +364,15 @@ export class Directory {
     if (session.expiresAt - now < SESSION_TTL_MS - SESSION_RENEW_MS) {
       await this.store.put(key, { ...session, expiresAt: now + SESSION_TTL_MS })
     }
-    return this.load(session.accountId)
+    const account = await this.load(session.accountId)
+    if (!account) return null
+    // A recovery code that has been replaced takes its sessions with it. A session with no
+    // startedAt predates this and counts as older than any rotation.
+    if ((session.startedAt ?? 0) < (account.sessionsFrom ?? 0)) {
+      await this.store.delete(key)
+      return null
+    }
+    return account
   }
 
   async signOut(token: string): Promise<void> {
@@ -534,7 +565,9 @@ export class Directory {
     // trusted, since a client that lies about them only robs itself.
     const transfer = mode === 'cpu' ? losesOnly(sanitizeTransfer(stakes)) : null
     const owned = transfer
-      ? applyTransfer(account.collection.owned, transfer)
+      ? // A chrome keepsake never changes hands (DESIGN.md 12), which the guest path has always
+        // honoured and this one did not.
+        applyTransfer(account.collection.owned, transfer, account.collection.variants.chrome)
       : account.collection.owned
     const next: Account = {
       ...account,
@@ -573,7 +606,9 @@ export class Directory {
       if (rated && account.wins + account.losses === 0) newlyRated += 1
       const transfer = transfers ? sanitizeTransfer(won ? transfers.winner : transfers.loser) : null
       const owned = transfer
-        ? applyTransfer(account.collection.owned, transfer)
+        ? // Each side's own keepsakes, so the winner keeps theirs too: protectKeepsakes above
+          // only ever sees the loser's, and a winner can lose a car to the loser mid-match.
+          applyTransfer(account.collection.owned, transfer, account.collection.variants.chrome)
         : account.collection.owned
       const next: Account = {
         ...account,
@@ -598,7 +633,22 @@ export class Directory {
     return ((await this.store.get<Stats>(STATS)) ?? { rated: 0 }).rated
   }
 
+  /**
+   * The top rated players. Building it reads every account, and the route is open to anyone, so
+   * the answer is held for `LEADERBOARD_CACHE_MS` and a rated result clears it. Without that,
+   * repeating one unauthenticated request scans the whole account table each time, on the one
+   * object that also serves matchmaking and the identity check for every room connect.
+   */
   async leaderboard(limit: number = LEADERBOARD_SIZE): Promise<LeaderboardRow[]> {
+    const now = this.now()
+    const held = this.board
+    if (held && held.limit === limit && now - held.at < LEADERBOARD_CACHE_MS) return held.rows
+    const rows = await this.buildLeaderboard(limit)
+    this.board = { rows, at: now, limit }
+    return rows
+  }
+
+  private async buildLeaderboard(limit: number): Promise<LeaderboardRow[]> {
     const accounts = await this.store.list<Account>(ACCOUNT)
     return [...accounts.values()]
       .filter((a) => a.wins + a.losses > 0)
@@ -615,6 +665,8 @@ export class Directory {
   }
 
   private async save(account: Account): Promise<void> {
+    // Every account write can change a name, a rating or a record, all of which the board shows.
+    this.board = null
     await this.store.put(`${ACCOUNT}${account.id}`, account)
   }
 }

@@ -78,10 +78,14 @@ export function ProfileScreen({ onBack, onShowCode }: ProfileScreenProps) {
   const newCode = async () => {
     if (!account) return
     setBusy('code')
-    const code = await rotateRecovery(account.endpoint, account.token)
+    const rotated = await rotateRecovery(account.endpoint, account.token)
     setBusy(null)
-    if (code) onShowCode(code)
-    else setNotice('The service did not answer. Try again in a moment.')
+    if (rotated) {
+      // Rotating ended this browser's session along with the rest; take the one that replaced it
+      // before showing the code, or the next request signs the player out.
+      account.replaceToken(rotated.token)
+      onShowCode(rotated.recoveryCode)
+    } else setNotice('The service did not answer. Try again in a moment.')
   }
 
   return (

@@ -129,8 +129,13 @@ describe('players', () => {
   })
 
   it('rotate their code and rename', async () => {
-    const rotated = answering(200, { recoveryCode: 'NEWW-CODE-HERE' })
-    expect(await rotateRecovery('https://s.dev', 't', rotated.fetcher)).toBe('NEWW-CODE-HERE')
+    // Rotating ends every session opened before it, so the answer carries the token that
+    // replaces this browser's along with the code.
+    const rotated = answering(200, { recoveryCode: 'NEWW-CODE-HERE', token: 'fresh-token' })
+    expect(await rotateRecovery('https://s.dev', 't', rotated.fetcher)).toEqual({
+      recoveryCode: 'NEWW-CODE-HERE',
+      token: 'fresh-token',
+    })
     expect(rotated.calls[0]?.init?.headers).toMatchObject({ Authorization: 'Bearer t' })
     expect(await rotateRecovery('https://s.dev', 't', answering(401, null).fetcher)).toBeNull()
     const renamed = answering(200, { ...sample, profile: { ...sample.profile, name: 'Annie' } })

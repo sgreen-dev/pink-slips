@@ -105,19 +105,23 @@ export async function recoverPlayer(
   return body
 }
 
-/** Replaces the recovery code and returns the new one, shown once. */
+/**
+ * Replaces the recovery code and returns the new one, shown once, with the session token that
+ * replaces this browser's. Rotating ends every session opened before it, this one included, so
+ * the caller has to store the new token or the player signs themselves out.
+ */
 export function rotateRecovery(
   endpoint: string,
   token: string,
   fetcher: Fetcher | undefined = globalThis.fetch,
-): Promise<string | null> {
-  return call<{ recoveryCode: string }>(
+): Promise<{ recoveryCode: string; token: string } | null> {
+  return call<{ recoveryCode: string; token: string }>(
     endpoint,
     '/me/recovery',
     token,
     { method: 'POST' },
     fetcher,
-  ).then((r) => r.body?.recoveryCode ?? null)
+  ).then((r) => r.body ?? null)
 }
 
 /** Scraps the account's surplus for credits; 'refused' when there is nothing spare. */
@@ -292,6 +296,8 @@ export interface AccountHandle {
   data: AccountData
   /** Replaces the account data after the service answered with a fresh copy. */
   update: (data: AccountData) => void
+  /** Takes a replacement session token, which rotating the recovery code hands back. */
+  replaceToken: (token: string) => void
   signOut: () => void
 }
 

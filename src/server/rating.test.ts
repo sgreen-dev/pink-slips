@@ -75,3 +75,36 @@ describe('queue', () => {
     expect(pickPair(stale, now, pairMinRated + 1)?.map((w) => w.accountId)).toEqual(['a', 'b'])
   })
 })
+
+/**
+ * Ratings are farmable if one person can queue twice and pair with themselves, so two waiting
+ * players from one address are never paired for a rating. They can still race in a friend room,
+ * which moves none.
+ */
+describe('pairing two accounts from one address', () => {
+  const at = (accountId: string, address: string | undefined, since = 0): Waiting => ({
+    accountId,
+    rating: 1000,
+    since,
+    ...(address === undefined ? {} : { address }),
+  })
+
+  it('refuses a pair from the same address', () => {
+    expect(pickPair([at('a', '1.2.3.4'), at('b', '1.2.3.4')], 0, 0)).toBeNull()
+  })
+
+  it('pairs them with anyone else who is waiting', () => {
+    const pair = pickPair([at('a', '1.2.3.4'), at('b', '1.2.3.4'), at('c', '5.6.7.8')], 0, 0)
+    expect(pair).not.toBeNull()
+    const ids = (pair ?? []).map((w) => w.accountId).sort()
+    expect(ids).toEqual(['a', 'c'])
+  })
+
+  // Local play and anything the adapter could not read arrive as unknown, which is no
+  // information about who is behind them, so it never blocks a pairing.
+  it('treats an unknown or missing address as no information', () => {
+    expect(pickPair([at('a', 'unknown'), at('b', 'unknown')], 0, 0)).not.toBeNull()
+    expect(pickPair([at('a', undefined), at('b', undefined)], 0, 0)).not.toBeNull()
+    expect(pickPair([at('a', undefined), at('b', '1.2.3.4')], 0, 0)).not.toBeNull()
+  })
+})

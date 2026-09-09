@@ -4,9 +4,12 @@
  *   GET  /   -> { count }
  *   POST /   -> adds one finished match and returns { count }
  *
- * Increments are accepted only from the game's origins and at most one every ten seconds per
- * address. KV writes are not atomic, so two matches finishing in the same instant can lose a
- * count; for a number nobody is meant to notice, that is fine.
+ * Increments carry the game's origin and are limited to one every ten seconds per address. The
+ * origin is a browser's word, not a control: anything that is not a browser sets that header
+ * freely, so the rate limit is the only real brake and the number is inflatable by anyone who
+ * cares to. That is accepted. It counts matches raced for the start screen, it gates nothing,
+ * and KV writes are not atomic either, so two matches finishing in the same instant can already
+ * lose a count. Nothing should ever be decided by this figure.
  *
  * Deploy once from this directory: npx wrangler login, npx wrangler kv namespace create COUNTS,
  * put the id in wrangler.toml, npx wrangler deploy. Then set the worker URL as the repository
