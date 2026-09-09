@@ -32,6 +32,8 @@ import {
   openNext,
   scrapOnline,
 } from './account.ts'
+import { detailTargetFor } from './detail.ts'
+import { useDetail } from './useDetail.ts'
 import { Plate } from './Plate.tsx'
 import { CAR_BY_ID, CARS } from '../data/cars.ts'
 import { MOD_BY_ID, MODS } from '../data/mods.ts'
@@ -61,6 +63,11 @@ interface Opened {
   fresh: ReadonlySet<string>
 }
 
+/** A card name for either kind of id, for the picker and the line after a buy. */
+function nameOfCard(id: string): string {
+  return CAR_BY_ID.get(id)?.name ?? MOD_BY_ID.get(id)?.name ?? id
+}
+
 /** Every card in the game, what the player owns, and the packs waiting to be opened (DESIGN.md 12). */
 export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const account = useContext(AccountContext)
@@ -88,13 +95,15 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const [confirmScrap, setConfirmScrap] = useState(false)
   const [wanted, setWanted] = useState('')
   const [scrapError, setScrapError] = useState<string | null>(null)
+  const [boughtNote, setBoughtNote] = useState<string | null>(null)
+  const openDetail = useDetail()
   const spare = surplus(state)
   const spareCount = [...spare.values()].reduce((sum, n) => sum + n, 0)
   const spareValue = scrapValue(state)
   const missing = ALL_CARD_IDS.filter((id) => !owns(owned, id))
     .map((id) => ({
       id,
-      name: CAR_BY_ID.get(id)?.name ?? MOD_BY_ID.get(id)?.name ?? id,
+      name: nameOfCard(id),
       price: cardPrice(id) ?? 0,
     }))
     .sort((a, b) => a.price - b.price || a.name.localeCompare(b.name))
@@ -123,9 +132,18 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
       applyCollection(next)
     }
   }
+  /** Shows the card just bought, the way its info button would, and leaves a line naming it. */
+  const showBought = (id: string) => {
+    const target = detailTargetFor(id)
+    setBoughtNote(nameOfCard(id) + ' is yours.')
+    if (target) openDetail?.(target)
+  }
   const doBuy = async () => {
     setScrapError(null)
+    setBoughtNote(null)
     if (wanted === '') return
+    // applyCollection clears the picker, so the id has to be held first.
+    const bought = wanted
     if (account) {
       const data = await buyOnline(account.endpoint, account.token, wanted)
       if (!data || data === 'refused') {
@@ -135,13 +153,15 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
       account.update(data)
       mirror(data)
       applyCollection(data.collection)
+      showBought(bought)
     } else {
-      const next = buyLocally(wanted)
+      const next = buyLocally(bought)
       if (!next) {
         setScrapError('That card could not be bought.')
         return
       }
       applyCollection(next)
+      showBought(bought)
     }
   }
   const takeLap = async () => {
@@ -323,6 +343,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
               {wanted === '' ? 'Pick a card' : `Buy for ${cardPrice(wanted) ?? 0} credits`}
             </button>
             {scrapError && <p className="builder__notice">{scrapError}</p>}
+            {boughtNote && <p className="builder__hint">{boughtNote}</p>}
           </div>
         )}
         <button

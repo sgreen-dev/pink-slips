@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { CARS, getCar } from '../data/cars.ts'
 import { getMod } from '../data/mods.ts'
 import { computeAdvance } from '../engine/index.ts'
-import { carDetailRows, modDetailRows, stockAdvanceFt, type DetailRow } from './detail.ts'
+import {
+  carDetailRows,
+  detailTargetFor,
+  modDetailRows,
+  stockAdvanceFt,
+  type DetailRow,
+} from './detail.ts'
 
 const MUSTANG = 'ford-mustang-gt'
 
@@ -73,5 +79,14 @@ describe('mod detail', () => {
     expect(value(turbo, 'Rarity')).toBe('Common: up to 3 per deck')
     expect(value(turbo, 'Level')).toBeUndefined()
     expect(value(turbo, 'Type lock')).toBeUndefined()
+  })
+})
+
+describe('detail target', () => {
+  it('tells a car from a mod, so a bought card opens the right panel', () => {
+    expect(detailTargetFor(MUSTANG)).toEqual({ kind: 'car', id: MUSTANG })
+    expect(detailTargetFor('turbo-kit')).toEqual({ kind: 'mod', id: 'turbo-kit' })
+    expect(detailTargetFor('not-a-card')).toBeNull()
+    expect(detailTargetFor('')).toBeNull()
   })
 })

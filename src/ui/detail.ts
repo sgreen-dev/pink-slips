@@ -1,8 +1,9 @@
-import { getCar } from '../data/cars.ts'
-import { getMod } from '../data/mods.ts'
+import { CAR_BY_ID, getCar } from '../data/cars.ts'
+import { getMod, MOD_BY_ID } from '../data/mods.ts'
 import { powerToWeight, TIER_LABEL } from '../data/tiers.ts'
 import { CAR_TYPE_LABEL } from '../data/types.ts'
 import { computeAdvance, partSlots, TUNABLES } from '../engine/index.ts'
+import type { DetailTarget } from './detailContext.ts'
 import { typeIdentityLines } from './rules.ts'
 
 /**
@@ -10,6 +11,16 @@ import { typeIdentityLines } from './rules.ts'
  * figures with their source, and a mod's full rules text with how its family plays. Pure so
  * the rows can be tested without a browser; the panel only lays them out.
  */
+
+/**
+ * What the panel should show for a bare card id, or null when it names no card. The collection
+ * screen opens the panel on a card it has just bought, so the id can be either kind.
+ */
+export function detailTargetFor(id: string): DetailTarget | null {
+  if (CAR_BY_ID.has(id)) return { kind: 'car', id }
+  if (MOD_BY_ID.has(id)) return { kind: 'mod', id }
+  return null
+}
 
 export interface DetailRow {
   label: string

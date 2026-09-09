@@ -11,6 +11,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 - The camera: when it becomes the player's turn to stage, their own garage comes into view, so the cars they are asked to keep or swap are on screen without a scroll on a phone, where they sat below the fold. Once per staging turn, after the race-end banner closes, and never over the guided first match. (the commit that adds this line)
 - Phase 30, scrapping duplicates: a copy past what any deck can hold can be scrapped for credits, and credits buy a card outright, priced by tier. Scrapping never costs a card that could be played and never touches a foil, holo or chrome. Credits survive a lap, and a guest keeps them when they claim a player. (267b1f7)
 - Phase 30 marked done in the build plan. (the commit that marks it done)
+- A bought card now shows itself: its detail panel opens the way its info button would, and a line under the picker names it once the panel is closed. (the commit that adds this line)
 
 ## 2026-09-08
 
