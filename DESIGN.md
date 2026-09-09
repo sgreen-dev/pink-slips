@@ -546,6 +546,8 @@ Fonts load from Google Fonts. The card is a portrait 5:7 with a thick type-color
 
 A static web app, plus two small Cloudflare Workers: the matches-played counter, and the room service that holds online matches (section 13).
 
+This section records the design decisions behind the code. `docs/architecture.md` is the companion technical write-up: what runs where, where state lives, how a match flows through the parts, and the stack decisions with their reasons.
+
 ```
 src/
   data/        cars.ts, mods.ts, starters.ts      static card data, validated by tests

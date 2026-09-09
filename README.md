@@ -54,7 +54,7 @@ The music is six original tracks by the owner, shipped as MP3 in `public/audio/`
 
 ## Project layout
 
-`DESIGN.md` is the source of truth for the game. `BUILD_PLAN.md` tracks what was built and in what order. `docs/balance-log.md` records every change to the tunable numbers and the evidence behind it.
+[`docs/architecture.md`](docs/architecture.md) explains how the game runs: the moving parts, where state lives, and the stack decisions. `DESIGN.md` is the source of truth for the game itself. `BUILD_PLAN.md` tracks what was built and in what order. `docs/balance-log.md` records every change to the tunable numbers and the evidence behind it.
 
 Every change, by the day it landed, is in `changelog/CHANGELOG.md`.
 
