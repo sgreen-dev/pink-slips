@@ -160,6 +160,7 @@ describe('directory', () => {
       variants: { foil: { 'mazda-mx-5-miata': 1 }, holo: {}, chrome: {} },
       laps: 0,
       grantVersion: GRANT_VERSION,
+      credits: 0,
     }
     const garages = [{ id: 'g1', name: 'Mine', cars: ['a'], deck: ['b'], updatedAt: 1 }]
     const data = await directory.claim(token, { collection: guest, garages })
@@ -348,6 +349,7 @@ describe('laps on the service', () => {
         variants: NO_VARIANTS,
         laps: 1,
         grantVersion: GRANT_VERSION,
+        credits: 0,
       },
       garages: [
         { id: 'keep', name: 'Keep', cars: [spare], deck: [], updatedAt: 1 },

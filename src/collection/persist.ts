@@ -11,6 +11,7 @@ import {
 import {
   GRANT_VERSION,
   NO_VARIANTS,
+  buyCard,
   claimLap,
   garagesAfterLap,
   grant,
@@ -20,6 +21,7 @@ import {
   openPack,
   packCards,
   rebaseToIntro,
+  scrapAll,
   type Collection,
   type Pack,
 } from './collection.ts'
@@ -40,6 +42,7 @@ interface StoredState {
   variants?: { foil: Collection; holo: Collection; chrome?: Collection }
   laps?: number
   grantVersion?: number
+  credits?: number
 }
 
 function isCounts(value: unknown): value is Collection {
@@ -90,6 +93,7 @@ export function loadCollection(store: StorageLike | null = browserStorage()): Co
     variants: NO_VARIANTS,
     laps: 0,
     grantVersion: GRANT_VERSION,
+    credits: 0,
   }
   writeRecord(COLLECTION_KEY, state, store)
   return state
@@ -131,6 +135,7 @@ export function openNextPack(
     variants: grantVariants(current.variants, cards),
     laps: current.laps,
     grantVersion: current.grantVersion,
+    credits: current.credits,
   }
   saveCollection(state, store)
   return { state, pack }
@@ -162,4 +167,23 @@ export function clearRebaseNotice(store: StorageLike | null = browserStorage()):
   } catch {
     // Nothing to do: a store that cannot be cleared shows the notice again at worst.
   }
+}
+
+/** Scraps the browser's surplus for credits. Null when there is nothing to scrap. */
+export function scrapLocally(store: StorageLike | null = browserStorage()): CollectionState | null {
+  const next = scrapAll(loadCollection(store))
+  if (!next) return null
+  saveCollection(next, store)
+  return next
+}
+
+/** Buys a card with the browser's credits. Null when it cannot be bought. */
+export function buyLocally(
+  id: string,
+  store: StorageLike | null = browserStorage(),
+): CollectionState | null {
+  const next = buyCard(loadCollection(store), id)
+  if (!next) return null
+  saveCollection(next, store)
+  return next
 }

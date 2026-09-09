@@ -27,6 +27,8 @@ export interface CollectionState {
    * set. A record still at 1 is rebased once on load (DESIGN.md 12).
    */
   grantVersion: number
+  /** Credits from scrapping surplus copies, spent on a card outright (DESIGN.md 12). */
+  credits: number
 }
 
 /**
@@ -40,6 +42,7 @@ export function normalizeCollection(value: {
   variants: { foil: Collection; holo: Collection; chrome?: Collection }
   laps?: number
   grantVersion?: number
+  credits?: number
 }): CollectionState {
   return {
     owned: value.owned,
@@ -51,6 +54,7 @@ export function normalizeCollection(value: {
     },
     laps: value.laps ?? 0,
     grantVersion: value.grantVersion ?? 1,
+    credits: value.credits ?? 0,
   }
 }
 

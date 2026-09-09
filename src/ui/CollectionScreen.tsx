@@ -5,24 +5,36 @@ import {
   ALL_CARD_IDS,
   bestVariant,
   copiesOwned,
+  cardPrice,
   isComplete,
   ownedCount,
+  scrapValue,
+  surplus,
   owns,
   packCarCount,
   packCards,
   type Pack,
 } from '../collection/collection.ts'
 import {
+  buyLocally,
   claimLapLocally,
   clearRebaseNotice,
+  scrapLocally,
   loadCollection,
   rebaseNoticePending,
   type CollectionState,
 } from '../collection/persist.ts'
-import { AccountContext, claimLapOnline, mirror, openNext } from './account.ts'
+import {
+  AccountContext,
+  buyOnline,
+  claimLapOnline,
+  mirror,
+  openNext,
+  scrapOnline,
+} from './account.ts'
 import { Plate } from './Plate.tsx'
-import { CARS } from '../data/cars.ts'
-import { MODS } from '../data/mods.ts'
+import { CAR_BY_ID, CARS } from '../data/cars.ts'
+import { MOD_BY_ID, MODS } from '../data/mods.ts'
 import { TIER_LABEL } from '../data/tiers.ts'
 import {
   CAR_TYPES,
@@ -72,6 +84,66 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const defaultKeepsake =
     rarestFirst.flatMap((t) => ownedCars.filter((car) => car.tier === t))[0]?.id ?? ''
   const chosen = keepsake || defaultKeepsake
+  // Scrapping spare copies for credits, and buying a card with them (DESIGN.md 12).
+  const [confirmScrap, setConfirmScrap] = useState(false)
+  const [wanted, setWanted] = useState('')
+  const [scrapError, setScrapError] = useState<string | null>(null)
+  const spare = surplus(state)
+  const spareCount = [...spare.values()].reduce((sum, n) => sum + n, 0)
+  const spareValue = scrapValue(state)
+  const missing = ALL_CARD_IDS.filter((id) => !owns(owned, id))
+    .map((id) => ({
+      id,
+      name: CAR_BY_ID.get(id)?.name ?? MOD_BY_ID.get(id)?.name ?? id,
+      price: cardPrice(id) ?? 0,
+    }))
+    .sort((a, b) => a.price - b.price || a.name.localeCompare(b.name))
+  const applyCollection = (next: CollectionState) => {
+    setState(next)
+    setConfirmScrap(false)
+    setWanted('')
+  }
+  const doScrap = async () => {
+    setScrapError(null)
+    if (account) {
+      const data = await scrapOnline(account.endpoint, account.token)
+      if (!data || data === 'refused') {
+        setScrapError('Nothing could be scrapped. Check the connection and try again.')
+        return
+      }
+      account.update(data)
+      mirror(data)
+      applyCollection(data.collection)
+    } else {
+      const next = scrapLocally()
+      if (!next) {
+        setScrapError('There is nothing spare to scrap.')
+        return
+      }
+      applyCollection(next)
+    }
+  }
+  const doBuy = async () => {
+    setScrapError(null)
+    if (wanted === '') return
+    if (account) {
+      const data = await buyOnline(account.endpoint, account.token, wanted)
+      if (!data || data === 'refused') {
+        setScrapError('That card could not be bought.')
+        return
+      }
+      account.update(data)
+      mirror(data)
+      applyCollection(data.collection)
+    } else {
+      const next = buyLocally(wanted)
+      if (!next) {
+        setScrapError('That card could not be bought.')
+        return
+      }
+      applyCollection(next)
+    }
+  }
   const takeLap = async () => {
     setLapError(null)
     if (account) {
@@ -148,6 +220,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         )}
         <p className="collection__summary">
           You own {ownedCount(owned)} of {ALL_CARD_IDS.length} cards.
+          {state.credits > 0 ? ' ' + state.credits + ' credits.' : ''}
           <Plate laps={state.laps} size="md" />
         </p>
         {complete && (
@@ -194,6 +267,62 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
               </button>
             )}
             {lapError && <p className="builder__notice">{lapError}</p>}
+          </div>
+        )}
+        {(spareCount > 0 || state.credits > 0) && (
+          <div className="collection__scrap">
+            <p>
+              You hold {spareCount} spare {spareCount === 1 ? 'card' : 'cards'} past what any deck
+              can use. Scrapping them costs you nothing you could play, and never touches a card
+              with a finish.
+            </p>
+            {confirmScrap ? (
+              <span className="board__confirm">
+                <button
+                  type="button"
+                  className="button button--primary"
+                  onClick={() => void doScrap()}
+                >
+                  Scrap for {spareValue} credits
+                </button>
+                <button
+                  type="button"
+                  className="button button--ghost"
+                  onClick={() => setConfirmScrap(false)}
+                >
+                  Keep them
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="button button--primary"
+                disabled={spareCount === 0}
+                onClick={() => setConfirmScrap(true)}
+              >
+                Scrap {spareCount} spare {spareCount === 1 ? 'card' : 'cards'}
+              </button>
+            )}
+            <label className="collection__buy">
+              Buy{' '}
+              <select value={wanted} onChange={(event) => setWanted(event.target.value)}>
+                <option value="">a card you do not own</option>
+                {missing.map((card) => (
+                  <option key={card.id} value={card.id}>
+                    {card.name} — {card.price}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="button"
+              disabled={wanted === '' || (cardPrice(wanted) ?? 0) > state.credits}
+              onClick={() => void doBuy()}
+            >
+              {wanted === '' ? 'Pick a card' : `Buy for ${cardPrice(wanted) ?? 0} credits`}
+            </button>
+            {scrapError && <p className="builder__notice">{scrapError}</p>}
           </div>
         )}
         <button

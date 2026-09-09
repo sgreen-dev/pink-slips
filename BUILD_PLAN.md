@@ -46,6 +46,7 @@
 | 27 | Laps | done | 75242bb |
 | 28 | Loaner garages and the intro set | done | d965d6e |
 | 29 | Turn timer with forfeit, online | done | afaddab |
+| 30 | Scrapping duplicates for credits | done | (this commit) |
 
 ---
 
@@ -771,6 +772,32 @@
 
 ---
 
+## Phase 30 — Scrapping duplicates for credits
+
+**Goal**: give the pile of duplicates a use, so a pack past the first few dozen still moves a player forward.
+
+**Design to record first** (`DESIGN.md` 12): what counts as surplus and why it is safe to scrap in one action, the finish rule, the two rate tables and the grade a mod takes, that credits survive a lap, and how a guest's balance joins an account.
+
+**Deliverables**
+
+- `src/collection/collection.ts`: `gradeOf`, `usefulCopies`, `surplus`, `scrapValue`, `scrapAll`, `cardPrice`, `buyCard`, and `claimLap` keeping the balance
+- `credits` on `CollectionState` with the usual default for older records; the guest wrappers in `persist.ts`
+- `Directory.scrap` and `Directory.buy`, the two worker routes, the client helpers, and credits added to the claim merge
+- The collection screen's balance, the scrap confirm, and the card picker
+- The two tunables and the balance-log line
+
+**Tests**
+
+- Surplus counts only copies past the deck limit, never a finished copy, and leaves every deck buildable
+- Scrapping pays by grade and refuses with nothing spare; buying refuses when unaffordable, already owned, or not a card
+- Credits survive a lap
+
+**Done when**: a guest and a signed-in player both scrap and buy with the same result, no finished copy is lost, and the measured packs-to-complete lands where the balance log says.
+
+**Prompt**: Do phase 30 of BUILD_PLAN.md.
+
+---
+
 ## Backlog
 
 Anything new goes here first and becomes a phase when picked up. Items sit in value order within their tier, judged by how many players feel them and how often; a new item goes to the tier that fits, at the end. Numbers never change, since the design and past commits refer to them. A finished item leaves its tier for the Done list at the end, with the phase and the commits that closed it.
@@ -779,8 +806,6 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 
    *Why here:* Every race, every pack, every finish; the largest change in feel still open.
    *Why here:* A public leaderboard for an audience that includes kids; one bad name is seen by everyone.
-1. Trading duplicates, or converting them, once the collection has been live long enough to show how many duplicates players hold
-   *Why here:* A full collection takes about 600 packs, so duplicates pile up early, and every pack after the first few dozen feels worse without it.
 13. Race animation. On each advance the car slides along its lane over a short time instead of jumping, a played mod card flies from the hand to the table, and a sabotage lands on the opponent's car with a shake. All CSS transitions keyed off the log entries the race-end moment already reads, off under reduced motion, and never delaying an action. A section 8 addendum
 
 21. A use for surplus fuel. Fuel is never spent by advancing, one token must be placed every turn, and fuel stays on a car between races, so once every car in the garage sits at its cost each further token has nowhere to go; only Nitrous Shot and Fuel Dump spend it. Shapes considered: a pit stop action in the mod step, once per turn, spending 2 fuel above a car's cost to remove 1 wear (the recommendation: it uses the wear system that exists, makes a repair-or-fuel-the-bench choice, and sits behind a tunable cost); a burnout before advancing, up to 2 surplus fuel for +50 ft each (direct, but it shortens races and competes with Fuel Dump); a pit crew action, 2 surplus fuel to draw a card (quiet, least effect on pace); or new Boosts that convert fuel with no core rule. Whichever is chosen needs an engine action with a section 3 rule and test, a CPU rule, a tunable for its cost, and the sim's targets re-run. Tabled on 2026-09-04 for more thought
@@ -829,3 +854,5 @@ Anything new goes here first and becomes a phase when picked up. Items sit in va
 23. Laps: complete the roster, keep a keepsake in Chrome, start over with bigger packs and a plate. Phase 27, 2026-09-08 (75242bb, the commit that marks it done).
 
 10. Turn timer with forfeit, online. Phase 29, 2026-09-09 (afaddab, the commit that marks it done).
+
+1. Trading duplicates, or converting them. Converting done as phase 30, 2026-09-09 (the commit that closed it); trading between players is still open and needs a population first.

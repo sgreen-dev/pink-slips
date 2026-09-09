@@ -13,8 +13,10 @@ import {
   type Mode,
   type Pack,
   type VariantCounts,
+  buyCard,
   claimLap,
   garagesAfterLap,
+  scrapAll,
 } from '../collection/collection.ts'
 import {
   applyTransfer,
@@ -227,6 +229,7 @@ export class Directory {
         variants: NO_VARIANTS,
         laps: 0,
         grantVersion: GRANT_VERSION,
+        credits: 0,
       },
       garages: [],
       createdAt: this.now(),
@@ -364,6 +367,8 @@ export class Directory {
           variants: mergeVariants(account.collection.variants, guestState.variants),
           laps: Math.max(account.collection.laps, guestState.laps),
           grantVersion: GRANT_VERSION,
+          // A balance, not a count of held cards, so the two sides add rather than take the larger.
+          credits: account.collection.credits + guestState.credits,
         },
       }
     }
@@ -385,6 +390,29 @@ export class Directory {
     return this.dataOf(next)
   }
 
+  /** Scraps the account's surplus copies for credits (DESIGN.md 12). */
+  async scrap(token: string): Promise<AccountData | 'refused' | null> {
+    const account = await this.accountFor(token)
+    if (!account) return null
+    const collection = scrapAll(account.collection, this.t)
+    if (!collection) return 'refused'
+    const next = { ...account, collection }
+    await this.save(next)
+    return this.dataOf(next)
+  }
+
+  /** Buys one card the account does not own, with its credits (DESIGN.md 12). */
+  async buy(token: string, cardId: unknown): Promise<AccountData | 'refused' | null> {
+    const account = await this.accountFor(token)
+    if (!account) return null
+    if (typeof cardId !== 'string') return 'refused'
+    const collection = buyCard(account.collection, cardId, this.t)
+    if (!collection) return 'refused'
+    const next = { ...account, collection }
+    await this.save(next)
+    return this.dataOf(next)
+  }
+
   /** Opens the next pack with the seed the adapter supplies. Null with nothing to open. */
   async openPack(token: string, seed: number): Promise<{ pack: Pack; data: AccountData } | null> {
     const account = await this.accountFor(token)
@@ -399,6 +427,7 @@ export class Directory {
       packs: account.collection.packs - 1,
       variants: grantVariants(account.collection.variants, cards),
       grantVersion: account.collection.grantVersion,
+      credits: account.collection.credits,
       laps: account.collection.laps,
     }
     const next = { ...account, collection }

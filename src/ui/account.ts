@@ -121,6 +121,41 @@ export function rotateRecovery(
 }
 
 /** Renames the player. `refused` when the name is not allowed; null when unreachable. */
+/** Scraps the account's surplus for credits; 'refused' when there is nothing spare. */
+export async function scrapOnline(
+  endpoint: string,
+  token: string,
+  fetcher: Fetcher | undefined = globalThis.fetch,
+): Promise<AccountData | 'refused' | null> {
+  const { status, body } = await call<AccountData>(
+    endpoint,
+    '/me/scrap',
+    token,
+    { method: 'POST' },
+    fetcher,
+  )
+  if (status === 400) return 'refused'
+  return body
+}
+
+/** Buys a card with the account's credits; 'refused' when the service says no. */
+export async function buyOnline(
+  endpoint: string,
+  token: string,
+  card: string,
+  fetcher: Fetcher | undefined = globalThis.fetch,
+): Promise<AccountData | 'refused' | null> {
+  const { status, body } = await call<AccountData>(
+    endpoint,
+    '/me/buy',
+    token,
+    { method: 'POST', body: JSON.stringify({ card }) },
+    fetcher,
+  )
+  if (status === 400) return 'refused'
+  return body
+}
+
 /** Takes the lap on the account (DESIGN.md 12, Laps); 'refused' when the service says no. */
 export async function claimLapOnline(
   endpoint: string,

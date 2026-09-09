@@ -315,6 +315,23 @@ export class AccountDirectory extends DurableObject<Env> {
       }
       return data ? json(data, 200, headers) : text('', 401, headers)
     }
+    if (path === '/me/scrap' && request.method === 'POST') {
+      const data = await this.directory.scrap(token)
+      if (data === 'refused') return text('There is nothing spare to scrap.', 400, headers)
+      return data ? json(data, 200, headers) : text('', 401, headers)
+    }
+    if (path === '/me/buy' && request.method === 'POST') {
+      const body = (await readJson(request)) as Record<string, unknown> | null
+      const data = await this.directory.buy(token, body?.['card'])
+      if (data === 'refused') {
+        return text(
+          'That card cannot be bought: check the credits and what is already owned.',
+          400,
+          headers,
+        )
+      }
+      return data ? json(data, 200, headers) : text('', 401, headers)
+    }
     if (path === '/me/recovery' && request.method === 'POST') {
       const recoveryCode = await this.directory.rotateRecovery(token)
       return recoveryCode ? json({ recoveryCode }, 200, headers) : text('', 401, headers)

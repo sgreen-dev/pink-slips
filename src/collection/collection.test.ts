@@ -5,6 +5,7 @@ import { INTRO_SET, STARTERS } from '../data/starters.ts'
 import { TIERS, type Tier } from '../data/types.ts'
 import { createMatch, seedRng, TUNABLES } from '../engine/index.ts'
 import { starterConfig } from '../engine/test-helpers.ts'
+import type { CollectionState } from '../protocol/records.ts'
 import { GARAGES_KEY, type StorageLike } from '../ui/storage.ts'
 import {
   copiesOwned,
@@ -14,8 +15,13 @@ import {
   owns,
   packCards,
   packsEarned,
+  buyCard,
+  cardPrice,
   introCollection,
   rebaseToIntro,
+  scrapAll,
+  scrapValue,
+  surplus,
   GRANT_VERSION,
   NO_VARIANTS,
   bestVariant,
@@ -187,6 +193,7 @@ describe('rebase onto the intro set', () => {
         variants: NO_VARIANTS,
         laps: 0,
         grantVersion: GRANT_VERSION,
+        credits: 0,
       }),
     })
     expect(loadCollection(store).owned).toEqual(owned)
@@ -337,6 +344,7 @@ describe('laps', () => {
       variants: { foil: { [outsideCar]: 1 }, holo: {}, chrome: {} },
       laps: 0,
       grantVersion: GRANT_VERSION,
+      credits: 0,
     }
     expect(claimLap({ ...before, owned: intro }, outsideCar)).toBeNull()
     expect(claimLap(before, 'not-a-car')).toBeNull()
@@ -364,5 +372,86 @@ describe('laps', () => {
     ]
     expect(garagesAfterLap(garages, intro).map((g) => g.id)).toEqual(['b'])
     expect(garagesAfterLap(garages, everyCar).map((g) => g.id)).toEqual(['a', 'b'])
+  })
+})
+
+describe('scrapping and buying', () => {
+  const base = (owned: Record<string, number>, credits = 0): CollectionState => ({
+    owned: { ...intro, ...owned },
+    packs: 0,
+    variants: NO_VARIANTS,
+    laps: 0,
+    grantVersion: GRANT_VERSION,
+    credits,
+  })
+
+  it('counts only copies no deck could hold', () => {
+    // A car is useful at one copy, a common mod at three, the one rare mod at one.
+    const state = base({ [outsideCar]: 4, 'turbo-kit': 5, 'fuel-drain': 3 })
+    const spare = surplus(state)
+    expect(spare.get(outsideCar)).toBe(3)
+    expect(spare.get('turbo-kit')).toBe(2)
+    expect(spare.get('fuel-drain')).toBe(2)
+    // A card at its limit is not spare, and nothing in the intro set is.
+    expect(spare.has('wheelspin')).toBe(false)
+    expect(surplus(base({})).size).toBe(0)
+  })
+
+  it('never scraps a copy wearing a finish', () => {
+    const state: CollectionState = {
+      ...base({ [outsideCar]: 3 }),
+      variants: { foil: { [outsideCar]: 1 }, holo: {}, chrome: {} },
+    }
+    // Three held, one useful, one foil: only the third is spare.
+    expect(surplus(state).get(outsideCar)).toBe(1)
+    const after = scrapAll(state)
+    expect(after?.owned[outsideCar]).toBe(2)
+    // The finish itself is untouched.
+    expect(after?.variants.foil[outsideCar]).toBe(1)
+  })
+
+  it('leaves every deck still buildable after a scrap', () => {
+    const state = base({ 'turbo-kit': 9, [outsideCar]: 4 })
+    const after = scrapAll(state)
+    if (!after) throw new Error('expected a scrap')
+    expect(copiesOwned(after.owned, 'turbo-kit')).toBe(TUNABLES.maxCopiesPerMod)
+    expect(copiesOwned(after.owned, outsideCar)).toBe(1)
+    // Nothing owned drops below what the builder would let into a deck.
+    for (const [id, held] of Object.entries(after.owned)) {
+      expect(held, id).toBeGreaterThanOrEqual(Math.min(copiesOwned(state.owned, id), 1))
+    }
+  })
+
+  it('pays by grade and refuses when there is nothing spare', () => {
+    // A Daily car is worth one, its price twenty: about twenty duplicates buys one card.
+    const daily = CARS.find((car) => car.tier === 'daily' && !owns(intro, car.id))
+    if (!daily) throw new Error('no daily car outside the intro set')
+    const state = base({ [daily.id]: 3 })
+    expect(scrapValue(state)).toBe(2 * TUNABLES.collection.scrapValue.daily)
+    expect(scrapAll(state)?.credits).toBe(2 * TUNABLES.collection.scrapValue.daily)
+    expect(scrapAll(base({}))).toBeNull()
+  })
+
+  it('buys a card it does not own, and refuses otherwise', () => {
+    const price = cardPrice(outsideCar) ?? 0
+    const rich = base({}, price)
+    const bought = buyCard(rich, outsideCar)
+    expect(owns(bought?.owned ?? {}, outsideCar)).toBe(true)
+    expect(bought?.credits).toBe(0)
+    // A card already owned, one credit short, and a card that does not exist.
+    expect(buyCard(rich, Object.keys(intro)[0] as string)).toBeNull()
+    expect(buyCard(base({}, price - 1), outsideCar)).toBeNull()
+    expect(buyCard(rich, 'not-a-card')).toBeNull()
+  })
+
+  it('keeps credits across a lap, the way unopened packs are kept', () => {
+    const everything = grant(
+      intro,
+      CARS.filter((car) => !owns(intro, car.id)).map((car) => car.id),
+    )
+    const state: CollectionState = { ...base({}), owned: everything, packs: 4, credits: 250 }
+    const after = claimLap(state, outsideCar)
+    expect(after?.credits).toBe(250)
+    expect(after?.packs).toBe(4)
   })
 })

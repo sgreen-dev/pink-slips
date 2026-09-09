@@ -1,5 +1,5 @@
-import { CARS } from '../data/cars.ts'
-import { MODS, modRarity } from '../data/mods.ts'
+import { CAR_BY_ID, CARS } from '../data/cars.ts'
+import { MOD_BY_ID, MODS, modRarity } from '../data/mods.ts'
 import { INTRO_SET } from '../data/starters.ts'
 import { TIERS, type Tier } from '../data/types.ts'
 import { nextFloat, nextInt, TUNABLES, type RngState } from '../engine/index.ts'
@@ -204,6 +204,7 @@ export function claimLap(state: CollectionState, keepsakeId: string): Collection
     variants: { foil: {}, holo: {}, chrome },
     laps: state.laps + 1,
     grantVersion: GRANT_VERSION,
+    credits: state.credits,
   }
 }
 
@@ -331,4 +332,78 @@ export function openPack(
 export function packsEarned(mode: Mode, humanWon: boolean, t: typeof TUNABLES = TUNABLES): number {
   const earned = mode === 'cpu' || mode === 'online'
   return earned && humanWon ? t.collection.packsPerCpuWin : t.collection.packsPerMatch
+}
+
+/**
+ * Scrapping surplus copies for credits, and buying a card with them (DESIGN.md 12). A copy is
+ * surplus only when no deck could ever hold it: one per car, three per common mod, one per rare
+ * mod. Scrapping therefore never costs a player a card they could play, which is what makes one
+ * bulk action safe. A copy wearing a finish is never scrapped, so a foil, holo or chrome stays.
+ */
+
+/** What a card grades as for scrapping and buying: its tier, or Common and Rare for a mod. */
+export function gradeOf(id: string): Tier | null {
+  const car = CAR_BY_ID.get(id)
+  if (car) return car.tier
+  const mod = MOD_BY_ID.get(id)
+  if (!mod) return null
+  return modRarity(mod) === 'rare' ? 'super' : 'daily'
+}
+
+/** Copies of a card no deck could hold, so they are free to scrap. */
+export function usefulCopies(id: string, t = TUNABLES): number {
+  if (CAR_IDS.has(id)) return 1
+  const mod = MOD_BY_ID.get(id)
+  if (!mod) return 0
+  return modRarity(mod) === 'rare' ? t.maxCopiesPerRareMod : t.maxCopiesPerMod
+}
+
+/** The copies of each card that may be scrapped: past the deck limit and not wearing a finish. */
+export function surplus(state: CollectionState, t = TUNABLES): Map<string, number> {
+  const out = new Map<string, number>()
+  for (const [id, held] of Object.entries(state.owned)) {
+    const finished =
+      copiesOwned(state.variants.foil, id) +
+      copiesOwned(state.variants.holo, id) +
+      copiesOwned(state.variants.chrome, id)
+    const spare = held - usefulCopies(id, t) - finished
+    if (spare > 0) out.set(id, spare)
+  }
+  return out
+}
+
+/** What the surplus is worth, in credits. */
+export function scrapValue(state: CollectionState, t = TUNABLES): number {
+  let total = 0
+  for (const [id, spare] of surplus(state, t)) {
+    const grade = gradeOf(id)
+    if (grade) total += spare * t.collection.scrapValue[grade]
+  }
+  return total
+}
+
+/** Scraps every surplus copy for credits. Null when there is nothing to scrap. */
+export function scrapAll(state: CollectionState, t = TUNABLES): CollectionState | null {
+  const spare = surplus(state, t)
+  if (spare.size === 0) return null
+  const owned: Record<string, number> = { ...state.owned }
+  for (const [id, count] of spare) owned[id] = (owned[id] ?? 0) - count
+  return { ...state, owned, credits: state.credits + scrapValue(state, t) }
+}
+
+/** What a card costs, or null when it is not a real card. */
+export function cardPrice(id: string, t = TUNABLES): number | null {
+  const grade = gradeOf(id)
+  return grade === null ? null : t.collection.cardPrice[grade]
+}
+
+/**
+ * Buys one copy of a card the player does not own. Null when the id is not a card, the player
+ * already owns it, or the credits do not cover it.
+ */
+export function buyCard(state: CollectionState, id: string, t = TUNABLES): CollectionState | null {
+  const price = cardPrice(id, t)
+  if (price === null || owns(state.owned, id)) return null
+  if (state.credits < price) return null
+  return { ...state, owned: grant(state.owned, [id]), credits: state.credits - price }
 }

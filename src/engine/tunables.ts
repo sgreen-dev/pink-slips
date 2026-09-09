@@ -68,6 +68,15 @@ export const TUNABLES = {
     holoOdds: 0.02,
     /** Chance that each mod slot in a pack holds a rare mod instead of a common one. */
     rareModOdds: 0.05,
+    /**
+     * Scrapping surplus copies for credits, and buying a card outright with them (DESIGN.md 12).
+     * Both are keyed by tier; a mod grades as Common, or as Rare when the mod itself is rare.
+     * About forty duplicates of a grade buys one card of it.
+     */
+    scrapValue: { daily: 1, performance: 2, super: 5, hyper: 12 } as Readonly<Record<Tier, number>>,
+    cardPrice: { daily: 40, performance: 80, super: 200, hyper: 500 } as Readonly<
+      Record<Tier, number>
+    >,
     /** Odds that a car slot in a pack holds each tier. Must sum to 1. */
     carTierOdds: { daily: 0.55, performance: 0.3, super: 0.12, hyper: 0.03 } as Readonly<
       Record<Tier, number>

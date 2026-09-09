@@ -1400,6 +1400,24 @@ h2 {
   margin: 0;
   font-size: 0.9rem;
 }
+.collection__scrap {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+  margin: 0.5rem 0;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--line);
+  border-radius: 0.6rem;
+  background: var(--asphalt-2);
+}
+.collection__scrap p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.collection__buy select {
+  margin-left: 0.3rem;
+  max-width: 18rem;
+}
 .collection__lap {
   display: grid;
   gap: 0.5rem;

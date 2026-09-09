@@ -61,6 +61,7 @@ const sample: AccountData = {
     variants: { foil: {}, holo: {}, chrome: {} },
     laps: 0,
     grantVersion: 2,
+    credits: 0,
   },
   garages: [{ id: 'g', name: 'G', cars: ['x'], deck: [], updatedAt: 1 }],
 }
