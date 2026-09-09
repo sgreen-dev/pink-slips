@@ -23,6 +23,7 @@ import { OnlineScreen, type OnlineEntry } from './OnlineScreen.tsx'
 import { DetailProvider } from './CardDetail.tsx'
 import { PlayerDialog, type PlayerView } from './PlayerDialog.tsx'
 import { ProfileScreen } from './ProfileScreen.tsx'
+import { scrollPageTop } from './scroll.ts'
 import { newSeed } from './seed.ts'
 import { useSound } from './sound/useSound.ts'
 import { StartScreen } from './StartScreen.tsx'
@@ -133,6 +134,13 @@ export function App() {
     ENDPOINT && token && data
       ? { endpoint: ENDPOINT, token, data, update, replaceToken: signedIn, signOut }
       : null
+  // A screen opens at its top. The button that reaches one sits below the main action, at the
+  // bottom of the screen you were on, so on a phone the builder and the collection would
+  // otherwise open half-way down with their headers off screen (DESIGN.md 8).
+  useEffect(() => {
+    scrollPageTop()
+  }, [screen.kind])
+
   const toStart = () => setScreen({ kind: 'start' })
   const toOnline = () => setScreen({ kind: 'online', prefill: null })
   const openPlayer = (view: PlayerView, code: string | null = null) => setDialog({ view, code })
