@@ -751,7 +751,10 @@ function applyEndMods(state: MatchState): MatchState {
   const blocker = advanceBlocker(state)
   if (blocker === null) return setTurn(state, { step: 'advance' })
   let next = state
-  if (blocker === 'redLight') next = setPending(next, player, () => NO_PENDING_SABOTAGE)
+  // Red Light is spent by the skip, but a Wheelspin or Missed Shift stacked on an earlier turn
+  // was aimed at an advance, and a skipped turn is not one (DESIGN.md 2.5), so it waits.
+  if (blocker === 'redLight')
+    next = setPending(next, player, (pending) => ({ ...pending, skipAdvance: false }))
   next = withLog(next, { kind: 'advanceSkipped', player, reason: blocker })
   return endTurn(next)
 }

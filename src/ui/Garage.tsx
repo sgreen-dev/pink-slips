@@ -6,6 +6,7 @@ import { CarCard, type CardSize } from './CarCard.tsx'
 import { Plate } from './Plate.tsx'
 import { stagedFirst, type CarIntent, type Selection } from './interaction.ts'
 import { scrollRowBack, TURN_END_RESET_MS } from './scroll.ts'
+import { TUNABLES } from '../engine/index.ts'
 
 interface GarageProps {
   player: PlayerState
@@ -62,8 +63,8 @@ export function Garage({
           <Plate laps={plate} />
         </span>
         <span className="garage__meta">
-          Pink slips {player.pinkSlips.length}/3 · Hand {handCount ?? player.hand.length} · Deck{' '}
-          {player.deck.length}
+          Pink slips {player.pinkSlips.length}/{TUNABLES.pinkSlipsToWin} · Hand{' '}
+          {handCount ?? player.hand.length} · Deck {player.deck.length}
           {handCount !== undefined && cardBackUrl() && (
             <span className="garage__fan" aria-hidden="true">
               {Array.from({ length: Math.min(5, handCount) }, (_, i) => (

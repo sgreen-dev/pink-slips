@@ -98,7 +98,10 @@ describe('simulation', () => {
     const text = formatReport(report)
     expect(text).toContain('Win rate against random garages')
     expect(text).toContain('Targets (DESIGN.md section 7)')
-    expect(checkTargets(report)).toHaveLength(4)
+    // The five targets of DESIGN.md 7, including the first-player one added with G10.
+    const targets = checkTargets(report)
+    expect(targets).toHaveLength(5)
+    expect(targets.map((t) => t.name)).toContain('First player wins between 47% and 55%')
   })
 
   it('is deterministic for a seed', () => {

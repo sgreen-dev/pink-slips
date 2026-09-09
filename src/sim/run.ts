@@ -61,7 +61,12 @@ export interface SimulationReport {
   swaps: number
 }
 
-/** Shares of the match budget per experiment. */
+/**
+ * Shares of the match budget per experiment. Tiers take a fifth across four tiers and types
+ * three tenths across six, so a 5,000-match run measured each cell over 250 to 300 games --
+ * about six points either way, enough for a cap to fail on one seed and pass on the next. The
+ * default is 20,000 for that reason; the caps themselves did not move.
+ */
 const SHARE = { types: 0.3, tiers: 0.2, dailyVsHyper: 0.1, starters: 0.15, intro: 0.1 } as const
 
 export function runSimulation(options: SimulationOptions): SimulationReport {
@@ -239,6 +244,7 @@ export function checkTargets(report: SimulationReport): TargetResult[] {
   const maxTier = Math.max(...[...report.byTier.values()].map(rate))
   const dailyHyper = rate(report.dailyVsHyper)
   const medianTurns = median(report.lengthsRandom)
+  const first = rate(report.firstPlayer)
   return [
     {
       name: 'No single-type garage wins more than 60% against the field',
@@ -259,6 +265,13 @@ export function checkTargets(report: SimulationReport): TargetResult[] {
       name: 'Median match is 25 or fewer turns per player',
       value: `${medianTurns}`,
       pass: medianTurns <= 25,
+    },
+    {
+      // Going first is worth something in a turn-based race and always will be; a coin flip
+      // decides it and a rematch alternates it. What is checked is that it stays small.
+      name: 'First player wins between 47% and 55%',
+      value: pct(first),
+      pass: first >= 0.47 && first <= 0.55,
     },
   ]
 }

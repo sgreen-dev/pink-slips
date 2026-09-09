@@ -19,7 +19,10 @@ export interface PackReport {
   laps: number
   meanToComplete: number
   medianToComplete: number
-  /** Packs to own every car, the lap's own bar. */
+  /**
+   * Packs to own every car, the lap's bar. Not printed: every mod is collected within about
+   * forty packs and the last car takes hundreds, so this always equals the figure above.
+   */
   meanToAllCars: number
   medianToAllCars: number
   meanToFirstUltraRare: number
@@ -86,7 +89,6 @@ export function formatPackReport(r: PackReport): string {
   return [
     `Packs: ${r.trials} runs at seed ${r.seed}, starting with ${r.startingOwned} of ${r.cards} cards, ${r.laps} laps taken`,
     `  packs to own every card: mean ${r.meanToComplete.toFixed(0)}, median ${r.medianToComplete}`,
-    `  packs to own every car, the next lap: mean ${r.meanToAllCars.toFixed(0)}, median ${r.medianToAllCars}`,
     `  packs to the first Ultra Rare car: mean ${r.meanToFirstUltraRare.toFixed(1)}, median ${r.medianToFirstUltraRare}`,
   ].join('\n')
 }

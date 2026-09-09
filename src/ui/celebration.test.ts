@@ -152,6 +152,38 @@ describe('undo', () => {
     expect(reduceSession(session, { type: 'undo', player: acting })).toBe(session)
   })
 
+  // Extra Tank owes a fuel placement inside the mod step. The step has not ended, so the mods
+  // played before it can still be taken back (DESIGN.md 3.2).
+  it('keeps the take-back through the fuel placement Extra Tank owes', () => {
+    const state = scenario({
+      players: [
+        { cars: [MIATA, GR86], hand: ['turbo-kit', 'extra-tank'] },
+        { cars: [PORSCHE, LOTUS] },
+      ],
+    })
+    let session: Session = { match: state, raceEnd: null, history: [] }
+    const part = legalActions(state, 0).find((a) => a.type === 'playPart')
+    if (!part) throw new Error('no Part to play')
+    session = reduceSession(session, { type: 'act', action: part })
+    const afterPart = session.match
+    const tank = legalActions(session.match, 0).find(
+      (a) => a.type === 'playBoost' && a.modId === 'extra-tank',
+    )
+    if (!tank) throw new Error('no Extra Tank to play')
+    session = reduceSession(session, { type: 'act', action: tank })
+    // Extra Tank owes a fuel placement, and the mod step cannot end until it is made.
+    const owed = legalActions(session.match, 0).find((a) => a.type === 'fuel')
+    if (!owed) throw new Error('Extra Tank owed no fuel placement')
+    expect(legalActions(session.match, 0).some((a) => a.type === 'endMods')).toBe(false)
+    session = reduceSession(session, { type: 'act', action: owed })
+    // Still the mod step, so the Part played before it can still be taken back.
+    expect(session.match.turn.step).toBe('mods')
+    expect(canUndo(session, 0)).toBe(true)
+    session = reduceSession(session, { type: 'undo', player: 0 })
+    session = reduceSession(session, { type: 'undo', player: 0 })
+    expect(session.match).toEqual(afterPart)
+  })
+
   it('makes plays final when the mod step ends or the turn moves on', () => {
     const { state, acting, play } = untilPlayable('playPart', 7)
     let session: Session = { match: state, raceEnd: null, history: [] }
