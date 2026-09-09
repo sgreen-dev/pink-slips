@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from 'react'
 import { loadCollection } from '../collection/persist.ts'
 import type { Level } from '../cpu/index.ts'
 import type { MatchConfig } from '../engine/index.ts'
@@ -14,20 +14,51 @@ import {
   signOutOnline,
   type AccountHandle,
 } from './account.ts'
-import { BuilderScreen } from './BuilderScreen.tsx'
-import { CollectionScreen } from './CollectionScreen.tsx'
-import { Match, type Mode } from './Match.tsx'
-import { roomEndpoint, roomFromSearch } from './online.ts'
-import { OnlineMatch } from './OnlineMatch.tsx'
-import { OnlineScreen, type OnlineEntry } from './OnlineScreen.tsx'
+import type { Mode } from './Match.tsx'
+import { roomEndpoint, roomFromSearch } from './roomLink.ts'
+import type { OnlineEntry } from './OnlineScreen.tsx'
 import { DetailProvider } from './CardDetail.tsx'
-import { PlayerDialog, type PlayerView } from './PlayerDialog.tsx'
-import { ProfileScreen } from './ProfileScreen.tsx'
+import type { PlayerView } from './PlayerDialog.tsx'
 import { scrollPageTop } from './scroll.ts'
 import { newSeed } from './seed.ts'
 import { useSound } from './sound/useSound.ts'
 import { StartScreen } from './StartScreen.tsx'
 import { loadGarages } from '../browser/storage.ts'
+
+/**
+ * Every screen but the start one is loaded when it is opened. The start screen is the first
+ * paint, so it and what it draws stay eager; a first visit no longer downloads the board, the
+ * CPU, the builder, the collection, the online screens and the profile before it can show the
+ * title. Each `lazy` call is its own chunk, fetched on the navigation that needs it.
+ */
+const BuilderScreen = lazy(() =>
+  import('./BuilderScreen.tsx').then((m) => ({ default: m.BuilderScreen })),
+)
+const CollectionScreen = lazy(() =>
+  import('./CollectionScreen.tsx').then((m) => ({ default: m.CollectionScreen })),
+)
+const Match = lazy(() => import('./Match.tsx').then((m) => ({ default: m.Match })))
+const OnlineMatch = lazy(() =>
+  import('./OnlineMatch.tsx').then((m) => ({ default: m.OnlineMatch })),
+)
+const OnlineScreen = lazy(() =>
+  import('./OnlineScreen.tsx').then((m) => ({ default: m.OnlineScreen })),
+)
+const PlayerDialog = lazy(() =>
+  import('./PlayerDialog.tsx').then((m) => ({ default: m.PlayerDialog })),
+)
+const ProfileScreen = lazy(() =>
+  import('./ProfileScreen.tsx').then((m) => ({ default: m.ProfileScreen })),
+)
+
+/** Held for the moment a screen's chunk takes to arrive. Its own name, so it is never blank. */
+function Loading() {
+  return (
+    <main className="start">
+      <p className="board__brand">Pink Slips</p>
+    </main>
+  )
+}
 
 type Screen =
   | { kind: 'start' }
@@ -205,17 +236,19 @@ export function App() {
     <AccountContext value={account}>
       <DetailProvider>
         <Soundtrack kind={screen.kind} />
-        {page}
+        <Suspense fallback={<Loading />}>{page}</Suspense>
       </DetailProvider>
       {dialog && ENDPOINT && (
-        <PlayerDialog
-          sessionKept={sessionKept}
-          endpoint={ENDPOINT}
-          view={dialog.view}
-          code={dialog.code}
-          onSignedIn={signedIn}
-          onClose={() => setDialog(null)}
-        />
+        <Suspense fallback={null}>
+          <PlayerDialog
+            sessionKept={sessionKept}
+            endpoint={ENDPOINT}
+            view={dialog.view}
+            code={dialog.code}
+            onSignedIn={signedIn}
+            onClose={() => setDialog(null)}
+          />
+        </Suspense>
       )}
     </AccountContext>
   )

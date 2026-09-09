@@ -11,13 +11,8 @@ import { RandomGarages } from './RandomGarages.tsx'
 import { dealGarage } from './randomGarages.ts'
 import type { GarageSpec } from '../data/garages.ts'
 import { newSeed } from './seed.ts'
-import {
-  clearOnlineSeat,
-  createRoom,
-  loadOnlineSeat,
-  normalizeCode,
-  type OnlineSeat,
-} from './online.ts'
+import { clearOnlineSeat, createRoom, loadOnlineSeat, type OnlineSeat } from './online.ts'
+import { normalizeCode } from './roomLink.ts'
 import { loadGarages } from '../browser/storage.ts'
 import { loadCollection } from '../collection/persist.ts'
 

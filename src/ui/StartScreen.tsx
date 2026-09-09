@@ -1,7 +1,7 @@
 import { useContext, useRef, useState } from 'react'
 import { loadCollection } from '../collection/persist.ts'
 import { stakesAllowed as allowStakes } from '../collection/stakes.ts'
-import { LEVELS, LEVEL_BLURB, LEVEL_LABEL, type Level } from '../cpu/index.ts'
+import { LEVELS, LEVEL_BLURB, LEVEL_LABEL, type Level } from '../cpu/levels.ts'
 import type { MatchConfig } from '../engine/index.ts'
 import { AccountContext } from './account.ts'
 import { garageOptions, type GarageOption } from './builder.ts'
