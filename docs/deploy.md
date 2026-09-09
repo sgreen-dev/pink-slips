@@ -12,11 +12,13 @@ Three things are deployed. Only one of them is automatic, which is the trap.
 
 ```
 git push origin main                  # the site builds and deploys itself
-cd server && npx wrangler deploy      # the room worker does not
-npm run deploy:check                  # everything answers
+npm run deploy:rooms                  # the room worker does not
+npm run deploy:check                  # everything answers, and all on one commit
 ```
 
 **Deploy the room worker every time, without deciding whether it is needed.** It takes about three seconds and running it twice is harmless. The alternative is a rule about which paths matter, and getting that rule wrong is how a release ships half a feature.
+
+`npm run deploy:rooms` and `npm run deploy:counter` wrap `wrangler deploy` and stamp the commit into the worker, which it then answers `/version` with. The site writes the same thing into `version.json` at build time, so `deploy:check` compares all three and **fails when they disagree** — a site running against a worker that was never redeployed is now something it says out loud (backlog `Q36`). They refuse a dirty tree, since a worker claiming a commit whose code is not what is running is worse than one that claims nothing; `--dirty` overrides it and marks the stamp.
 
 If you want the rule anyway: `server/worker.ts` bundles `src/protocol/`, `src/server/`, `src/engine/`, `src/data/`, and two files from `src/collection/`. Only changes confined to `src/ui/`, `src/cpu/`, `src/sim/`, `public/`, or `src/index.css` are safe without it. Note that `src/engine/tunables.ts` is in that list, so **a tunable is a worker deploy** even though it reads like a game number.
 
@@ -54,4 +56,4 @@ Neither worker reports which commit it is running, so `deploy:check` proves thin
 Two consequences worth knowing:
 
 - `src/protocol/messages.ts` is the wire format for both sides, and the two deploys are not atomic. In the gap, an old client talks to a new room or the reverse. Both ends shape-check and drop what they do not recognise, so the failure is a quietly missing feature rather than a crash.
-- The room worker is type-checked by `npm run build`, so a type error in `server/worker.ts` now fails CI rather than waiting for `wrangler deploy`. What CI still cannot tell you is whether the deployed worker is the one this commit built, which is why you deploy it every time.
+- The room worker is type-checked by `npm run build`, so a type error in `server/worker.ts` fails CI rather than waiting for `wrangler deploy`. Whether the deployed worker is the one this commit built is now `npm run deploy:check`'s job: every part reports the commit it was built from and the check fails when they differ. Deploy it every time anyway — the check tells you afterwards, and the point is not to need telling.

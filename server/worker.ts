@@ -26,6 +26,8 @@ import { planRoomWrite, type WrittenRoom } from '../src/server/roomWrites.ts'
 interface Env {
   ROOMS: DurableObjectNamespace<MatchRoom>
   ACCOUNTS: DurableObjectNamespace<AccountDirectory>
+  /** The commit this worker was deployed from, set by `scripts/deploy-worker.ts` (backlog Q36). */
+  COMMIT?: string
 }
 
 interface Attachment {
@@ -127,6 +129,10 @@ export default {
     const headers = corsHeaders(request)
     const path = url.pathname
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers })
+
+    // What this deployment was built from, so the deploy check can say whether the site and
+    // the workers are the same commit rather than only that each one answered (backlog Q36).
+    if (path === '/version') return json({ commit: env.COMMIT ?? 'unknown' }, 200, headers)
 
     if (path === '/new') return json({ code: newCode() }, 200, headers)
 

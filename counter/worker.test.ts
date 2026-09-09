@@ -98,6 +98,20 @@ describe('the matches counter', () => {
     expect(await countOf(await from('5.6.7.8'))).toBe(2)
   })
 
+  it('says which commit it was deployed from, without touching the count', async () => {
+    // The deploy check reads this to tell a stale worker from a current one (backlog Q36).
+    const { env, data } = fakeKv({ matches: '7' })
+    const withCommit = { ...env, COMMIT: 'abc1234' } as Env
+    const response = await worker.fetch(new Request(`${URL_}version`), withCommit)
+    expect(await response.json()).toEqual({ commit: 'abc1234' })
+    expect(data.get('matches')).toBe('7')
+  })
+
+  it('says the commit is unknown when it was deployed without one', async () => {
+    const response = await worker.fetch(new Request(`${URL_}version`), fakeKv().env)
+    expect(await response.json()).toEqual({ commit: 'unknown' })
+  })
+
   it('turns away any other method', async () => {
     const response = await call(fakeKv().env, 'DELETE', { Origin: SITE })
     expect(response.status).toBe(405)

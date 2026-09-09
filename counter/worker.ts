@@ -22,6 +22,8 @@ const MIN_GAP_MS = 10_000
 
 export interface Env {
   COUNTS: KVNamespace
+  /** The commit this worker was deployed from, set by `scripts/deploy-worker.ts` (backlog Q36). */
+  COMMIT?: string
 }
 
 export default {
@@ -37,6 +39,10 @@ export default {
       Vary: 'Origin',
     }
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers })
+    // What this deployment was built from, for the deploy check (backlog Q36).
+    if (request.method === 'GET' && new URL(request.url).pathname === '/version') {
+      return new Response(JSON.stringify({ commit: env.COMMIT ?? 'unknown' }), { headers })
+    }
     if (request.method === 'GET') return reply(await readCount(env), headers)
     if (request.method === 'POST') {
       if (!allowed) return new Response('{"error":"origin"}', { status: 403, headers })
