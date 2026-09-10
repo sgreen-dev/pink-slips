@@ -16,12 +16,19 @@ import type { IntroSet, StarterGarage } from './types.ts'
  * The four decks between them run **every one of the 33 mods**, so the set is also a tour of the
  * card pool. Redline and Fuel Drain had never appeared in a loaner deck before this.
  *
- * With the CPU on both sides each garage wins about half its matches overall -- 49, 46, 52 and
- * 54 at 40,000 matches on seed 1 -- and they beat each other in a cycle: Street Kings over The
- * Long Game 63%, The Long Game over Tuners 52%, Tuners over Spoilers 55%, Spoilers over Street
- * Kings 65%. The two pairings across the cycle are measured too, at 48% and 49%, so it is a
- * finding rather than an assumption. Say the second link honestly: at 52, 50 and 49 on three
- * seeds The Long Game and Tuners are level, and only the other three links are real.
+ * With the CPU on both sides each garage wins about half its matches overall -- 48, 49, 50 and
+ * 53 at 40,000 matches on seed 1 -- and they beat each other in a cycle: Street Kings over The
+ * Long Game, The Long Game over Tuners, Tuners over Spoilers, Spoilers over Street Kings. Every
+ * link holds on seeds 1, 2 and 3, at 61/61/56, 56/55/55, 55/56/58 and 65/62/63. The two pairings
+ * across the cycle are measured too and stay near even, so it is a finding rather than an
+ * assumption.
+ *
+ * The link that took the work was The Long Game over Tuners. Both are build-up strategies -- bank
+ * fuel against bolt on Parts -- so they raced past each other at 52, 50 and 49, which is level.
+ * Giving The Long Game a Part-hate package was the obvious fix and it made things worse: Parts
+ * Thief strips one Part where Missed Shift halves a whole advance, and the CPU rates them
+ * accordingly. What worked was raising the ceiling instead of attacking theirs, which is why the
+ * 812 is here rather than the Aventador it replaced.
  */
 
 /** Expands [modId, copies] pairs into a flat deck list. */
@@ -61,10 +68,12 @@ export const STARTERS: readonly StarterGarage[] = [
     id: 'long-game',
     name: 'The Long Game',
     style: 'bank fuel, win late',
-    // Big cars paid for from the bench. The Miata is the turn-2 car that buys time while the
-    // Aventador fills; the AMG halves its own wear and the Model X gives Regen somewhere to land.
+    // Big cars paid for from the bench. The Miata is the turn-2 car that buys time while the 812
+    // fills; the AMG halves its own wear and the Model X gives Regen somewhere to land. The 812
+    // is Luxury too, so the car this garage wins on also takes half wear from winning -- which
+    // is what lets it out-scale a Tuners car that has run out of Part slots.
     cars: [
-      'lamborghini-aventador-svj',
+      'ferrari-812-competizione',
       'mercedes-amg-gt-r',
       'tesla-model-x-plaid',
       'ford-f-150-raptor-r',

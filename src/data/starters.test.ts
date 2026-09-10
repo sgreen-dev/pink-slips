@@ -17,7 +17,7 @@ const DESIGN_GARAGES: Record<string, string[]> = {
     'porsche-911-carrera-s',
   ],
   'long-game': [
-    'lamborghini-aventador-svj',
+    'ferrari-812-competizione',
     'mercedes-amg-gt-r',
     'tesla-model-x-plaid',
     'ford-f-150-raptor-r',
