@@ -715,10 +715,11 @@ h2 {
   font-size: 0.85rem;
   text-align: center;
 }
-/* Both are siblings of the garages, so they are flex items too and would otherwise sit beside
-   one. Each takes a line of its own. */
-.dealt__note,
-.dealt > .button {
+/* A sibling of the garages, so it is a flex item too and would otherwise sit beside one. It
+   takes a line of its own, which also puts the button after it on a line of its own: the note
+   cannot shrink, so nothing shares its line and the button starts the next one. Stretching the
+   button as well only made it a full-width bar between two buttons sized to their labels. */
+.dealt__note {
   flex: 0 0 100%;
 }
 
