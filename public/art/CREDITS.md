@@ -1,8 +1,9 @@
 # Card art credits
 
-Each illustration is derived from a photograph on Wikimedia Commons, processed into the
-card style. The illustrations are published under CC BY-SA 4.0; each source photograph's
-own license is listed. Thank you to the photographers.
+Each illustration is the owner's own or is derived from a photograph on Wikimedia Commons,
+processed into the card style. The photograph-derived illustrations are published under
+CC BY-SA 4.0, and each source photograph's own license is listed. Thank you to the
+photographers.
 
 | Car id | Car | Photograph | Author | License |
 | --- | --- | --- | --- | --- |
@@ -54,9 +55,11 @@ own license is listed. Thank you to the photographers.
 | ford-mustang-1965-six | Ford Mustang 200 Six (1965) | [1965 Ford Mustang 2D Hardtop Front.jpg](https://commons.wikimedia.org/wiki/File%3A1965%20Ford%20Mustang%202D%20Hardtop%20Front.jpg) | Kroelleboelle | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) |
 | ford-mustang-289 | Ford Mustang 289 | [1967 Ford Mustang hardtop, red, Golden Super Cruise 2026-07-04.jpg](https://commons.wikimedia.org/wiki/File%3A1967%20Ford%20Mustang%20hardtop%2C%20red%2C%20Golden%20Super%20Cruise%202026-07-04.jpg) | Xnatedawgx | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
 | ford-mustang-gt | Ford Mustang GT | [Ford Mustang Fastback 5.0 GT (54185175396).jpg](https://commons.wikimedia.org/wiki/File%3AFord%20Mustang%20Fastback%205.0%20GT%20%2854185175396%29.jpg) | Alexandre Prevot from Nancy, France | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) |
+| ford-mustang-mach-1 | Ford Mustang Mach 1 (2021) | [Ford Mustang VI Mach I Auto Zuerich 2021 IMG 0117.jpg](https://commons.wikimedia.org/wiki/File%3AFord%20Mustang%20VI%20Mach%20I%20Auto%20Zuerich%202021%20IMG%200117.jpg) | Alexander Migl | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
 | ford-mustang-mach-e-gt | Ford Mustang Mach-E GT | [Ford Mustang Mach-E GT IAA 2021 1X7A0176.jpg](https://commons.wikimedia.org/wiki/File%3AFord%20Mustang%20Mach-E%20GT%20IAA%202021%201X7A0176.jpg) | Alexander Migl | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
 | ford-mustang-v6-2005 | Ford Mustang V6 (2005) | [2005 Ford Mustang V6 Premium Convertible in Screaming Yellow, front left, 06-13-2026.jpg](https://commons.wikimedia.org/wiki/File%3A2005%20Ford%20Mustang%20V6%20Premium%20Convertible%20in%20Screaming%20Yellow%2C%20front%20left%2C%2006-13-2026.jpg) | Cutlass | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) |
 | ford-ranger-raptor | Ford Ranger Raptor | [Ford Ranger P375 2.0 Bi-Turbo Raptor Blue Lightning.jpg](https://commons.wikimedia.org/wiki/File%3AFord%20Ranger%20P375%202.0%20Bi-Turbo%20Raptor%20Blue%20Lightning.jpg) | Ethan Llamas | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
+| ford-shelby-gt500-2020 | Ford Shelby GT500 (2020) | [2021 Ford Mustang Shelby GT500 (S550) Front (Bahrain).jpg](https://commons.wikimedia.org/wiki/File%3A2021%20Ford%20Mustang%20Shelby%20GT500%20%28S550%29%20Front%20%28Bahrain%29.jpg) | Mohammed Hamad | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
 | gmc-hummer-ev-pickup | GMC Hummer EV Pickup | [GMC Hummer EV Pickup Edition 1 Interstellar White.jpg](https://commons.wikimedia.org/wiki/File%3AGMC%20Hummer%20EV%20Pickup%20Edition%201%20Interstellar%20White.jpg) | Ethan Llamas | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
 | honda-civic-si | Honda Civic Si | [2022 Honda Civic Si in Blazing Orange Pearl, Front Right, 12-19-2021.jpg](https://commons.wikimedia.org/wiki/File%3A2022%20Honda%20Civic%20Si%20in%20Blazing%20Orange%20Pearl%2C%20Front%20Right%2C%2012-19-2021.jpg) | Elise240SX | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
 | honda-civic-type-r-fl5 | Honda Civic Type R (FL5) | [HONDA CIVIC TYPE R FL5 China.jpg](https://commons.wikimedia.org/wiki/File%3AHONDA%20CIVIC%20TYPE%20R%20FL5%20China.jpg) | Dinkun Chen | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |

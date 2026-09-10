@@ -49,7 +49,7 @@ Every car is a real production car with manufacturer-published figures.
 
 **Flavor fields** (printed, no effect in v1): drivetrain, zero to sixty, top speed, engine, production years.
 
-**Data fields**: `id`, `name`, `make`, `model`, `generation` (only when needed to disambiguate), `source` (where the figures came from), `imageUrl` (empty in v1).
+**Data fields**: `id`, `name`, `make`, `model`, `generation` (only when needed to disambiguate), `imageUrl` (the card illustration; every car has one). Where the figures came from is `source`, which lives with the drivetrain, engine, production years and tier note in `carDetails.ts` keyed by car id, since only the detail panel reads any of them (backlog P3).
 
 ### 2.2 Tiers
 

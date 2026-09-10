@@ -2,6 +2,10 @@
 
 Every change to Pink Slips, by the day it landed. Dates are commit dates, newest first. Each line ends with the commit that made the change, so anything here can be traced in the history. A phase entry names its phase from `BUILD_PLAN.md`; the commit that marks a phase done is listed with it. Every commit adds a line here under its day.
 
+## 2026-09-10
+
+- Backlog 5, the last two cards: the 2021 Mustang Mach 1 and the 2020 Shelby GT500 have illustrations, so all 126 cars carry one and the tinted silhouette is again only a loading state. The row was filed as blocked on licensing, and that had lifted — it read as blocked because both are modern cars, where a search for "Mustang Mach 1" returns 1969-73 classics and the electric Mach-E. Three sources were generated and thrown away first, each because the background remover keeps one connected shape and a neighbouring car that touches the subject comes through with it: one kept a wheel, one kept an entire BMW, one kept a dark mass behind the roof. What worked was a photograph where the car stands alone rather than merely apart — a motor show stand and a showroom floor. The regenerated credits file also picks up a preamble wording the script had changed earlier, which is why that line moves too. `DESIGN.md` 2.1 was corrected alongside: it still called `imageUrl` empty in v1, and still listed `source` as a car field after P3 moved it. (e06c49c)
+
 ## 2026-09-09
 
 - Backlog Q40, knowing whether anyone plays: the game now counts browsers, screens opened, and matches started and finished, and `npm run stats` reads it. A random number in the browser is the only identifier, it is never joined to an account or a name, no address or time of day is stored anywhere, and only a fixed list of event names is accepted. A browser sending Do Not Track or Global Privacy Control is not counted at all, and a dialog on the start screen says all of this in the same plain words as the rules. There is no public route to read any of it. Counting went in the room worker rather than the counter, because counting distinct browsers honestly needs a database and the counter has only key-value storage. (4056f1e)
