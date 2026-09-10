@@ -35,8 +35,24 @@ function versionFile(): Plugin {
 // Served from https://sgreen-dev.github.io/pink-slips/
 export default defineConfig({
   base: '/pink-slips/',
-  // Source images for the site live here and are not served; a locked file in it must not stop the dev server.
-  server: { watch: { ignored: ['**/game-images/**', '**/music/**'] } },
+  /*
+   * strictPort so a second `npm run dev` fails instead of walking to the next free port and
+   * leaving the first one running: that walk is what let five servers pile up unnoticed, one of
+   * them launched with `--port 5173` and answering on 5174. It also keeps the dev server on the
+   * one origin the workers allow, since `src/server/http.ts` and `counter/worker.ts` both name
+   * localhost:5173, so a drifted port quietly breaks online play and the counter.
+   * `npm run dev:stop` clears a server left behind.
+   *
+   * Source images for the site live under the ignored folders and are not served; a locked file
+   * in one of them must not stop the dev server.
+   */
+  server: {
+    port: 5173,
+    strictPort: true,
+    watch: { ignored: ['**/game-images/**', '**/music/**'] },
+  },
+  // Pinned for the same reason: a drifted preview origin is in neither worker's allow list.
+  preview: { port: 4173, strictPort: true },
   plugins: [react(), versionFile()],
   // Sent with a crash report so a stack can be read against the code that threw (backlog Q38).
   define: { __COMMIT__: JSON.stringify(commit()) },

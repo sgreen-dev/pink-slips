@@ -33,6 +33,7 @@ npm run dev
 
 | Command                                    | What it does                                    |
 | ------------------------------------------ | ----------------------------------------------- |
+| `npm run dev:stop`                         | stop a dev server left running (`-- --check` lists) |
 | `npm test`                                 | run the test suite once                         |
 | `npm run lint`                             | ESLint                                          |
 | `npm run format:check`                     | Prettier check                                  |
