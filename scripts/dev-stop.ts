@@ -11,15 +11,27 @@
  * being made, but it can do nothing about the ones already running. This is that half.
  *
  * It looks at command lines rather than at a port, because a stray is on a port nobody chose and
- * not knowing which port is the whole problem. A Vite server has to carry both this repo's path
- * and Vite's own entry file, which is what keeps `npm run test:watch` out of it: vitest lives at
- * `node_modules/vitest/vitest.mjs`, so anything matching the bare word "vite" would stop the
- * test watcher too.
+ * not knowing which port is the whole problem.
  *
- * `python -m http.server`, which the art scripts use to look at `public/`, is covered on the
- * same terms. It was added after one sat on a port for most of a day: this script had reported
- * a clean machine each time, truthfully, because it only ever looked at node and workerd. A
- * cleanup tool that is narrower than the problem reads exactly like one that has nothing to do.
+ * **The rule is open by design, and it did not start that way.** The first version matched a list
+ * of tools -- vite, then wrangler and workerd, then http.server -- and a list of tools can only
+ * ever find what somebody remembered to add. A static file server held a port for most of a day
+ * while this script reported a clean machine every time it was asked, truthfully, because Python
+ * was not on the list. A cleanup tool narrower than the problem reads exactly like one with
+ * nothing to do, and that is worse than having no tool, because it turns "I do not know" into a
+ * confident wrong answer.
+ *
+ * So the match is now: anything running in one of our RUNTIMES whose command line names this
+ * repo, whatever tool it happens to be. New kind of server, new library, does not matter. It is
+ * still a list of runtimes rather than "any process under the repo", and that is deliberate --
+ * an editor with the folder open carries the repo path too, and the cost of a wrong match is
+ * killing someone's editor. Two things are carved back out by shape: vitest, because a watcher
+ * is not a stray, and this script itself.
+ *
+ * The second half is the cross-check. Anything sitting on a port this repo serves on that the
+ * rules did not claim is printed too, and never stopped -- it is as likely to be another project
+ * as ours. Its whole job is to stop the script being able to imply a clean machine while one of
+ * our ports is held, which is the exact way it was wrong before.
  *
  * `wrangler dev` and the `workerd` it runs are covered with one caveat the output states out
  * loud: neither carries a repo path, because wrangler is resolved from the npx cache and
@@ -47,10 +59,30 @@ function plain(text: string): string {
 /** This repo's root, in the shape a command line carries it. */
 const ROOT = plain(fileURLToPath(new URL('..', import.meta.url))).replace(/\/+$/, '')
 
+/**
+ * The runtimes this repo starts things in. This is the list that matters: it is what makes the
+ * match open rather than closed. Naming *tools* -- vite, wrangler, http.server -- meant every new
+ * kind of server was invisible until someone thought to add it, which is how a static file server
+ * held a port for most of a day while this script reported a clean machine. Naming runtimes
+ * instead catches whatever is run in one of them, tool unknown.
+ *
+ * It is still a list rather than "anything under the repo", and deliberately: an editor with the
+ * folder open can carry the repo path on its command line too, and the cost of a wrong match here
+ * is killing someone's editor. Restricting the kill to a runtime we launch keeps that impossible.
+ */
+const RUNTIMES = ['node', 'python', 'pythonw', 'deno', 'bun']
+
+/** Ports this repo is known to serve on, for the cross-check that only ever reports. */
+const OUR_PORTS = [4173, 4300, 5173, 8787]
+
 interface Row {
   pid: number
   parent: number
   command: string
+  /** The program itself, lower case and without .exe, so it can be matched against RUNTIMES. */
+  image: string
+  /** TCP ports this process is listening on. Windows only; empty elsewhere. */
+  ports: number[]
 }
 
 interface Target extends Row {
@@ -66,12 +98,15 @@ interface Target extends Row {
  * on this repo's path: a path in the query would put it on the probe's own command line, and the
  * script would go on to find itself.
  */
-const NAMES = ["'node.exe'", "'workerd.exe'", "'python.exe'", "'pythonw.exe'"]
 const PROBE = [
   '$p = @(Get-CimInstance Win32_Process |',
-  `  Where-Object { ${NAMES.map((n) => `$_.Name -eq ${n}`).join(' -or ')} } |`,
-  '  Select-Object ProcessId, ParentProcessId, CommandLine)',
-  'ConvertTo-Json -Depth 3 -Compress -InputObject $p',
+  '  Select-Object ProcessId, ParentProcessId, Name, CommandLine)',
+  '$l = @()',
+  'try {',
+  '  $l = @(Get-NetTCPConnection -State Listen |',
+  '    Select-Object LocalPort, OwningProcess)',
+  '} catch {}',
+  'ConvertTo-Json -Depth 3 -Compress -InputObject @{ processes = $p; listening = $l }',
 ].join('\n')
 
 function look(): Row[] {
@@ -85,18 +120,38 @@ function fromWindows(): Row[] {
   // PowerShell 5 writes a byte-order mark to a redirected stdout, which JSON.parse will not take.
   const text = out.replace(/^\uFEFF/, '').trim()
   if (text === '') return []
-  const rows = JSON.parse(text) as {
-    ProcessId?: number
-    ParentProcessId?: number
-    CommandLine?: string | null
-  }[]
+  const parsed = JSON.parse(text) as {
+    processes?: {
+      ProcessId?: number
+      ParentProcessId?: number
+      Name?: string | null
+      CommandLine?: string | null
+    }[]
+    listening?: { LocalPort?: number; OwningProcess?: number }[]
+  }
+  const ports = new Map<number, number[]>()
+  for (const one of parsed.listening ?? []) {
+    const pid = Number(one.OwningProcess ?? 0)
+    const port = Number(one.LocalPort ?? 0)
+    if (pid === 0 || port === 0) continue
+    // The same port arrives twice when something is bound on both IPv4 and IPv6.
+    const held = ports.get(pid) ?? []
+    if (!held.includes(port)) held.push(port)
+    ports.set(pid, held)
+  }
+  const rows = parsed.processes ?? []
   return rows
     .filter((row) => row.CommandLine)
-    .map((row) => ({
-      pid: Number(row.ProcessId ?? 0),
-      parent: Number(row.ParentProcessId ?? 0),
-      command: row.CommandLine ?? '',
-    }))
+    .map((row) => {
+      const pid = Number(row.ProcessId ?? 0)
+      return {
+        pid,
+        parent: Number(row.ParentProcessId ?? 0),
+        command: row.CommandLine ?? '',
+        image: (row.Name ?? '').toLowerCase().replace(/\.exe$/, ''),
+        ports: ports.get(pid) ?? [],
+      }
+    })
 }
 
 function fromPosix(): Row[] {
@@ -108,10 +163,16 @@ function fromPosix(): Row[] {
   for (const line of out.split('\n')) {
     const found = /^\s*(\d+)\s+(\d+)\s+(.+)$/.exec(line)
     if (found) {
+      const command = (found[3] ?? '').trim()
       rows.push({
         pid: Number(found[1] ?? ''),
         parent: Number(found[2] ?? ''),
-        command: (found[3] ?? '').trim(),
+        command,
+        // argv[0]'s basename, which is the closest `ps` gets to an image name.
+        image: (plain(command).split(/\s+/)[0] ?? '').split('/').pop() ?? '',
+        // Listening ports would need lsof, which is not always installed; the port cross-check
+        // is Windows-only and its absence only costs the extra warning, never a missed kill.
+        ports: [],
       })
     }
   }
@@ -142,15 +203,25 @@ function run(file: string, args: string[]): string {
  * proved separately. The trailing slash on the root matters: without it a sibling checkout in
  * `pink-slips-old` would read as this one.
  */
-function nameFor(command: string): { name: string; repoScoped: boolean } | null {
-  const text = plain(command)
-  if (text.includes(`${ROOT}/`) && /\/vite\/bin\/vite\.js\b/.test(text)) {
-    return {
-      name: text.split(/\s+/).includes('preview') ? 'vite preview' : 'vite dev',
-      repoScoped: true,
-    }
-  }
+function nameFor(row: Row): { name: string; repoScoped: boolean } | null {
+  const text = plain(row.command)
   const words = text.split(/\s+/)
+
+  // The open rule. Anything run in one of our runtimes whose command line names this repo is
+  // ours, whatever tool it happens to be. The trailing slash on the root matters: without it a
+  // sibling checkout in `pink-slips-old` would read as this one.
+  if (RUNTIMES.includes(row.image) && text.includes(`${ROOT}/`)) {
+    // `npm run test:watch` is a node process under this repo and must survive: vitest lives at
+    // `node_modules/vitest/vitest.mjs`, and a watcher is not a stray.
+    if (/\/vitest\//.test(text)) return null
+    // This script and its own probe are excluded by pid elsewhere; skip them by shape too, so a
+    // second copy started by hand cannot stop the first mid-run.
+    if (text.includes('dev-stop.ts')) return null
+    return { name: labelFor(text), repoScoped: true }
+  }
+
+  // The two that carry no repo path at all: wrangler resolves from the npx cache and workerd is
+  // handed its config on stdin, so these stay matched by which program they are.
   // `dev` as a whole word, so `wrangler deploy` mid-flight is never mistaken for a dev server.
   if (text.includes('/wrangler/') && words.includes('dev')) {
     return { name: 'wrangler dev', repoScoped: false }
@@ -158,13 +229,19 @@ function nameFor(command: string): { name: string; repoScoped: boolean } | null 
   if (/\/workerd(\.exe)?\b/.test(text) && words.includes('serve')) {
     return { name: 'workerd', repoScoped: false }
   }
-  // Python's own static server, used by hand to look at `public/`. Unlike wrangler this one can
-  // be proved ours: it runs from the art venv inside the repo, so its interpreter path carries
-  // the root. Requiring that as well as `http.server` leaves another checkout's alone.
-  if (text.includes(`${ROOT}/`) && text.includes('http.server')) {
-    return { name: 'http.server', repoScoped: true }
-  }
   return null
+}
+
+/** A readable name for the report. Falls back to the runtime when the tool is not one we know. */
+function labelFor(text: string): string {
+  if (/\/vite\/bin\/vite\.js\b/.test(text)) {
+    return text.split(/\s+/).includes('preview') ? 'vite preview' : 'vite dev'
+  }
+  if (text.includes('http.server')) return 'http.server'
+  const known = ['vite', 'esbuild', 'rollup', 'wrangler', 'serve'].find((one) =>
+    text.includes(`/${one}/`),
+  )
+  return known ?? 'node or python'
 }
 
 /** This process and everything that started it, so the script cannot reach up its own chain. */
@@ -184,7 +261,7 @@ function targets(rows: readonly Row[]): Target[] {
   const found: Target[] = []
   for (const row of rows) {
     if (mine.has(row.pid)) continue
-    const named = nameFor(row.command)
+    const named = nameFor(row)
     if (named) found.push({ ...row, ...named })
   }
   return parentsFirst(found, rows)
@@ -214,7 +291,25 @@ function parentsFirst(found: Target[], rows: readonly Row[]): Target[] {
 }
 
 function describe(target: Target): string {
-  return `  ${target.name.padEnd(14)}pid ${target.pid}`
+  const where = target.ports.length > 0 ? `  port ${target.ports.join(', ')}` : ''
+  return `  ${target.name.padEnd(16)}pid ${String(target.pid).padEnd(8)}${where}`
+}
+
+/**
+ * Anything sitting on a port this repo serves on that the rules above did not claim. Reported and
+ * never stopped: it is as likely to be another project, or an editor, as it is to be ours. The
+ * point is that the script stops being able to say "nothing is running" while one of our ports is
+ * held by something -- which is the exact way it was wrong before.
+ */
+function squatters(rows: readonly Row[], claimed: readonly Target[]): Row[] {
+  const taken = new Set(claimed.map((one) => one.pid))
+  const mine = ancestry(rows)
+  return rows.filter(
+    (row) =>
+      !taken.has(row.pid) &&
+      !mine.has(row.pid) &&
+      row.ports.some((port) => OUR_PORTS.includes(port)),
+  )
 }
 
 function stop(pid: number, signal: NodeJS.Signals): 'denied' | 'done' {
@@ -238,9 +333,24 @@ async function main(): Promise<void> {
     process.exit(2)
   }
 
-  let running = targets(look())
+  const rows = look()
+  let running = targets(rows)
+
+  /** Printed whether or not anything was ours, since its whole job is to contradict a clean bill. */
+  const alsoOnOurPorts = squatters(rows, running)
+  const reportSquatters = () => {
+    if (alsoOnOurPorts.length === 0) return
+    console.log('\nNot ours, but sitting on a port this repo uses:')
+    for (const row of alsoOnOurPorts) {
+      const port = row.ports.filter((one) => OUR_PORTS.includes(one)).join(', ')
+      console.log(`  ${row.image.padEnd(16)}pid ${String(row.pid).padEnd(8)}  port ${port}`)
+    }
+    console.log('  Left alone. Stop it yourself if it is in the way.')
+  }
+
   if (running.length === 0) {
     console.log('No dev servers of this repo are running.')
+    reportSquatters()
     return
   }
 
@@ -251,6 +361,7 @@ async function main(): Promise<void> {
       '\n  wrangler and workerd carry no path, so those are matched by program, not by repo.',
     )
   }
+  reportSquatters()
 
   if (process.argv.includes('--check')) {
     console.log(`\n${started} running. Run \`npm run dev:stop\` to stop them.`)
