@@ -13,12 +13,42 @@ import { execFileSync } from 'node:child_process'
 
 const clear = process.argv.includes('--clear')
 
+interface ExecFailure {
+  status?: number | null
+  code?: string
+  stderr?: string
+}
+
 function wrangler(args: string[]): string {
   return execFileSync('npx', ['wrangler', ...args], {
     cwd: 'counter',
     encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
     shell: process.platform === 'win32',
   })
+}
+
+/** A key nobody has written yet is an empty store. Anything else wrangler says is a fault. */
+function isMissingKey(error: unknown): boolean {
+  return /key not found|10009/i.test((error as ExecFailure).stderr ?? '')
+}
+
+/** Repeats what wrangler said, so a login or a path problem cannot read as "nothing stored". */
+function bail(action: string, error: unknown): never {
+  const failure = error as ExecFailure
+  console.error(`Could not ${action}.`)
+  if (failure.code === 'ENOENT') {
+    console.error('  npx would not start, or counter/ is not below the directory this ran from.')
+    console.error('  Run it as `npm run errors`, which works anywhere in the repo.')
+  }
+  const said = failure.stderr?.trim()
+  if (said !== undefined && said !== '') {
+    for (const line of said.split('\n')) console.error(`  ${line}`)
+    console.error('\nIf that is a login problem: npx wrangler login')
+  } else if (typeof failure.status === 'number') {
+    console.error(`  wrangler exited ${failure.status} and said nothing.`)
+  }
+  process.exit(1)
 }
 
 interface Report {
@@ -29,7 +59,15 @@ interface Report {
 }
 
 if (clear) {
-  wrangler(['kv', 'key', 'delete', 'errors', '--binding', 'COUNTS', '--remote'])
+  try {
+    wrangler(['kv', 'key', 'delete', 'errors', '--binding', 'COUNTS', '--remote'])
+  } catch (error) {
+    if (isMissingKey(error)) {
+      console.log('Nothing to clear.')
+      process.exit(0)
+    }
+    bail('clear the crash reports', error)
+  }
   console.log('Cleared.')
   process.exit(0)
 }
@@ -37,7 +75,15 @@ if (clear) {
 let raw = ''
 try {
   raw = wrangler(['kv', 'key', 'get', 'errors', '--binding', 'COUNTS', '--remote'])
-} catch {
+} catch (error) {
+  if (isMissingKey(error)) {
+    console.log('No crash reports stored.')
+    process.exit(0)
+  }
+  bail('read the crash reports', error)
+}
+
+if (raw.trim() === '') {
   console.log('No crash reports stored.')
   process.exit(0)
 }
