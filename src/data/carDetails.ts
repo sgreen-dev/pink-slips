@@ -329,12 +329,11 @@ export const CAR_DETAILS: Readonly<Record<string, CarDetail>> = {
     source:
       'Stellantis media, 2013 SRT Viper specifications (base curb weight; 645 hp from the 2015 model year on)',
   },
-  'dodge-challenger-srt-demon-170': {
+  'dodge-challenger-srt-hellcat-redeye': {
     drivetrain: 'RWD',
     engine: '6.2L supercharged HEMI V8',
-    productionYears: '2023',
-    source:
-      'Dodge, 2023 Challenger SRT Demon 170 specifications (1,025 hp on E85; curb weight on standard wheels)',
+    productionYears: '2019–2023',
+    source: 'Dodge, Challenger SRT Hellcat Redeye specifications (797 hp; 203 mph)',
   },
   'chevrolet-corvette-zr1-c8': {
     drivetrain: 'RWD',

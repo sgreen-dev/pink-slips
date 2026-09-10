@@ -153,7 +153,7 @@ Type is a car's character, not its brand. A front-engine V12 Ferrari grand toure
 | Performance | ★ Plymouth Hemi 'Cuda (1970) | 425 | 3,850 |
 | Super | ★ Chevrolet Corvette Z06 (C6) | 505 | 3,130 |
 | Super | ★ Dodge Viper (Gen 5) | 645 | 3,375 |
-| Hyper | Dodge Challenger SRT Demon 170 | 1,025 | 4,275 |
+| Super | Dodge Challenger SRT Hellcat Redeye | 797 | 4,451 |
 | Hyper | Chevrolet Corvette ZR1 (C8) | 1,064 | 3,800 |
 | Daily | Ford Mustang 200 Six (1965) | 120 | 2,445 |
 | Daily | Ford Mustang V6 (2005) | 210 | 3,300 |
