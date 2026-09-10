@@ -21,9 +21,13 @@
   --part: #6b7f99;
   --boost: #2e9e5b;
   --sabotage: #c0392b;
-  --font-display: 'Bebas Neue', 'Oswald', Impact, 'Arial Narrow', sans-serif;
-  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
-  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* Five roles, not three (DESIGN.md 8). The wordmark and the scoreboard were being done by
+     the display and stat faces, which is why the title could only ever look like a big button. */
+  --font-wordmark: 'Monoton', 'Bebas Neue', Impact, cursive;
+  --font-display: 'Saira Condensed', 'Oswald', 'Arial Narrow', sans-serif;
+  --font-mono: 'Space Mono', 'IBM Plex Mono', 'Courier New', monospace;
+  --font-meter: 'Wallpoet', 'Space Mono', 'Courier New', monospace;
+  --font-body: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
   color-scheme: dark;
   font-family: var(--font-body);
@@ -58,6 +62,39 @@ h2 {
   font-weight: 400;
   letter-spacing: 0.05em;
   margin: 0;
+}
+
+/* Bebas Neue had no lowercase, so twenty-one rules leaned on the face to uppercase their text
+   and none of them said so. Saira Condensed does have a lowercase, which would have quietly
+   turned every button, heading and card name mixed-case. The intent is written down here
+   instead of being a property of the font: it is the game's look, not the typeface's. */
+
+h1,
+h2,
+.button,
+.card__name,
+.card__type,
+.card__badge,
+.card__variant,
+.mod__name,
+.mod__variant,
+.mod__rare,
+.lane__player,
+.board__brand,
+.garage__name,
+.hand__header,
+.log__header,
+.dealt__label,
+.picker__legend,
+.picker__title,
+.builder__ready,
+.online__code,
+.profile__stats dd,
+.leaderboard h2,
+.online__queue h2,
+.player__title,
+.stakes__toggle {
+  text-transform: uppercase;
 }
 
 /* Buttons */
@@ -413,12 +450,17 @@ h2 {
   margin-left: 11.75rem;
   margin-right: 6.25rem;
 }
+/* The scoreboard (DESIGN.md 8). A strip posts distance on segmented lamps, so the two places
+   this game shows one take the meter face. The unit stays in the stat face beside it, the way
+   a real board prints the unit next to the lamps rather than lighting it. */
 .track__mark {
   position: absolute;
   transform: translateX(-50%);
-  font-family: var(--font-mono);
+  font-family: var(--font-meter);
   font-size: 0.65rem;
-  color: var(--muted);
+  /* The ruler along the track, not the readout: dim gold and no glow, so it belongs to the
+     same board as the lane numbers without competing with the one that actually changes. */
+  color: rgb(242 193 78 / 55%);
 }
 .lane {
   --lane-color: var(--pink);
@@ -496,6 +538,17 @@ h2 {
   border-radius: 0.6rem 0.9rem 0.9rem 0.6rem;
   background: var(--lane-color);
   box-shadow: 0 0 0.6rem var(--lane-color);
+}
+/* The number only; `.lane__distance` keeps the unit in the stat face. */
+/* The live number, and the only lit thing on the board. Gold with a halo in the same hue, the
+   blur in `em` so it holds at any size. The unit beside it stays unlit in the stat face. */
+.lane__meter {
+  font-family: var(--font-meter);
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+  text-shadow:
+    0 0 0.12em rgb(242 193 78 / 70%),
+    0 0 0.4em rgb(242 193 78 / 45%);
 }
 .lane__distance {
   font-family: var(--font-mono);
@@ -628,11 +681,32 @@ h2 {
   padding: 2rem 1rem 3rem;
   text-align: center;
 }
+/* The wordmark. Monoton is a neon-tube face — the gap running down each stroke is the tube,
+   not a rendering fault — so the treatment is light first and depth second: a short hard
+   extrude to lift it off the road, then two blurred halos in the accent.
+
+   Every offset is in `em` on purpose. The title drops to 3.5rem on a phone, and a depth fixed
+   in px that reads right on a desktop turns to mud at that size; in `em` it scales with the
+   type and needs no second rule. */
 .start__title {
-  font-size: 5rem;
-  color: var(--pink);
-  letter-spacing: 0.1em;
-  line-height: 1;
+  font-family: var(--font-wordmark);
+  font-weight: 400;
+  /* Monoton sets much wider than Bebas did at the same size, so this is a range, not a number. */
+  font-size: clamp(2.25rem, 10vw, 4.5rem);
+  text-transform: uppercase;
+  /* Light, not depth. A lit sign has no shadow side, so there is no extrude here at all — the
+     letterform is held just above the accent so it reads as the hot centre, and every halo
+     below it is pink. Five stops, tight to wide: the tight ones give the edge its bloom, the
+     wide ones throw colour onto the road behind it. */
+  color: #ffd6ea;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  text-shadow:
+    0 0 0.05em var(--pink),
+    0 0 0.15em var(--pink),
+    0 0 0.35em var(--pink),
+    0 0 0.7em var(--pink-2),
+    0 0 1.2em var(--pink-2);
 }
 .start__tagline {
   color: var(--muted);

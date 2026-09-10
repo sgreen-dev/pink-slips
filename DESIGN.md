@@ -506,7 +506,7 @@ A headless command, `npm run sim`, that plays CPU against CPU for thousands of m
 **Retro trading card.** The precedent for layout is Top Trumps, the 1970s car stat card game: portrait card, car name across the top, a stat block down one side. The precedent for stock and border is the 1999 Pokémon Base Set: cream body, thick colored border, a boxed image area. The image area holds a stylized placeholder in v1 and an illustration later.
 
 - Border color by type. Foil and holo finishes are CSS overlays on the frame and the art (section 12).
-- Typography from Google Fonts: a condensed display face for names, a monospace face for stats. Real fallback stacks.
+- Typography from Google Fonts: a condensed display face for names, a monospace face for stats. Real fallback stacks. Five roles in all, since the wordmark and the on-screen distance each want a face the other four cannot give them.
 - Race screen: two lanes viewed from above, a car marker per lane advancing toward a finish line, distance in feet under each. Markers slide. The one other piece of motion is the race-end moment: the track holds at the finishing positions, the winner's finish line flashes, and a banner names the winner and shows the captured car as a pink slip with the tally. It stays until Continue and comes before staging, the hotseat hand-over, and the result screen. Reduced-motion settings keep the banner and drop the motion.
 - Hotseat shows a hand-over screen between turns so hands stay hidden.
 - Desktop first. Usable on a phone.
@@ -518,18 +518,20 @@ A headless command, `npm run sim`, that plays CPU against CPU for thousands of m
 |---|---|
 | Table | asphalt `#17171a`, panels `#232327`, lines `#3a3a40` |
 | Card stock | cream `#f3e7c9`, stat bands `#e6d7b0`, ink `#2b2118` |
-| Accent | pink `#ff5ca8` for pink slips, prompts, and targets; gold `#f2c14e` for the staged car and fuel |
+| Accent | pink `#ff5ca8` for pink slips, prompts, and targets; gold `#f2c14e` for the staged car, fuel, and the distance on the track |
 | Type borders | Sports `#d7263d`, Luxury `#7a3e9d`, Muscle `#e8731c`, JDM `#1e6fd9`, EV `#1fa37a`, Off-road `#8c6b2f` |
 | Mod families | Part `#6b7f99`, Boost `#2e9e5b`, Sabotage `#c0392b` |
-| Display face | Bebas Neue, falling back to Oswald, Impact, Arial Narrow |
-| Stat face | IBM Plex Mono, falling back to Courier New |
-| Body face | the system UI stack |
+| Wordmark face | Monoton, a neon-tube face, for the start title only; falling back to Bebas Neue, Impact |
+| Display face | Saira Condensed, falling back to Oswald, Arial Narrow |
+| Stat face | Space Mono, falling back to IBM Plex Mono, Courier New |
+| Meter face | Wallpoet, for a distance on screen; falling back to Space Mono, Courier New |
+| Body face | Barlow, falling back to the system UI stack |
 
 **Card art** (phase 10)
 
 Every car card carries an illustration in one style: the owner's own, imported from `game-images/cars/` by `scripts/art/import_art.py` and given the same print treatment so it sits beside the rest, or one derived from a photograph on Wikimedia Commons by the pipeline in `scripts/art/`. The credits file marks which is which. The spec: an 800 by 600 image for the 4:3 art box; a front three-quarter view with the car facing right, the direction the track runs, mirrored when the source faces left; the car cut out of its background, posterized to eight tones with a printed line layer, and set on the card cream `#f3e7c9` with a soft shadow; WebP under 60 KB each and under 4 MB in total. Source photographs must be CC0, public domain, CC BY, or CC BY-SA, and each is credited in `public/art/CREDITS.md`. The illustrations are published under CC BY-SA 4.0. The tinted silhouette stays as the fallback while an image loads or if it fails.
 
-Fonts load from Google Fonts. The card is a portrait 5:7 with a thick type-colored frame, a cream body, the name across the top in the display face, a boxed image area holding a tinted silhouette, a striped stat block in the mono face, and tier and fuel cost along the bottom. Fuel, wear, parts, and Launch Control show as tokens on the frame below the body. The engine defines every interaction: a card lights up pink only when `legalActions` lists a play for it.
+Fonts load from Google Fonts. The wordmark and the meter are requested with Google's `text=` subsetting, since each sets one fixed string, which means changing the title also means changing the glyphs asked for. The display face has a lowercase where Bebas Neue had none, so the all-caps look is set in CSS rather than left to the typeface. The card is a portrait 5:7 with a thick type-colored frame, a cream body, the name across the top in the display face, a boxed image area holding a tinted silhouette, a striped stat block in the mono face, and tier and fuel cost along the bottom. Fuel, wear, parts, and Launch Control show as tokens on the frame below the body. The engine defines every interaction: a card lights up pink only when `legalActions` lists a play for it.
 
 ---
 
