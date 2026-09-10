@@ -11,10 +11,18 @@ Requires Python 3.10 or later. From the repo root:
     scripts/art/.venv/Scripts/pip install -r scripts/art/requirements.txt
     scripts/art/.venv/Scripts/python scripts/art/make_art.py            # every car in sources.csv
     scripts/art/.venv/Scripts/python scripts/art/make_art.py honda-civic-si   # just some
+    scripts/art/.venv/Scripts/python scripts/art/make_art.py --out tmp honda-civic-si  # try one
+
+--out writes the cards somewhere else and leaves public/art and the credits untouched, so a
+candidate photograph can be tried without dirtying the repo.
 
 Inputs: scripts/art/sources.csv with columns carId, commonsFile, flip. commonsFile is the Commons
 file title, for example "File:2021 Ford F-150 Raptor.jpg". flip is y when the car faces left.
 Only CC0, public domain, CC BY, and CC BY-SA photographs are accepted.
+
+Each card is also inspected and anything odd is printed under it: a car that runs off the edge
+of its photograph, a second object nearly as big as the car, or a subject filling an unusual
+share of the frame. Those are notes, never refusals, and they miss plenty. Look at the card.
 """
 
 from __future__ import annotations
@@ -50,6 +58,10 @@ SIZE = (800, 600)
 MAX_BYTES = 60_000
 START_QUALITY = 82
 DOWNLOAD_WIDTH = 1920  # a standard Commons thumbnail width; originals are refused in bulk
+
+# Bands for inspect_cutout. Warnings only, never a refusal.
+SECOND_REGION_WARN = 0.05  # a second blob this share of the car is worth mentioning
+FILL_BAND = (0.25, 0.69)  # the middle of the spread measured across every source
 
 Image.MAX_IMAGE_PIXELS = None  # Commons originals can be very large; they are trusted downloads
 
@@ -134,19 +146,67 @@ def download(url: str, target: Path) -> Path:
     return target
 
 
-def cut_out(photo: Image.Image, session) -> Image.Image:
+def cut_out(photo: Image.Image, session) -> tuple[Image.Image, list[str]]:
     from rembg import remove
 
     photo.thumbnail((2400, 2400))  # plenty for 800 by 600 and keeps the model fast
     cut = remove(photo, session=session).convert("RGBA")
     alpha = cut.getchannel("A").point(lambda v: 255 if v > ALPHA_CUTOFF else 0)
-    alpha = largest_region(alpha)
-    cut.putalpha(alpha.filter(ImageFilter.GaussianBlur(1.2)))
-    return cut
+    kept, census = largest_region(alpha)
+    notes = inspect_cutout(alpha, census)
+    cut.putalpha(kept.filter(ImageFilter.GaussianBlur(1.2)))
+    return cut, notes
 
 
-def largest_region(mask: Image.Image) -> Image.Image:
-    """Keeps the biggest connected blob of the cutout, dropping fragments of nearby cars."""
+def inspect_cutout(alpha: Image.Image, census: list[int]) -> list[str]:
+    """
+    What might be wrong with a photograph, as notes for whoever looks at the card.
+
+    Nothing here refuses a render. These are triage: on the set as it stood when this was
+    written they caught three of the eight bad cards that a person found by eye, so a clean
+    report is not a promise that the picture is right. Look at the card.
+
+    The bands come from measuring all the sources in sources.csv at the time: the subject
+    filled 46.5% of the photograph on average, with a standard deviation of 11 points.
+    """
+    import numpy as np
+
+    mask = np.array(alpha) > 0
+    if not mask.any():
+        return ["nothing was found in the photograph"]
+    notes: list[str] = []
+    columns = np.where(mask.any(axis=0))[0]
+    width = mask.shape[1]
+    if columns[0] <= 2 or columns[-1] >= width - 3:
+        side = "left" if columns[0] <= 2 else "right"
+        notes.append(f"runs off the {side} edge of the photograph, so the car may be cut off")
+    if len(census) > 1 and census[1] >= census[0] * SECOND_REGION_WARN:
+        share = census[1] / census[0]
+        notes.append(
+            f"a second object is {share:.0%} the size of the car; it is only dropped "
+            "if it does not touch the car"
+        )
+    fill = mask.mean()
+    if not FILL_BAND[0] <= fill <= FILL_BAND[1]:
+        low, high = FILL_BAND
+        notes.append(
+            f"fills {fill:.0%} of the photograph, outside the usual {low:.0%} to {high:.0%}"
+        )
+    return notes
+
+
+def largest_region(mask: Image.Image) -> tuple[Image.Image, list[int]]:
+    """
+    Keeps the biggest connected blob of the cutout, dropping fragments of nearby cars.
+
+    Also returns the sizes of every blob it found, biggest first, so a caller can say when a
+    second object was nearly as big as the car. That census is taken before the MaxFilter
+    below, which grows the kept blob by about four pixels of the downscaled grid and can pull
+    a close fragment back in.
+
+    A neighbouring car that *touches* the car shares its blob and cannot be dropped here at
+    all; that is a photograph to replace, not a mask to fix.
+    """
     import numpy as np
     from collections import deque
 
@@ -174,11 +234,12 @@ def largest_region(mask: Image.Image) -> Image.Image:
                         queue.append((ny, nx))
             sizes[label] = count
     if not sizes:
-        return mask
+        return mask, []
+    census = sorted(sizes.values(), reverse=True)
     keep = max(sizes, key=sizes.get)
     kept = Image.fromarray((labels == keep).astype(np.uint8) * 255).resize(mask.size, Image.Resampling.NEAREST)
     kept = kept.filter(ImageFilter.MaxFilter(scale * 2 + 1))
-    return ImageChops.multiply(mask, kept)
+    return ImageChops.multiply(mask, kept), census
 
 
 def stylize(car: Image.Image) -> Image.Image:
@@ -274,14 +335,33 @@ def write_credits(credits: dict[str, dict], names: dict[str, str]) -> None:
             f"| {car_id} | {names.get(car_id, car_id)} | [{c['title'].removeprefix('File:')}]({c['page']}) "
             f"| {author} | {license_cell} |"
         )
-    (OUT / "CREDITS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # newline="\n" so a rerun that changes nothing leaves no diff: git stores LF, and letting
+    # Python translate to CRLF on Windows marks the file modified every time it is written.
+    (OUT / "CREDITS.md").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
 
 
-def main(only: list[str]) -> None:
+def main(argv: list[str]) -> None:
     from rembg import new_session
 
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    OUT.mkdir(parents=True, exist_ok=True)
+    # --out sends the cards somewhere else and leaves the credits alone, so a candidate
+    # photograph can be tried without touching the repo. import_art.py has the same escape.
+    out_dir = OUT
+    check_run = False
+    only: list[str] = []
+    rest = list(argv)
+    while rest:
+        item = rest.pop(0)
+        if item == "--out":
+            if not rest:
+                raise SystemExit("--out needs a directory")
+            out_dir = Path(rest.pop(0))
+            check_run = True
+        elif item.startswith("-"):
+            raise SystemExit(f"unknown option: {item}")
+        else:
+            only.append(item)
+    out_dir.mkdir(parents=True, exist_ok=True)
     CACHE.mkdir(exist_ok=True)
     names = car_names()
     credits: dict[str, dict] = (
@@ -295,6 +375,7 @@ def main(only: list[str]) -> None:
         raise SystemExit("nothing to do: no matching rows in sources.csv")
 
     session = new_session("u2net")
+    flagged: list[str] = []
     for row in rows:
         car_id = row["carId"].strip()
         if car_id not in names:
@@ -308,17 +389,27 @@ def main(only: list[str]) -> None:
         photo_path = download(info["url"], CACHE / f"{car_id}-{stamp}{suffix}")
         with Image.open(photo_path) as photo:
             photo = ImageOps.exif_transpose(photo).convert("RGB")
-            cut = cut_out(photo, session)
+            cut, notes = cut_out(photo, session)
         image = compose(cut, row.get("flip", "").strip().lower() == "y")
-        size = save_webp(image, OUT / f"{car_id}.webp")
-        credits[car_id] = info
-        time.sleep(1)
-        CREDITS_DATA.write_text(json.dumps(credits, indent=2), encoding="utf-8")
+        size = save_webp(image, out_dir / f"{car_id}.webp")
         print(f"{car_id}: {size:,} bytes, {info['license']}, {info['author']}")
+        for note in notes:
+            print(f"  look at this one: {note}")
+            flagged.append(car_id)
+        time.sleep(1)  # every run asks Commons for the metadata, check runs included
+        if check_run:
+            continue
+        credits[car_id] = info
+        CREDITS_DATA.write_text(json.dumps(credits, indent=2), encoding="utf-8", newline="\n")
 
-    CREDITS_DATA.write_text(json.dumps(credits, indent=2), encoding="utf-8")
-    write_credits(credits, names)
-    print(f"credits: {OUT / 'CREDITS.md'}")
+    if check_run:
+        print(f"check run: cards written to {out_dir}, credits left alone")
+    else:
+        CREDITS_DATA.write_text(json.dumps(credits, indent=2), encoding="utf-8", newline="\n")
+        write_credits(credits, names)
+        print(f"credits: {OUT / 'CREDITS.md'}")
+    if flagged:
+        print(f"worth a look: {', '.join(sorted(set(flagged)))}")
 
 
 if __name__ == "__main__":
