@@ -14,6 +14,7 @@ import { newSeed } from './seed.ts'
 import type { Mode } from './Match.tsx'
 import { MatchCounter } from './MatchCounter.tsx'
 import type { PlayerView } from './PlayerDialog.tsx'
+import { PrivacyDialog } from './PrivacyDialog.tsx'
 import { RulesButton, RulesDialog } from './RulesDialog.tsx'
 import { SoundButton } from './sound/SoundButton.tsx'
 import { loadGarages } from '../browser/storage.ts'
@@ -254,6 +255,7 @@ export function StartScreen({
           Collection{packs > 0 ? ` · ${packs} ${packs === 1 ? 'pack' : 'packs'} to open` : ''}
         </button>
         <RulesButton dialogRef={rules} />
+        <PrivacyDialog />
         <SoundButton />
       </div>
       <MatchCounter />

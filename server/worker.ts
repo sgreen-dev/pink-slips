@@ -1,6 +1,15 @@
-import { corsHeaders, json, originAllowed, text } from '../src/server/http.ts'
+import {
+  bearer,
+  corsHeaders,
+  json,
+  originAllowed,
+  readJson,
+  sameSecret,
+  text,
+} from '../src/server/http.ts'
 import { isRoomCode } from '../src/protocol/messages.ts'
 import type { SeatIdentity } from '../src/server/room.ts'
+import { analyticsOf } from './analytics.ts'
 import { directoryOf, type Env } from './env.ts'
 import { newCode } from '../src/server/ids.ts'
 
@@ -12,6 +21,8 @@ import { newCode } from '../src/server/ids.ts'
  * Routes:
  *   GET  /version            what this deployment was built from (backlog Q36)
  *   GET  /new                a fresh room code
+ *   POST /events             what the game counts, from a browser (backlog Q40)
+ *   GET  /admin/stats        the report; needs the ADMIN_TOKEN secret
  *   POST /auth/*             player creation, recovery and sign out
  *   GET  /me, /leaderboard   the account routes, all served by the directory
  *   DELETE /admin/player     removes a player; needs the ADMIN_TOKEN secret (backlog Q39)
@@ -20,6 +31,7 @@ import { newCode } from '../src/server/ids.ts'
  */
 
 export { AccountDirectory } from './accounts.ts'
+export { Analytics } from './analytics.ts'
 export { MatchRoom } from './rooms.ts'
 
 export default {
@@ -32,6 +44,25 @@ export default {
     // What this deployment was built from, so the deploy check can say whether the site and
     // the workers are the same commit rather than only that each one answered (backlog Q36).
     if (path === '/version') return json({ commit: env.COMMIT ?? 'unknown' }, 200, headers)
+
+    // What the game counts (backlog Q40). Origin-gated like every other write a browser makes,
+    // and answered the same whatever was sent: nothing here is worth telling a caller about.
+    if (path === '/events' && request.method === 'POST') {
+      if (!originAllowed(request)) return text('Origin not allowed', 403, headers)
+      await analyticsOf(env).record(await readJson(request), Date.now())
+      return new Response(null, { status: 204, headers })
+    }
+
+    // The report, for the owner alone. Same guard as the admin delete: with no secret set the
+    // route answers 404 rather than existing unprotected.
+    if (path === '/admin/stats' && request.method === 'GET') {
+      const secret = env.ADMIN_TOKEN
+      if (!secret) return text('Not found', 404, headers)
+      if (!sameSecret(bearer(request) ?? '', secret)) return text('Not allowed', 403, headers)
+      const days = Number(url.searchParams.get('days') ?? '30')
+      const window = Number.isFinite(days) ? Math.min(Math.max(Math.trunc(days), 1), 400) : 30
+      return json(await analyticsOf(env).report(Date.now(), window), 200, headers)
+    }
 
     if (path === '/new') return json({ code: newCode() }, 200, headers)
 

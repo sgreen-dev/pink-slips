@@ -21,6 +21,7 @@ import { DetailProvider } from './CardDetail.tsx'
 import type { PlayerView } from './PlayerDialog.tsx'
 import { scrollPageTop } from './scroll.ts'
 import { newSeed } from './seed.ts'
+import { count, flush } from './analytics.ts'
 import { useSound } from './sound/useSound.ts'
 import { StartScreen } from './StartScreen.tsx'
 import { loadGarages } from '../browser/storage.ts'
@@ -172,6 +173,18 @@ export function App() {
     scrollPageTop()
   }, [screen.kind])
 
+  // What the game counts (backlog Q40): the screens opened, once each time one opens. The visit
+  // and the screen size go once, on the way in.
+  useEffect(() => {
+    count('visit')
+    count(window.matchMedia('(max-width: 720px)').matches ? 'screen-phone' : 'screen-desktop')
+    return () => flush()
+  }, [])
+  useEffect(() => {
+    if (screen.kind === 'builder') count('builder-opened')
+    if (screen.kind === 'collection') count('collection-opened')
+  }, [screen.kind])
+
   const toStart = () => setScreen({ kind: 'start' })
   const toOnline = () => setScreen({ kind: 'online', prefill: null })
   const openPlayer = (view: PlayerView, code: string | null = null) => setDialog({ view, code })
@@ -181,9 +194,10 @@ export function App() {
     page = (
       <StartScreen
         key={generation}
-        onStart={(mode, config, names, level, stakes) =>
+        onStart={(mode, config, names, level, stakes) => {
+          count(mode === 'cpu' ? 'match-start-cpu' : 'match-start-hotseat')
           setScreen({ kind: 'match', mode, config, names, level, stakes, seed: newSeed() })
-        }
+        }}
         onBuilder={() => setScreen({ kind: 'builder' })}
         onCollection={() => setScreen({ kind: 'collection' })}
         onOnline={ENDPOINT ? toOnline : undefined}
