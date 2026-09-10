@@ -76,7 +76,9 @@ export function RaceTrack({ state, names, lanes, frozen, ref }: RaceTrackProps) 
                 </div>
               )}
             </div>
-            <div className="lane__distance">{ft} ft</div>
+            <div className="lane__distance">
+              <span className="lane__meter">{ft}</span> ft
+            </div>
           </div>
         )
       })}

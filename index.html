@@ -14,8 +14,23 @@
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Three requests, not one, because Google's `text=` subsetting applies to a whole
+         request. The two display faces below are only ever set in one fixed string each, so
+         asking for just those glyphs turns roughly 60 KB of font into about 4 KB. The cost is
+         that the subset is tied to the words: change the title and the Monoton URL has to
+         change with it, or the letters it is missing fall back silently. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Saira+Condensed:wght@600;700&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- The wordmark. Glyphs for "PINK SLIPS" and nothing else. -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Monoton&text=PINK%20SLIPS&display=swap"
+      rel="stylesheet"
+    />
+    <!-- The scoreboard. Digits only: it never sets anything but a distance. -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Wallpoet&text=0123456789&display=swap"
       rel="stylesheet"
     />
     <!-- How a shared room link looks wherever it is pasted. Making a room and sending the link
