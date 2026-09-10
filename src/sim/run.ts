@@ -156,10 +156,16 @@ export function runSimulation(options: SimulationOptions): SimulationReport {
   const perType = Math.round((total * SHARE.types) / CAR_TYPES.length)
   const perTier = Math.round((total * SHARE.tiers) / TIERS.length)
   const dailyHyper = Math.round(total * SHARE.dailyVsHyper)
+  // The four-garage cycle DESIGN.md 5 claims, then the two pairings across it. Measuring the
+  // across pairs is what makes the cycle a finding: without 0v2 and 1v3 a garage could beat the
+  // one after it and still be the obvious pick against everything else.
   const starterPairs: Array<[number, number]> = [
     [0, 1],
     [1, 2],
-    [2, 0],
+    [2, 3],
+    [3, 0],
+    [0, 2],
+    [1, 3],
   ]
   const perStarterPair = Math.round((total * SHARE.starters) / starterPairs.length)
   const perIntroPair = Math.round((total * SHARE.intro) / STARTERS.length)

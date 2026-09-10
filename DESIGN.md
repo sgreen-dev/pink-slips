@@ -409,7 +409,9 @@ Every value here is a starting point. Phase 5 runs the simulator and adjusts the
 
 ## 5. Loaner garages
 
-Three prebuilt garages ship in v1 so a new player is racing within ten seconds. Each has a 30-card mod deck built for its style. The decklists below were finalized in phase 7 against the tuned numbers.
+Four prebuilt garages ship so a new player is racing within ten seconds. Each has a 30-card mod deck built for its style.
+
+They are cut by **how you win**, not by car type (phase 45). Three of them were named for a kind of car, and the EV one had drifted to three EVs and two Off-road cars, which is what prompted the re-cut. A type garage teaches a player what an EV is; it does not teach them how to play. So each garage is now a way to take the match, each spans several types, and all six types appear across the twenty cars. The four decks between them run **every one of the 33 mods**, so the set is also a tour of the card pool: Redline and Fuel Drain had never appeared in a loaner deck before.
 
 They are **loaners** (phase 28): always raceable and never owned. Their cards are not in the collection, they cannot be edited or broken, and a loaner car can be neither won nor lost under stakes. What a fresh collection owns is the smaller intro set in section 12, and the two moved apart so the garages could stay broad enough to teach the game while the collection stayed small enough to leave something to find. Before phase 28 the union of these three garages was the free grant.
 
@@ -419,17 +421,21 @@ The draw is not a new question of balance: `randomGarage` against `randomGarage`
 
 | Name | Style | Cars |
 |---|---|---|
-| **Street Kings** | cheap tempo, race early and often | Mustang GT, Camaro SS 1LE, RX-7, S2000, Civic Si |
-| **Exotics** | fuel the bench, win late with big cars | Aventador SVJ, 458 Italia, AMG GT R, 911 Carrera S, Miata |
-| **EVs** | launch bonuses and traction immunity | Model S Plaid, Ioniq 5 N, Raptor R, WRX STI, Prius |
+| **Street Kings** | race early and often | Mustang GT, Civic Si, RX-7, X5 M, 911 Carrera S |
+| **The Long Game** | bank fuel, win late | Aventador SVJ, AMG GT R, Model X Plaid, Raptor R, Miata |
+| **Tuners** | the deck does the work | GR Supra 3.0, Civic Type R, Integra Type R, Corvette Stingray C8, Ioniq 5 N |
+| **Spoilers** | slow the other side down | Charger SRT Hellcat, Supra Turbo A80, EV6 GT, Range Rover P530, Challenger SXT |
 
 **Decklists** (30 cards each)
 
-- **Street Kings**: Two-Step ×3, Anti-Lag ×2, Perfect Launch ×3, Power Shift ×3, Drag Slicks ×2, Stage 2 Tune ×3, Turbo Kit ×2, Pit Crew ×3, Wheelspin ×3, Red Light ×2, Bad Tune ×2, Roadblock ×2
-- **Exotics**: Extra Tank ×3, Tow Truck ×3, Fuel Cell ×3, Sponsor ×2, Supercharger ×3, Carbon Body Kit ×2, Roll Cage ×2, Nitrous Shot ×3, Fuel Dump ×2, Fuel Siphon ×3, Missed Shift ×2, Parts Thief ×2
-- **EVs**: Regen ×3, Drag Slicks ×2, Perfect Launch ×2, Launch Control ×2, Wheelie Bar ×2, Weight Reduction ×2, Extra Tank ×2, Aero Package ×2, Overdrive ×2, Oil Slick ×2, Red Light ×1, Bad Tune ×2, Pit Crew ×3, Sponsor ×3
+- **Street Kings**: Two-Step ×3, Perfect Launch ×3, Drag Slicks ×3, Power Shift ×3, Pit Crew ×3, Stage 2 Tune ×3, Turbo Kit ×3, Wheelspin ×2, Anti-Lag ×2, Red Light ×2, Roadblock ×2, Launch Control ×1
+- **The Long Game**: Extra Tank ×3, Tow Truck ×3, Fuel Cell ×3, Regen ×3, Supercharger ×3, Nitrous Shot ×3, Roll Cage ×2, Aero Package ×2, Sponsor ×2, Fuel Siphon ×2, Missed Shift ×2, Fuel Dump ×1, Redline ×1
+- **Tuners**: Turbo Kit ×3, Supercharger ×3, Weight Reduction ×3, Anti-Lag ×3, Sponsor ×3, Pit Crew ×3, Overdrive ×3, Stage 2 Tune ×2, Wheelie Bar ×2, Perfect Launch ×2, Power Shift ×2, Wheelspin ×1
+- **Spoilers**: Carbon Body Kit ×3, Pit Crew ×3, Oil Slick ×2, Missed Shift ×2, Bad Tune ×2, Roadblock ×2, Wheelspin ×2, Weight Reduction ×2, Stage 2 Tune ×2, Launch Control ×2, Power Shift ×2, Perfect Launch ×2, Red Light ×1, Parts Thief ×1, Fuel Siphon ×1, Fuel Drain ×1
 
-With the CPU on both sides each garage wins about half its matches overall, and they beat each other in a cycle: Street Kings over Exotics, Exotics over EVs, EVs over Street Kings, each near 60%. Sabotage that stalls a first advance, Red Light above all, swings these matchups more than any Part or Boost, which is why Exotics carries none and EVs carries one.
+With the CPU on both sides each garage wins about half its matches overall — 49, 46, 52 and 54 at 40,000 matches on seed 1 — and they beat each other in a cycle: Street Kings over The Long Game 63%, The Long Game over Tuners 52%, Tuners over Spoilers 55%, Spoilers over Street Kings 65%. The two pairings across the cycle are measured too, at 48% and 49%, so it is a finding rather than an assumption. One link is weaker than it looks: at 52, 50 and 49 on three seeds The Long Game and Tuners are level, and only the other three are real.
+
+Sabotage that stalls a first advance, Red Light above all, swings these matchups more than any Part or Boost. A garage built entirely on it is therefore the strongest thing in the game: Spoilers at twenty-two Sabotage cards took 89% off Street Kings and 70% off Tuners, and it ships at fifteen with one Red Light. Only one Sabotage may be played a turn, so past about half the deck the extra copies buy nothing anyway. The counter-weight is a single Launch Control in Street Kings — three of them was tried and closed the gap between the CPU levels instead, since a stall that is always shrugged off is one Pro gains nothing by timing.
 
 ---
 
@@ -443,11 +449,13 @@ One rule-based opponent, used both in play and by the simulator. It never cheats
 4. Attach Parts to the car with the most races likely left in it.
 5. Between races, stage the car with the highest ready advance, preferring lower wear.
 
-When none of those applies, the CPU still uses its turn. It attaches any Part that improves a car. It plays a Boost worth at least 50 ft on an advance it will make this turn, counting fuel and cards a Boost gives as worth something too, and a Sabotage that takes at least 50 ft off an advance the opponent is ready to make. It never plays a Boost that would leave its staged car unable to advance. It reads every coin flip as tails unless the Sports rule makes heads certain, and assumes the opponent's hand is empty. Reading tails means a card whose worth is all on heads is worth nothing to it: Rookie and Street never play Overdrive, and never play Nitrous Shot except behind the Sports rule, so the Overdrives in the EVs deck and the Nitrous Shots in Exotics sit in the CPU's hand at two of the three levels. Pro reads flips at their expected value and plays both. Exact ties between equal choices are broken by a seed, so the CPU is deterministic given a state and a seed.
+When none of those applies, the CPU still uses its turn. It attaches any Part that improves a car. It plays a Boost worth at least 50 ft on an advance it will make this turn, counting fuel and cards a Boost gives as worth something too, and a Sabotage that takes at least 50 ft off an advance the opponent is ready to make. It never plays a Boost that would leave its staged car unable to advance. It reads every coin flip as tails unless the Sports rule makes heads certain, and assumes the opponent's hand is empty. Reading tails means a card whose worth is all on heads is worth nothing to it: Rookie and Street never play Overdrive, and never play Nitrous Shot except behind the Sports rule, so the Overdrives in the Tuners deck and the Nitrous Shots in The Long Game sit in the CPU's hand at two of the three levels. Pro reads flips at their expected value and plays both. Exact ties between equal choices are broken by a seed, so the CPU is deterministic given a state and a seed.
 
 **Levels** (phase 13). Three levels, chosen at match start, default Street. *Rookie* fuels and stages by the rules above but never uses the win rule or the stop rule, spends a Boost or Sabotage only when it is worth twice the usual threshold, and stages by highest advance alone, ignoring fuel and wear. *Street* is the opponent described above, unchanged. *Pro* adds four things: it holds a first-advance stall such as Red Light until the opponent's staged car is fueled and about to make its first advance; it stages the car that finishes a race in the fewest turns with fueling counted, and when it stages second it takes the weakest car that still finishes first with a turn to spare, so a Hyper stays on the bench until it can move and the strong cars stay unworn; it reads coin flips at their expected value instead of as tails; and it values Boosts and Sabotage by the turns they take off its own finish or add to the opponent's rather than by feet, since in a turn-based race only the turn count decides. A rule that fueled only bench cars able to be ready by the end of the current race was tried and dropped: it starved Hypers of fuel and cost Pro matches. A level is a profile of switches the CPU reads and the engine never sees. Rookie cannot play for stakes (section 12).
 
-**Measured** (`npm run sim -- --levels`, 4,000 matches per pairing, seed 1, re-taken in phase 42 after the roster grew and the generator widened): over random garages Street beats Rookie 72% and Pro beats Rookie 75%, while Pro and Street split 52 to 48, so on arbitrary garages Street already plays near the ceiling of this rule set. Over the starter pairings, the garages a new player races, Pro beats Street 61%, Street beats Rookie 75%, and Pro beats Rookie 83%. Every level takes about 0.01 ms per action. The next real step up for Pro would be a one-turn lookahead through the engine rather than more rules.
+**Measured** (`npm run sim -- --levels`, 4,000 matches per pairing, seed 1, re-taken in phase 42 after the roster grew and the generator widened): over random garages Street beats Rookie 72% and Pro beats Rookie 75%, while Pro and Street split 52 to 48, so on arbitrary garages Street already plays near the ceiling of this rule set. Over the starter pairings, the garages a new player races, Pro beats Street 59%, Street beats Rookie 66%, and Pro beats Rookie 76%. Every level takes about 0.01 ms per action. The next real step up for Pro would be a one-turn lookahead through the engine rather than more rules.
+
+Those starter figures fell when the loaner garages were re-cut by strategy in phase 45, from 61/75/83, and the cause is the garages rather than the rules: over random garages the numbers are unchanged. Rookie's weakness is that it stages the highest-advance car and ignores what filling it costs, so only a garage holding something expensive punishes it. The old three had two of those; four strategy garages have one, because both *race early and often* and *slow the other side down* want cheap cars. The margin is also seed-sensitive — `src/cpu/levels.test.ts` reads Street over Rookie at 60% on its own seed, at both 2,000 and 6,000 matches, and its floor moved from 65 to 60 to match. Putting a second expensive garage back would lift it and cost the cycle in section 5; that trade was made deliberately in favour of the cycle.
 
 ---
 

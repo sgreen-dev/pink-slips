@@ -142,9 +142,21 @@ describe('levels against each other', () => {
     expect(msPerAction).toBeLessThan(50)
   }, 120_000)
 
-  it('Street beats Rookie at least 65% over 2,000 matches', () => {
+  // 60, not the 65 this held before the loaner garages were re-cut by strategy. Rookie's own
+  // weakness is that it stages the highest-advance car and ignores what it costs to fill, so it
+  // is only punished by a garage that has something expensive in it. The old three had two of
+  // those; four strategy garages have one, because "race early and often" and "slow the other
+  // side down" both want cheap cars.
+  //
+  // The rule set did not move, only the garages it is measured over: against random garages
+  // Street still beats Rookie 71%. Nor is 60 a small-sample artefact -- it reads 60% at 2,000
+  // matches and 60% at 6,000, both on this seed. It is seed-sensitive rather than noisy, which
+  // is worth knowing on its own: `npm run sim -- --levels` on seed 1 puts the same pairing at
+  // 66%. Raising the floor again means a second expensive garage, and that costs the loaner
+  // cycle in DESIGN.md 5 -- the two were traded against each other and this is the side chosen.
+  it('Street beats Rookie at least 60% over 2,000 matches', () => {
     const { rate, msPerAction } = winRate('street', 'rookie', 2000)
-    expect(rate).toBeGreaterThanOrEqual(0.65)
+    expect(rate).toBeGreaterThanOrEqual(0.6)
     expect(msPerAction).toBeLessThan(50)
   }, 120_000)
 

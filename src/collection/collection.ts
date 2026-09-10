@@ -70,7 +70,7 @@ export const GRANT_VERSION = 2
  * rather than read from STARTERS, so the loaner garages stay free to change without moving
  * what an old record is rebased against.
  */
-const LEGACY_STARTER_GRANT: Collection = {
+export const LEGACY_STARTER_GRANT: Collection = {
   'ford-mustang-gt': 1,
   'chevrolet-camaro-ss-1le': 1,
   'mazda-rx-7': 1,

@@ -5,6 +5,7 @@ import {
   GRANT_VERSION,
   grant,
   introCollection,
+  LEGACY_STARTER_GRANT,
   NO_VARIANTS,
   ownedCount,
   owns,
@@ -708,14 +709,13 @@ describe('rebase onto the intro set', () => {
     })
   }
 
-  /** The old grant: the union of the loaner garages at the copies the deck using each most needed. */
-  const LEGACY_OWNED: Record<string, number> = {}
-  for (const s of STARTERS) {
-    for (const id of s.cars) LEGACY_OWNED[id] = 1
-    const counts = new Map<string, number>()
-    for (const id of s.deck) counts.set(id, (counts.get(id) ?? 0) + 1)
-    for (const [id, n] of counts) LEGACY_OWNED[id] = Math.max(LEGACY_OWNED[id] ?? 0, n)
-  }
+  /**
+   * The old grant itself, not a rebuild of it from today's garages. It used to be recomputed
+   * from STARTERS here, which only matched while the loaner garages had not moved: the rebase
+   * subtracts the frozen literal, so once a garage ran a third Red Light the difference read as
+   * one earned copy and the card survived a rebase that should have taken it back.
+   */
+  const LEGACY_OWNED: Record<string, number> = { ...LEGACY_STARTER_GRANT }
 
   it('rebases an account on the legacy grant once, on load, and keeps what was earned', async () => {
     const { directory, store } = setUp()
