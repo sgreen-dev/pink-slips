@@ -1504,29 +1504,38 @@ h2 {
   color: #fff;
   background: #1c1c20;
 }
-.collection__notice {
+/* The three boxes on this screen that talk to the player rather than show cards. None of them
+   set a width, so each filled the 90rem shell and put one sentence in the middle of an 1800px
+   box. 34rem is the width the rest of the app gives a box of prose, and it is the right one here
+   rather than a rounder number: the longest of these messages, the spare-cards sentence, wraps to
+   two lines at 34rem and is still two lines at 52rem, so anything wider is empty box. Capping
+   alone gives the phone behaviour too -- the box fills a narrow screen and only caps when there
+   is room -- so none of this needs a media query. min-width: 0 is what stops the 18rem select
+   inside the sell box forcing an overflow at 360px. */
+.collection__notice,
+.collection__scrap,
+.collection__lap {
   display: grid;
   gap: 0.5rem;
-  justify-items: start;
-  margin: 0.5rem 0;
+  max-width: 34rem;
+  min-width: 0;
+  /* auto, or a capped box hugs the left edge instead of centring. */
+  margin: 0.5rem auto;
   padding: 0.75rem 1rem;
-  border: 2px solid var(--pink);
+  border: 2px solid var(--line);
   border-radius: 0.6rem;
   background: var(--asphalt-2);
+}
+.collection__notice {
+  justify-items: start;
+  border-color: var(--pink);
 }
 .collection__notice p {
   margin: 0;
   font-size: 0.9rem;
 }
 .collection__scrap {
-  display: grid;
-  gap: 0.5rem;
   justify-items: center;
-  margin: 0.5rem 0;
-  padding: 0.75rem 1rem;
-  border: 2px solid var(--line);
-  border-radius: 0.6rem;
-  background: var(--asphalt-2);
 }
 .collection__scrap p {
   margin: 0;
@@ -1544,14 +1553,8 @@ h2 {
   gap: 0.5rem;
 }
 .collection__lap {
-  display: grid;
-  gap: 0.5rem;
   justify-items: center;
-  margin: 0.5rem 0;
-  padding: 0.75rem 1rem;
-  border: 2px solid var(--gold);
-  border-radius: 0.6rem;
-  background: var(--asphalt-2);
+  border-color: var(--gold);
 }
 .collection__lap p {
   margin: 0;
