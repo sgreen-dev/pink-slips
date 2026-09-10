@@ -773,7 +773,7 @@ const MUSCLE: readonly Car[] = [
     weightLb: 3868,
     zeroToSixtySec: 4.3,
     topSpeedMph: 168,
-    imageUrl: '',
+    imageUrl: '/art/ford-mustang-mach-1.webp',
   },
   {
     id: 'dodge-challenger-srt-hellcat',
@@ -800,7 +800,7 @@ const MUSCLE: readonly Car[] = [
     weightLb: 4171,
     zeroToSixtySec: 3.3,
     topSpeedMph: 180,
-    imageUrl: '',
+    imageUrl: '/art/ford-shelby-gt500-2020.webp',
   },
   {
     id: 'chevrolet-corvette-zr1-c7',
