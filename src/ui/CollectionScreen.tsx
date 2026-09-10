@@ -26,6 +26,7 @@ import {
   type CollectionState,
 } from '../collection/persist.ts'
 import { AccountContext, buyOnline, claimLapOnline, openNext, scrapOnline } from './account.ts'
+import { count } from './analytics.ts'
 import { detailTargetFor } from './detail.ts'
 import { useDetail } from './useDetail.ts'
 import { Plate } from './Plate.tsx'
@@ -245,6 +246,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         .map((card) => card.id),
     )
     setState(result.state)
+    count('pack-opened')
     setOpened({ pack: result.pack, fresh })
   }
 

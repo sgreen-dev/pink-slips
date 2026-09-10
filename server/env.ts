@@ -1,4 +1,5 @@
 import type { AccountDirectory } from './accounts.ts'
+import type { Analytics } from './analytics.ts'
 import type { MatchRoom } from './rooms.ts'
 
 /**
@@ -9,6 +10,7 @@ import type { MatchRoom } from './rooms.ts'
 export interface Env {
   ROOMS: DurableObjectNamespace<MatchRoom>
   ACCOUNTS: DurableObjectNamespace<AccountDirectory>
+  ANALYTICS: DurableObjectNamespace<Analytics>
   /** The commit this worker was deployed from, set by `scripts/deploy-worker.ts` (backlog Q36). */
   COMMIT?: string
   /**

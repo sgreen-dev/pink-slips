@@ -17,3 +17,11 @@ new_sqlite_classes = ["MatchRoom"]
 [[migrations]]
 tag = "v2"
 new_sqlite_classes = ["AccountDirectory"]
+
+[[durable_objects.bindings]]
+name = "ANALYTICS"
+class_name = "Analytics"
+
+[[migrations]]
+tag = "v3"
+new_sqlite_classes = ["Analytics"]
