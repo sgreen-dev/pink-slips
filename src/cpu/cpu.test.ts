@@ -328,6 +328,6 @@ describe('CPU determinism and legality', () => {
     const result = playCpuMatch(config, 3)
     const kinds = new Set(result.state.log.map((entry) => entry.kind))
     expect(kinds.has('playPart') || kinds.has('playBoost') || kinds.has('playSabotage')).toBe(true)
-    expect(STARTERS.length).toBe(3)
+    expect(STARTERS.length).toBe(4)
   })
 })

@@ -115,17 +115,25 @@ describe('garage builder rules', () => {
       { id: 'c', name: 'Broken', cars: ['honda-civic-si'], deck: [], updatedAt: 3 },
     ]
     const options = garageOptions(saved)
-    expect(options.map((o) => o.name)).toEqual(['Street Kings', 'Exotics', 'EVs', 'New', 'Old'])
+    expect(options.map((o) => o.name)).toEqual([
+      'Street Kings',
+      'The Long Game',
+      'Tuners',
+      'Spoilers',
+      'New',
+      'Old',
+    ])
     expect(options.filter((o) => o.custom)).toHaveLength(2)
-    // The three loaners are offered whatever the collection holds, and are flagged as loaners
+    // The four loaners are offered whatever the collection holds, and are flagged as loaners
     // so the picker can say their cars are not owned (DESIGN.md 5).
     expect(options.filter((o) => o.loaner).map((o) => o.name)).toEqual([
       'Street Kings',
-      'Exotics',
-      'EVs',
+      'The Long Game',
+      'Tuners',
+      'Spoilers',
     ])
     expect(options.every((o) => o.loaner !== o.custom)).toBe(true)
-    const custom = options[3]!
+    const custom = options[4]!
     const config = {
       players: [
         { garage: custom.cars, deck: custom.deck },
@@ -154,7 +162,7 @@ it('drops a saved garage the collection can no longer build', () => {
   // Told what the player holds, it does not, because they cannot field that car.
   expect(garageOptions([mine], owned).map((o) => o.name)).not.toContain('Mine')
   // The loaners are always there, whatever the collection holds.
-  expect(garageOptions([mine], owned)).toHaveLength(3)
+  expect(garageOptions([mine], owned)).toHaveLength(4)
 })
 
 describe('garage storage', () => {

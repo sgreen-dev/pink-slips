@@ -66,8 +66,8 @@ describe('garage generators', () => {
   })
 
   it('starter garages come straight from the data', () => {
-    for (const index of [0, 1, 2]) expectValid(starterGarage(index))
-    expect(() => starterGarage(3)).toThrow()
+    for (const index of [0, 1, 2, 3]) expectValid(starterGarage(index))
+    expect(() => starterGarage(4)).toThrow()
   })
 
   it('intro garages are valid, vary with the rng, and use only the intro set', () => {
@@ -93,7 +93,8 @@ describe('simulation', () => {
     expect([...report.byType.values()].every((t) => t.games > 0)).toBe(true)
     expect([...report.byTier.values()].every((t) => t.games > 0)).toBe(true)
     expect(report.dailyVsHyper.games).toBeGreaterThan(0)
-    expect(report.starters.size).toBe(3)
+    // The four-garage cycle plus the two pairings across it (src/sim/run.ts).
+    expect(report.starters.size).toBe(6)
     expect([...report.mods.values()].some((m) => m.plays > 0)).toBe(true)
     const text = formatReport(report)
     expect(text).toContain('Win rate against random garages')

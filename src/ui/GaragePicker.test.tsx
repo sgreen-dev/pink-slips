@@ -15,16 +15,16 @@ const options: GarageOption[] = [
   {
     id: 'street-kings',
     name: 'Street Kings',
-    style: 'cheap tempo, race early and often',
+    style: 'race early and often',
     loaner: true,
     custom: false,
     cars: ['ford-mustang-gt', 'chevrolet-camaro-ss-1le', 'mazda-rx-7'],
     deck: [],
   },
   {
-    id: 'exotics',
-    name: 'Exotics',
-    style: 'fuel the bench, win late with big cars',
+    id: 'long-game',
+    name: 'The Long Game',
+    style: 'bank fuel, win late',
     loaner: true,
     custom: false,
     cars: ['ferrari-458-italia'],
@@ -68,7 +68,7 @@ describe('the garage picker', () => {
 
   it('reports the garage that was chosen by its index', () => {
     const { onChange } = pickerOf(0)
-    ;(screen.getByRole('radio', { name: /Exotics/ }) as HTMLInputElement).click()
+    ;(screen.getByRole('radio', { name: /The Long Game/ }) as HTMLInputElement).click()
     expect(onChange).toHaveBeenCalledWith(1)
   })
 

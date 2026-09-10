@@ -267,8 +267,8 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
           <div className="collection__notice">
             <p>
               The free cards changed. A new collection now starts with six cars and sixteen mods
-              instead of all three garages, so packs have more left to find. Everything you opened
-              or won is still yours. The three garages are loaners: you can still race them, they
+              instead of every loaner garage, so packs have more left to find. Everything you opened
+              or won is still yours. The loaner garages are just that: you can still race them, they
               just are not in your collection. A saved garage that needs a card you no longer have
               waits in the builder until you fix it.
             </p>

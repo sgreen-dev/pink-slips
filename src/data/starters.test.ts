@@ -11,30 +11,68 @@ const MAX_COPIES = 3
 const DESIGN_GARAGES: Record<string, string[]> = {
   'street-kings': [
     'ford-mustang-gt',
-    'chevrolet-camaro-ss-1le',
-    'mazda-rx-7',
-    'honda-s2000',
     'honda-civic-si',
-  ],
-  'exotic-garage': [
-    'lamborghini-aventador-svj',
-    'ferrari-458-italia',
-    'mercedes-amg-gt-r',
+    'mazda-rx-7',
+    'bmw-x5-m',
     'porsche-911-carrera-s',
+  ],
+  'long-game': [
+    'lamborghini-aventador-svj',
+    'mercedes-amg-gt-r',
+    'tesla-model-x-plaid',
+    'ford-f-150-raptor-r',
     'mazda-mx-5-miata',
   ],
-  'electric-avenue': [
-    'tesla-model-s-plaid',
+  tuners: [
+    'toyota-gr-supra-3-0',
+    'honda-civic-type-r-fl5',
+    'acura-integra-type-r',
+    'chevrolet-corvette-stingray-c8',
     'hyundai-ioniq-5-n',
-    'ford-f-150-raptor-r',
-    'subaru-wrx-sti',
-    'toyota-prius',
+  ],
+  spoilers: [
+    'dodge-charger-srt-hellcat',
+    'toyota-supra-turbo-a80',
+    'kia-ev6-gt',
+    'range-rover-p530',
+    'dodge-challenger-sxt',
   ],
 }
 
 describe('loaner garages', () => {
-  it('ships exactly three starters', () => {
+  it('ships exactly four starters', () => {
     expect(STARTERS.map((starter) => starter.id)).toEqual(Object.keys(DESIGN_GARAGES))
+  })
+
+  // The garages are cut by strategy rather than by car type (DESIGN.md 5), so the set of them
+  // has to show the whole roster and the whole card pool rather than one column of each.
+  it('covers every car type across the four garages', () => {
+    const types = new Set(STARTERS.flatMap((s) => s.cars.map((id) => CAR_BY_ID.get(id)?.type)))
+    expect([...types].sort()).toEqual(['ev', 'jdm', 'luxury', 'muscle', 'offroad', 'sports'])
+  })
+
+  it('runs every mod in the game across the four decks', () => {
+    const used = new Set(STARTERS.flatMap((s) => s.deck))
+    const missing = [...MOD_BY_ID.keys()].filter((id) => !used.has(id)).sort()
+    expect(missing).toEqual([])
+  })
+
+  it('no garage is one car type, so none of them reads as a type garage', () => {
+    for (const starter of STARTERS) {
+      const types = new Set(starter.cars.map((id) => CAR_BY_ID.get(id)?.type))
+      expect(types.size, `${starter.name} is all one type`).toBeGreaterThan(1)
+    }
+  })
+
+  // engine/mods.ts caps a rare at one copy, and createMatch throws on a second. The copy test
+  // below only knows the common cap of 3, so a second Fuel Drain would pass it and break a
+  // dozen other suites instead.
+  it.each(STARTERS)('$name holds at most one copy of any rare mod', (starter) => {
+    for (const id of new Set(starter.deck)) {
+      if (MOD_BY_ID.get(id)?.rarity === 'rare') {
+        expect(starter.deck.filter((one) => one === id)).toHaveLength(1)
+      }
+    }
   })
 
   it.each(STARTERS)('$name has a garage of exactly 5 real cars', (starter) => {
