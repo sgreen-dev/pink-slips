@@ -1232,6 +1232,41 @@ h2 {
   margin-top: 0.15rem;
 }
 
+/* Card art credits: the rules dialog, but four columns of table want more room than the 34rem a
+   paragraph is set to. The table scrolls sideways inside the dialog so a long photograph title
+   never widens the page itself. */
+
+.credits {
+  width: min(48rem, calc(100vw - 2rem));
+}
+.credits__scroll {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+}
+.credits__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.credits__table th,
+.credits__table td {
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+/* The licence name is short and always two words: wrapping it doubled the height of most rows. */
+.credits__table th:last-child,
+.credits__table td:last-child {
+  white-space: nowrap;
+}
+.credits__table th {
+  color: var(--muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 /* Matches-played counter */
 
 .counter {
