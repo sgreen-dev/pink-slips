@@ -16,6 +16,11 @@
  * `node_modules/vitest/vitest.mjs`, so anything matching the bare word "vite" would stop the
  * test watcher too.
  *
+ * `python -m http.server`, which the art scripts use to look at `public/`, is covered on the
+ * same terms. It was added after one sat on a port for most of a day: this script had reported
+ * a clean machine each time, truthfully, because it only ever looked at node and workerd. A
+ * cleanup tool that is narrower than the problem reads exactly like one that has nothing to do.
+ *
  * `wrangler dev` and the `workerd` it runs are covered with one caveat the output states out
  * loud: neither carries a repo path, because wrangler is resolved from the npx cache and
  * workerd is handed its config on stdin, so those two are matched by which program they are
@@ -55,13 +60,16 @@ interface Target extends Row {
 }
 
 /**
- * Every node and workerd process, with its parent and command line. The filter is on the
- * program name and never on this repo's path: a path in the query would put it on the probe's
- * own command line, and the script would go on to find itself.
+ * Every process that could be one of ours, with its parent and command line. python is here for
+ * `python -m http.server`, which the art scripts use to look at `public/` and which had been
+ * sitting on a port for hours before anyone noticed. The filter is on the program name and never
+ * on this repo's path: a path in the query would put it on the probe's own command line, and the
+ * script would go on to find itself.
  */
+const NAMES = ["'node.exe'", "'workerd.exe'", "'python.exe'", "'pythonw.exe'"]
 const PROBE = [
   '$p = @(Get-CimInstance Win32_Process |',
-  "  Where-Object { $_.Name -eq 'node.exe' -or $_.Name -eq 'workerd.exe' } |",
+  `  Where-Object { ${NAMES.map((n) => `$_.Name -eq ${n}`).join(' -or ')} } |`,
   '  Select-Object ProcessId, ParentProcessId, CommandLine)',
   'ConvertTo-Json -Depth 3 -Compress -InputObject $p',
 ].join('\n')
@@ -149,6 +157,12 @@ function nameFor(command: string): { name: string; repoScoped: boolean } | null 
   }
   if (/\/workerd(\.exe)?\b/.test(text) && words.includes('serve')) {
     return { name: 'workerd', repoScoped: false }
+  }
+  // Python's own static server, used by hand to look at `public/`. Unlike wrangler this one can
+  // be proved ours: it runs from the art venv inside the repo, so its interpreter path carries
+  // the root. Requiring that as well as `http.server` leaves another checkout's alone.
+  if (text.includes(`${ROOT}/`) && text.includes('http.server')) {
+    return { name: 'http.server', repoScoped: true }
   }
   return null
 }
