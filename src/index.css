@@ -999,6 +999,18 @@ h2 {
   gap: 0.4rem;
   align-items: center;
 }
+/* On the collection screen these sit above a grid that runs the full width of the page, so left
+   aligned they read as stranded rather than deliberate. Scoped to `.collection` on purpose: the
+   builder uses the same three classes in a column beside its garage panel, where lining up on
+   the left is right. The hint is a `p` rather than a flex row, so it takes text-align, and it is
+   matched as a child of the browse section so the hints elsewhere on the screen stay put. */
+.collection .builder__tabs,
+.collection .filters {
+  justify-content: center;
+}
+.collection .builder__browse > .builder__hint {
+  text-align: center;
+}
 .filters__label {
   color: var(--muted);
   font-size: 0.8rem;
