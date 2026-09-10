@@ -115,7 +115,8 @@ Where a row says no rationale is recorded, that is a gap in the record, not an e
 
 | Command | Does |
 |---|---|
-| `npm run dev` | Vite dev server |
+| `npm run dev` | Vite dev server, pinned to 5173; a second one fails rather than drifting to the next port |
+| `npm run dev:stop` | Stops this repo's dev servers, Vite or `wrangler dev`, whatever port they are on. `-- --check` lists them |
 | `npm run build` | `tsc -b` then `vite build` into `dist/` |
 | `npm test` | Vitest, `src/**/*.test.{ts,tsx}` and `counter/*.test.ts`; `node` by default, `happy-dom` per file |
 | `npm run lint` / `format:check` | ESLint / Prettier |
