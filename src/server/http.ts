@@ -58,3 +58,15 @@ export async function readJson(request: Request): Promise<unknown> {
     return null
   }
 }
+
+/**
+ * Compares a secret without giving away how much of it was right (backlog Q39). A plain `===`
+ * stops at the first character that differs, and how long that takes is a hint; this always
+ * reads the whole of both.
+ */
+export function sameSecret(given: string, expected: string): boolean {
+  if (given.length !== expected.length) return false
+  let same = 0
+  for (let i = 0; i < given.length; i++) same |= given.charCodeAt(i) ^ expected.charCodeAt(i)
+  return same === 0
+}

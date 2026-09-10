@@ -748,3 +748,92 @@ describe('rebase onto the intro set', () => {
     expect(account?.collection.grantVersion).toBe(GRANT_VERSION)
   })
 })
+
+describe('deleting a player', () => {
+  /**
+   * An account is spread across several keys and a delete that leaves any of them behind either
+   * resolves to nothing or keeps counting (backlog Q39). These check every one of them goes.
+   */
+
+  it('removes the account, its recovery code, its provider key and its sessions', async () => {
+    const { directory, store } = setUp()
+    const made = await directory.createPlayer('Ann')
+    const id = made.data.profile.id
+    const before = [...store.data.keys()]
+    expect(before.some((k) => k.startsWith('acct:'))).toBe(true)
+    expect(before.some((k) => k.startsWith('rec:'))).toBe(true)
+    expect(before.some((k) => k.startsWith('prov:'))).toBe(true)
+    expect(before.some((k) => k.startsWith('sess:'))).toBe(true)
+
+    expect(await directory.deletePlayer(id)).toBe(true)
+
+    const left = [...store.data.keys()]
+    expect(left.filter((k) => k.startsWith('acct:'))).toEqual([])
+    expect(left.filter((k) => k.startsWith('rec:'))).toEqual([])
+    expect(left.filter((k) => k.startsWith('prov:'))).toEqual([])
+    expect(left.filter((k) => k.startsWith('sess:'))).toEqual([])
+  })
+
+  it('takes every session the player opened, not just the newest', async () => {
+    const { directory, store } = setUp()
+    const made = await directory.createPlayer('Ann')
+    const id = made.data.profile.id
+    const code = made.recoveryCode
+    await directory.recover(code)
+    await directory.recover(code)
+    expect([...store.data.keys()].filter((k) => k.startsWith('sess:')).length).toBe(3)
+    await directory.deletePlayer(id)
+    expect([...store.data.keys()].filter((k) => k.startsWith('sess:'))).toEqual([])
+  })
+
+  it('leaves another player entirely alone', async () => {
+    const { directory, store } = setUp()
+    const ann = await directory.createPlayer('Ann')
+    const bo = await directory.createPlayer('Bo')
+    await directory.deletePlayer(ann.data.profile.id)
+    expect(await directory.accountFor(bo.token)).not.toBeNull()
+    expect([...store.data.keys()].filter((k) => k.startsWith('sess:')).length).toBe(1)
+  })
+
+  it('signs the player out: the token and the recovery code both stop working', async () => {
+    const { directory } = setUp()
+    const made = await directory.createPlayer('Ann')
+    await directory.deletePlayer(made.data.profile.id)
+    expect(await directory.accountFor(made.token)).toBeNull()
+    expect(await directory.recover(made.recoveryCode)).toBeNull()
+  })
+
+  it('takes the player off the leaderboard, cache and all', async () => {
+    const { directory } = setUp()
+    const ann = await directory.createPlayer('Ann')
+    const bo = await directory.createPlayer('Bo')
+    await directory.recordResult(ann.data.profile.id, bo.data.profile.id, true)
+    expect((await directory.leaderboard()).map((r) => r.name)).toContain('Ann')
+    await directory.deletePlayer(ann.data.profile.id)
+    // The board is cached for a moment, so a delete has to drop it rather than wait it out.
+    expect((await directory.leaderboard()).map((r) => r.name)).not.toContain('Ann')
+  })
+
+  it('corrects the rated count, which is a running total rather than a sum', async () => {
+    const { directory } = setUp()
+    const ann = await directory.createPlayer('Ann')
+    const bo = await directory.createPlayer('Bo')
+    await directory.recordResult(ann.data.profile.id, bo.data.profile.id, true)
+    expect(await directory.ratedCount()).toBe(2)
+    await directory.deletePlayer(ann.data.profile.id)
+    expect(await directory.ratedCount()).toBe(1)
+  })
+
+  it('does not move the rated count for a player who never raced a ranked match', async () => {
+    const { directory } = setUp()
+    const ann = await directory.createPlayer('Ann')
+    expect(await directory.ratedCount()).toBe(0)
+    await directory.deletePlayer(ann.data.profile.id)
+    expect(await directory.ratedCount()).toBe(0)
+  })
+
+  it('says so when there is no such player, rather than pretending', async () => {
+    const { directory } = setUp()
+    expect(await directory.deletePlayer('nobody')).toBe(false)
+  })
+})

@@ -26,6 +26,7 @@ const timeout = process.argv.includes('--timeout')
 const socketBase = endpoint.replace(/^http/, 'ws')
 
 interface Player {
+  id: string
   name: string
   token: string
   rating: number
@@ -38,8 +39,11 @@ async function createPlayer(name: string): Promise<Player> {
     body: JSON.stringify({ name }),
   })
   if (!response.ok) throw new Error(`Could not create ${name}: ${response.status}`)
-  const made = (await response.json()) as { token: string; data: { profile: { rating: number } } }
-  return { name, token: made.token, rating: made.data.profile.rating }
+  const made = (await response.json()) as {
+    token: string
+    data: { profile: { id: string; rating: number } }
+  }
+  return { id: made.data.profile.id, name, token: made.token, rating: made.data.profile.rating }
 }
 
 function listen(ws: WebSocket, onMessage: (message: ServerMessage) => void): void {
@@ -133,12 +137,45 @@ function play(
   })
 }
 
+/**
+ * Takes away the players this run made (backlog Q39). Left behind, they sit on the public
+ * leaderboard for good, which is how it came to hold twelve of them and no real ones.
+ *
+ * Needs the admin secret in PINK_SLIPS_ADMIN_TOKEN. Without it the run still passes and the
+ * ids are printed, so whoever has the secret can remove them; it is never fatal, since a check
+ * that fails on its own tidying tells you nothing about the service.
+ */
+/** Every player this run made, so they can be taken away however the run ends. */
+const made: Player[] = []
+
+async function cleanUp(made: readonly Player[]): Promise<void> {
+  const secret = process.env['PINK_SLIPS_ADMIN_TOKEN'] ?? ''
+  if (!secret) {
+    console.log('No PINK_SLIPS_ADMIN_TOKEN set, so these players stay on the leaderboard:')
+    for (const player of made) console.log(`  ${player.id}  ${player.name}`)
+    console.log('  Remove them with: node scripts/admin.ts delete-tests --yes')
+    return
+  }
+  for (const player of made) {
+    try {
+      const response = await fetch(`${endpoint}/admin/player?id=${encodeURIComponent(player.id)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${secret}` },
+      })
+      console.log(response.ok ? `Removed ${player.name}` : `Could not remove ${player.name}`)
+    } catch {
+      console.log(`Could not remove ${player.name}`)
+    }
+  }
+}
+
 async function main(): Promise<void> {
   const stamp = Date.now().toString(36).slice(-4).toUpperCase()
   const [ann, bo] = await Promise.all([
     createPlayer(`Smoke Ann ${stamp}`),
     createPlayer(`Smoke Bo ${stamp}`),
   ])
+  made.push(ann, bo)
   console.log(`Players made: ${ann.name} and ${bo.name}, rating ${ann.rating} each`)
   if (rematch) {
     const made = (await (await fetch(`${endpoint}/new`)).json()) as { code?: string }
@@ -214,7 +251,14 @@ async function main(): Promise<void> {
   console.log('Online smoke check passed')
 }
 
-main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : String(error))
-  process.exit(1)
-})
+// The tidying runs whether the check passed or failed: a run that fails partway through has
+// still made its players, and leaving those behind is what filled the leaderboard.
+main()
+  .then(async () => {
+    await cleanUp(made)
+  })
+  .catch(async (error: unknown) => {
+    console.error(error instanceof Error ? error.message : String(error))
+    await cleanUp(made)
+    process.exit(1)
+  })

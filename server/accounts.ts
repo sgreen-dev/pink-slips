@@ -2,7 +2,7 @@ import { DurableObject } from 'cloudflare:workers'
 import { sanitizeTransfer, type Transfer } from '../src/collection/stakes.ts'
 import { safeDisplayName } from '../src/protocol/names.ts'
 import { Directory, type Store } from '../src/server/directory.ts'
-import { bearer, corsHeaders, json, readJson, text } from '../src/server/http.ts'
+import { bearer, corsHeaders, json, readJson, sameSecret, text } from '../src/server/http.ts'
 import { newCode, randomToken, sha256 } from '../src/server/ids.ts'
 import { pickPair } from '../src/server/queue.ts'
 import type { Ticket } from '../src/server/room.ts'
@@ -65,6 +65,19 @@ export class AccountDirectory extends DurableObject<Env> {
     // and this one lasts a year and renews itself (DESIGN.md 13).
     const token =
       path === '/queue' ? (bearer(request) ?? url.searchParams.get('session')) : bearer(request)
+
+    // Admin: removing a player (backlog Q39). Guarded by a secret set with `wrangler secret`
+    // and nothing else, so with no secret set the route does not exist. The comparison is
+    // length-safe rather than an early-exit `===`, since this one is worth not leaking.
+    if (path === '/admin/player' && request.method === 'DELETE') {
+      const secret = this.env.ADMIN_TOKEN
+      if (!secret) return text('Not found', 404, headers)
+      if (!sameSecret(bearer(request) ?? '', secret)) return text('Not allowed', 403, headers)
+      const id = url.searchParams.get('id') ?? ''
+      if (!id) return text('An id is required', 400, headers)
+      const gone = await this.directory.deletePlayer(id)
+      return gone ? json({ deleted: id }, 200, headers) : text('No such player', 404, headers)
+    }
 
     if (path === '/auth/player' && request.method === 'POST') {
       const body = (await readJson(request)) as Record<string, unknown> | null
