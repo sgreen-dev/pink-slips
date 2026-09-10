@@ -14,6 +14,7 @@ import { newSeed } from './seed.ts'
 import type { Mode } from './Match.tsx'
 import { MatchCounter } from './MatchCounter.tsx'
 import type { PlayerView } from './PlayerDialog.tsx'
+import { CreditsDialog } from './CreditsDialog.tsx'
 import { PrivacyDialog } from './PrivacyDialog.tsx'
 import { RulesButton, RulesDialog } from './RulesDialog.tsx'
 import { SoundButton } from './sound/SoundButton.tsx'
@@ -256,6 +257,7 @@ export function StartScreen({
         </button>
         <RulesButton dialogRef={rules} />
         <PrivacyDialog />
+        <CreditsDialog />
         <SoundButton />
       </div>
       <MatchCounter />

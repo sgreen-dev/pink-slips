@@ -2,6 +2,23 @@ MIT License
 
 Copyright (c) 2026 Shurron Green
 
+Scope
+-----
+
+The MIT terms above cover the source code of this repository.
+
+They do not cover the card illustrations in public/art/. Those are made from photographs
+published on Wikimedia Commons, most of them under a share-alike licence, so the illustrations
+are published under CC BY-SA 4.0 rather than the terms above. Each one names its photograph, its
+photographer and that photograph's own licence in public/art/CREDITS.md, and the same list is
+shown in the game.
+
+    https://creativecommons.org/licenses/by-sa/4.0/
+
+Everything else in public/ -- the music, the backgrounds, the card frames, the icons and the mod
+illustrations -- is the copyright holder's own work and is covered by the MIT terms above, as the
+CREDITS.md file in each folder records.
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
