@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   ALLOWED_ORIGINS,
   bearer,
+  sameSecret,
   corsHeaders,
   json,
   originAllowed,
@@ -98,5 +99,29 @@ describe('reading a body', () => {
     // A client can send whatever it likes, so this must never be the thing that fails.
     expect(await readJson(post('not json at all'))).toBeNull()
     expect(await readJson(post(''))).toBeNull()
+  })
+})
+
+describe('comparing an admin secret', () => {
+  it('accepts only the exact secret', () => {
+    expect(sameSecret('s3cret-token', 's3cret-token')).toBe(true)
+    expect(sameSecret('s3cret-tokeN', 's3cret-token')).toBe(false)
+    expect(sameSecret('', '')).toBe(true)
+  })
+
+  it('refuses a prefix, a suffix and an empty attempt', () => {
+    expect(sameSecret('s3cret', 's3cret-token')).toBe(false)
+    expect(sameSecret('s3cret-token-and-more', 's3cret-token')).toBe(false)
+    expect(sameSecret('', 's3cret-token')).toBe(false)
+  })
+
+  it('reads the whole of both rather than stopping at the first difference', () => {
+    // The point is that a wrong first character costs the same as a wrong last one, so the
+    // time taken never says how much of a guess was right.
+    const expected = 'a'.repeat(64)
+    const firstWrong = 'b' + 'a'.repeat(63)
+    const lastWrong = 'a'.repeat(63) + 'b'
+    expect(sameSecret(firstWrong, expected)).toBe(false)
+    expect(sameSecret(lastWrong, expected)).toBe(false)
   })
 })

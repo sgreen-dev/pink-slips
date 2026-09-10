@@ -14,6 +14,7 @@ import { newCode } from '../src/server/ids.ts'
  *   GET  /new                a fresh room code
  *   POST /auth/*             player creation, recovery and sign out
  *   GET  /me, /leaderboard   the account routes, all served by the directory
+ *   DELETE /admin/player     removes a player; needs the ADMIN_TOKEN secret (backlog Q39)
  *   GET  /queue              the ranked queue, as a WebSocket
  *   GET  /room/CODE          a room, as a WebSocket
  */
@@ -45,7 +46,14 @@ export default {
       return directoryOf(env).fetch(request)
     }
 
-    if (path === '/me' || path.startsWith('/me/') || path === '/leaderboard') {
+    // The admin routes are served by the directory too, since the accounts are there. The
+    // directory checks the secret; the router only decides who answers (backlog Q39).
+    if (
+      path === '/me' ||
+      path.startsWith('/me/') ||
+      path === '/leaderboard' ||
+      path.startsWith('/admin/')
+    ) {
       return directoryOf(env).fetch(request)
     }
 

@@ -664,6 +664,38 @@ export class Directory {
       }))
   }
 
+  /**
+   * Removes a player and everything the directory holds for them (backlog Q39). Returns false
+   * for an id nobody has, so a caller can tell a wrong id from a real deletion.
+   *
+   * An account is spread across several keys and every one has to go, or what is left behind
+   * either resolves to nothing or keeps counting. The sessions are the awkward part: they are
+   * keyed by a hash of their token, so they cannot be derived from the account and are found by
+   * reading each one and matching the id it holds. Leaving them would be a slow leak of keys
+   * that resolve to a missing account, which `accountFor` already fails closed on, but a delete
+   * that leaves anything behind is not one.
+   */
+  async deletePlayer(id: string): Promise<boolean> {
+    const account = await this.load(id)
+    if (!account) return false
+    const sessions = await this.store.list<Session>(SESSION)
+    for (const [key, session] of sessions) {
+      if (session.accountId === id) await this.store.delete(key)
+    }
+    if (account.recoveryHash) await this.store.delete(`${RECOVERY}${account.recoveryHash}`)
+    await this.store.delete(`${PROVIDER}${account.provider}:${account.providerId}`)
+    await this.store.delete(`${ACCOUNT}${id}`)
+    // The rated count is a running total, not something derived, so it has to be corrected here
+    // or it drifts up by one for every player removed.
+    if (account.wins + account.losses > 0) {
+      const stats = (await this.store.get<Stats>(STATS)) ?? { rated: 0 }
+      await this.store.put(STATS, { rated: Math.max(0, stats.rated - 1) })
+    }
+    // The board shows this player, so the cached copy is now wrong.
+    this.board = null
+    return true
+  }
+
   private async save(account: Account): Promise<void> {
     // Every account write can change a name, a rating or a record, all of which the board shows.
     this.board = null
