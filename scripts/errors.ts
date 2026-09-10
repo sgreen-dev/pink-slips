@@ -30,7 +30,10 @@ function wrangler(args: string[]): string {
 
 /** A key nobody has written yet is an empty store. Anything else wrangler says is a fault. */
 function isMissingKey(error: unknown): boolean {
-  return /key not found|10009/i.test((error as ExecFailure).stderr ?? '')
+  const said = (error as ExecFailure).stderr ?? ''
+  // wrangler 4 reports a missing key as a bare 404 on the value URL; older versions named it.
+  // Scoped to /values/ so a missing namespace, which 404s on a different path, stays a fault.
+  return /key not found|10009/i.test(said) || /\/values\/\S* - 404\b/.test(said)
 }
 
 /** Repeats what wrangler said, so a login or a path problem cannot read as "nothing stored". */
