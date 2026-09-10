@@ -666,17 +666,22 @@ h2 {
 
 /* The garages the game dealt: read-only, so no radio and no option frame. */
 .dealt {
-  display: grid;
-  /* minmax(0, …) and the min-width below: a row of five cards is wider than a phone, and a
-     grid or flex item refuses to shrink under its content without them, so the page itself
-     would scroll sideways instead of the row (DESIGN.md 8). */
-  grid-template-columns: minmax(0, 1fr);
+  /* A wrapping row, not a column: each box is only as wide as the five cards in it, so two sit
+     side by side where there is room and stack where there is not, and neither is left mostly
+     empty. A fixed two-column grid, which is what .start__pickers below uses, only fits the
+     cards above roughly a 1300px viewport and makes both rows scroll sideways under it. */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
   gap: 0.6rem;
-  justify-items: center;
   margin: 1rem 0 1.5rem;
 }
 .dealt__garage {
-  width: 100%;
+  /* width auto so the box hugs its cards; min-width 0 so it may still shrink under them on a
+     phone, where the row below scrolls sideways instead of the page (DESIGN.md 8). */
+  width: auto;
+  max-width: 100%;
   min-width: 0;
   padding: 0.6rem;
   border-radius: 0.6rem;
@@ -709,6 +714,12 @@ h2 {
   color: var(--muted);
   font-size: 0.85rem;
   text-align: center;
+}
+/* Both are siblings of the garages, so they are flex items too and would otherwise sit beside
+   one. Each takes a line of its own. */
+.dealt__note,
+.dealt > .button {
+  flex: 0 0 100%;
 }
 
 .start__pickers {
