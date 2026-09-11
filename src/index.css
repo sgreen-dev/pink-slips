@@ -1387,6 +1387,16 @@ h2,
     flex-wrap: wrap;
     align-items: center;
   }
+  /* The header wraps on a phone, and the stacked pair came down as a block at the left edge with
+     Rules tucked under Back to start — leaving the title on the row above with nothing beneath
+     it and the whole right half empty. One full-width row instead: the way out on the left, and
+     Rules under the title where the space already was. */
+  .screen__nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
   .builder__title {
     font-size: 1.4rem;
   }
