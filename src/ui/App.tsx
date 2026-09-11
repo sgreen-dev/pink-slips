@@ -6,7 +6,7 @@ import type { AccountData } from '../server/directory.ts'
 import {
   AccountContext,
   claimGuest,
-  clearSession,
+  leaveAccount,
   fetchMe,
   loadSession,
   mirror,
@@ -115,7 +115,7 @@ export function App() {
       const me = await fetchMe(endpoint, token)
       if (!live) return
       if (me.signedOut) {
-        clearSession()
+        leaveAccount()
         setToken(null)
         return
       }
@@ -146,7 +146,7 @@ export function App() {
 
   const signOut = useCallback(() => {
     if (ENDPOINT && token) void signOutOnline(ENDPOINT, token)
-    clearSession()
+    leaveAccount()
     setToken(null)
     setData(null)
     setGeneration((n) => n + 1)

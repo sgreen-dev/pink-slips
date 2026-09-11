@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { COLLECTION_KEY } from '../collection/persist.ts'
+import { introCollection } from '../collection/collection.ts'
+import { COLLECTION_KEY, loadCollection } from '../collection/persist.ts'
 import type { AccountData } from '../server/directory.ts'
 import {
   clearSession,
   createPlayer,
   fetchMe,
+  leaveAccount,
   loadSession,
   mirror,
   QueueClient,
@@ -201,5 +203,21 @@ describe('QueueClient', () => {
     dropped.connect()
     dropped.close()
     expect((sockets[2] as FakeSocket).closed).toBe(true)
+  })
+})
+
+describe('leaving the player on this browser (backlog S25)', () => {
+  it('takes the mirror with the session, so the guest left behind starts from the intro set', () => {
+    const store = fakeStore()
+    saveSession('tok', store)
+    store.setItem(COLLECTION_KEY, JSON.stringify({ owned: { 'a-car': 9 } }))
+    store.setItem(GARAGES_KEY, '[]')
+    store.setItem('pink-slips.sound.v1', 'kept')
+    leaveAccount(store)
+    expect(loadSession(store)).toBeNull()
+    expect(store.getItem(COLLECTION_KEY)).toBeNull()
+    expect(store.getItem(GARAGES_KEY)).toBeNull()
+    expect(store.getItem('pink-slips.sound.v1')).toBe('kept')
+    expect(loadCollection(store).owned).toEqual(introCollection())
   })
 })

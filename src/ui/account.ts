@@ -1,13 +1,13 @@
 import type { Transfer } from '../collection/stakes.ts'
 import { createContext } from 'react'
 import type { Pack } from '../collection/collection.ts'
-import { openNextPack, saveCollection } from '../collection/persist.ts'
+import { COLLECTION_KEY, openNextPack, saveCollection } from '../collection/persist.ts'
 import { parseServerMessage, type MatchedMessage } from '../protocol/messages.ts'
 import type { CollectionState } from '../protocol/records.ts'
 import type { AccountData, LeaderboardRow } from '../server/directory.ts'
 import type { SocketLike, SocketFactory } from './online.ts'
 import { newSeed } from './seed.ts'
-import { browserStorage, saveGarages, type StorageLike } from '../browser/storage.ts'
+import { browserStorage, GARAGES_KEY, saveGarages, type StorageLike } from '../browser/storage.ts'
 
 /**
  * The player account (DESIGN.md 13). A player is made from a name and lives on the service,
@@ -43,6 +43,22 @@ export function saveSession(token: string, store: StorageLike | null = browserSt
 export function clearSession(store: StorageLike | null = browserStorage()): void {
   try {
     store?.removeItem(SESSION_KEY)
+  } catch {
+    // Nothing to do.
+  }
+}
+
+/**
+ * Leaves the player on this browser: the session goes, and so do the collection and garages the
+ * browser kept as the player's mirror, so the guest left behind starts from the intro set like any
+ * new visitor. Kept, the mirror was a guest collection that the next player made here would claim
+ * all over again, packs and credits included (backlog S25). The player's cards stay with the player.
+ */
+export function leaveAccount(store: StorageLike | null = browserStorage()): void {
+  clearSession(store)
+  try {
+    store?.removeItem(COLLECTION_KEY)
+    store?.removeItem(GARAGES_KEY)
   } catch {
     // Nothing to do.
   }

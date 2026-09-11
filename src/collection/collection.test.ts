@@ -32,6 +32,8 @@ import {
   isComplete,
   ownedCount,
   packCarCount,
+  capClaim,
+  usefulCopies,
 } from './collection.ts'
 import {
   COLLECTION_KEY,
@@ -705,5 +707,59 @@ describe('scrapping and buying, guest side and service side', () => {
     expect(owns(guest.owned, other.id)).toBe(true)
     expect(guest.owned[daily.id]).toBe(1)
     expect(guest.credits).toBe(2 * TUNABLES.collection.scrapValue.daily)
+  })
+})
+
+describe('what a claim can carry into a new player (backlog S25)', () => {
+  const daily = must(
+    CARS.find((car) => car.tier === 'daily' && !owns(intro, car.id)),
+    'a Daily car outside the intro set',
+  )
+  const hyper = must(
+    CARS.find((car) => car.tier === 'hyper'),
+    'a Hyper car',
+  )
+  const guest = (extra: Partial<CollectionState> = {}): CollectionState => ({
+    owned: { ...intro, [daily.id]: 3 },
+    packs: 3,
+    variants: { foil: { [daily.id]: 1 }, holo: {}, chrome: {} },
+    laps: 0,
+    grantVersion: GRANT_VERSION,
+    credits: 40,
+    ...extra,
+  })
+
+  it('leaves an ordinary guest collection as it is', () => {
+    expect(capClaim(guest())).toEqual(guest())
+  })
+
+  it('holds each card to what a deck can use and a few spares', () => {
+    const capped = capClaim(guest({ owned: { ...intro, [daily.id]: 500 } }))
+    expect(capped.owned[daily.id]).toBe(usefulCopies(daily.id) + TUNABLES.claim.spareCopies)
+  })
+
+  it('holds credits and what the spares would scrap for to one budget', () => {
+    const capped = capClaim(guest({ owned: { ...intro, [hyper.id]: 500 }, credits: 1_000_000 }))
+    expect(capped.credits + scrapValue(capped)).toBeLessThanOrEqual(TUNABLES.claim.maxCredits)
+  })
+
+  it('caps packs and laps, keeps keepsakes to the laps, and drops what is not a card', () => {
+    const chrome = Object.fromEntries(
+      Object.keys(intro)
+        .slice(0, 5)
+        .map((id) => [id, 1]),
+    )
+    const capped = capClaim(
+      guest({
+        packs: 999,
+        laps: 9,
+        owned: { ...intro, 'not-a-card': 4 },
+        variants: { foil: {}, holo: {}, chrome },
+      }),
+    )
+    expect(capped.packs).toBe(TUNABLES.claim.maxPacks)
+    expect(capped.laps).toBe(TUNABLES.claim.maxLaps)
+    expect(Object.keys(capped.variants.chrome).length).toBeLessThanOrEqual(capped.laps)
+    expect(capped.owned['not-a-card']).toBeUndefined()
   })
 })

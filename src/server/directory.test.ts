@@ -209,6 +209,30 @@ describe('directory', () => {
     expect(second?.garages).toHaveLength(1)
   })
 
+  it('holds a claim to what a real guest collection could hold', async () => {
+    const { directory } = setUp()
+    const { token } = await directory.createPlayer('Ann')
+    const start = (await directory.accountFor(token))?.collection
+    if (!start) throw new Error('no account')
+    const hyper = CARS.find((car) => car.tier === 'hyper')?.id ?? ''
+    const inflated: CollectionState = {
+      owned: { ...introCollection(), [hyper]: 999 },
+      packs: 999,
+      variants: { foil: {}, holo: {}, chrome: {} },
+      laps: 99,
+      grantVersion: GRANT_VERSION,
+      credits: 1_000_000,
+    }
+    const data = await directory.claim(token, { collection: inflated, garages: [] })
+    // A browser's word carries a few spares, forty packs and one credit budget, and no more (S25).
+    expect(data?.collection.owned[hyper]).toBe(1 + TUNABLES.claim.spareCopies)
+    expect(data?.profile.packs).toBe(start.packs + TUNABLES.claim.maxPacks)
+    expect((data?.collection.credits ?? 0) - start.credits).toBeLessThanOrEqual(
+      TUNABLES.claim.maxCredits,
+    )
+    expect(data?.collection.laps).toBe(TUNABLES.claim.maxLaps)
+  })
+
   it('never lets a client award itself a pack', async () => {
     const { directory, tick } = setUp()
     const { token } = await directory.createPlayer('Ann')
@@ -713,7 +737,8 @@ describe('stakes on the service', () => {
         owned: grant(introCollection(), cars),
         packs: 0,
         variants: { ...NO_VARIANTS, chrome: Object.fromEntries(chrome.map((id) => [id, 1])) },
-        laps: 0,
+        // One keepsake per lap taken, as in play; a claim holds keepsakes to the laps (S25).
+        laps: chrome.length,
         grantVersion: GRANT_VERSION,
         credits: 0,
       } satisfies CollectionState,

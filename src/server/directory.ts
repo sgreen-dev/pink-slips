@@ -17,6 +17,7 @@ import {
   claimLap,
   garagesAfterLap,
   scrapAll,
+  capClaim,
 } from '../collection/collection.ts'
 import {
   applyTransfer,
@@ -444,8 +445,9 @@ export class Directory {
   }
 
   /**
-   * Merges the guest data from the browser that signed in, once. Card counts take the larger
-   * of the two, packs add up, and the guest's garages are kept. A second claim changes nothing.
+   * Merges the guest data from the browser that signed in, once, held first to what a real guest
+   * collection could hold (`capClaim`, backlog S25). Card counts take the larger of the two,
+   * packs and credits add up, and the guest's garages are kept. A second claim changes nothing.
    */
   async claim(token: string, guest: unknown): Promise<AccountData | null> {
     const account = await this.accountFor(token)
@@ -456,18 +458,21 @@ export class Directory {
     const garages = record['garages']
     let next: Account = { ...account, claimed: true }
     if (isCollectionState(collection)) {
-      const guestState = normalizeCollection(collection)
+      const normal = normalizeCollection(collection)
       // The account is rebased by load; a guest record still on the legacy grant is rebased
       // here, so the merge below cannot hand the legacy cards back through the per-id max.
-      const guestOwned =
-        guestState.grantVersion >= GRANT_VERSION
-          ? guestState.owned
-          : rebaseToIntro(guestState.owned)
+      const rebased =
+        normal.grantVersion >= GRANT_VERSION
+          ? normal
+          : { ...normal, owned: rebaseToIntro(normal.owned) }
+      // The service cannot see a guest's history, so it takes the browser's word only as far as a
+      // real guest collection could reach (backlog S25).
+      const guestState = capClaim(rebased)
       next = {
         ...next,
         collection: {
-          owned: maxCounts(account.collection.owned, guestOwned),
-          packs: account.collection.packs + collection.packs,
+          owned: maxCounts(account.collection.owned, guestState.owned),
+          packs: account.collection.packs + guestState.packs,
           variants: mergeVariants(account.collection.variants, guestState.variants),
           laps: Math.max(account.collection.laps, guestState.laps),
           grantVersion: GRANT_VERSION,
