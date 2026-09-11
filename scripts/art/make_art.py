@@ -367,6 +367,9 @@ def main(argv: list[str]) -> None:
     credits: dict[str, dict] = (
         json.loads(CREDITS_DATA.read_text(encoding="utf-8")) if CREDITS_DATA.exists() else {}
     )
+    # A car that has left the roster takes its credit with it, so the cache, which is this
+    # script's input, never carries a credit for art that no longer ships (backlog Q48).
+    credits = {car_id: info for car_id, info in credits.items() if car_id in names}
     with SOURCES.open(encoding="utf-8", newline="") as handle:
         rows = [row for row in csv.DictReader(handle) if row.get("carId")]
     if only:
