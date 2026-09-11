@@ -352,8 +352,17 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
             </span>
           </span>
         )}
+        {/* The way out, then the confirm (DESIGN.md 8): Stay lands where Leave stood, so a second
+            tap on the same spot keeps the match instead of conceding it (backlog U29). */}
         {conceding ? (
           <>
+            <button
+              type="button"
+              className="button button--small"
+              onClick={() => setConceding(false)}
+            >
+              Stay
+            </button>
             <button
               type="button"
               className="button button--primary button--small"
@@ -363,13 +372,6 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
               }}
             >
               Concede
-            </button>
-            <button
-              type="button"
-              className="button button--small"
-              onClick={() => setConceding(false)}
-            >
-              Stay
             </button>
           </>
         ) : (
