@@ -103,6 +103,15 @@ const outsideCar = must(
 ).id
 
 describe('packs', () => {
+  it('has cars in every tier a car slot can roll, so no slot falls back (backlog G19)', () => {
+    for (const tier of Object.keys(TUNABLES.collection.carTierOdds)) {
+      expect(
+        CARS.some((car) => car.tier === tier),
+        tier,
+      ).toBe(true)
+    }
+  })
+
   it('follow the tier odds and spread mods evenly over 10,000 packs', () => {
     const tierHits = new Map<Tier, number>()
     const modHits = new Map<string, number>()

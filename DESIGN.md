@@ -349,7 +349,7 @@ Computed in this order. All results floor to whole feet, minimum 0.
 3. Base = `floor(K × effective hp × type multiplier ÷ effective weight)` where **K = 3000** (tunable) and the type multiplier is 1 for Sports, Muscle, and EV, 1.1 for Luxury, and 1.2 for JDM and Off-road (tunable, set in phase 5)
 4. Add flat bonuses: type identity, Parts, Boosts
 5. Apply Sabotage pending on this car: flat reductions first, then halving
-6. Apply wear: `× (1 − wearRate × wearCount)` where **wearRate = 0.10** (tunable). Luxury uses half the rate.
+6. Apply wear: `× max(wearFloor, 1 − wearRate × wearCount)` where **wearRate = 0.10** and **wearFloor = 0.10** (both tunable). Luxury uses half the rate. The floor keeps a worn car moving: however much wear it carries, it covers a tenth of its distance, so wear can slow a race but never stop one.
 7. If the car's distance reaches or passes **1320 ft**, the race ends immediately.
 
 Three details the seven steps above leave out, which the code fixes and a reader should not have to infer. A Boost that multiplies the advance, which is Redline, applies after the flat bonuses of step 4 and before the Sabotage of step 5, so a halving cuts the boosted number. Overdrive's second advance is a fraction applied after the wear of step 6, not before it. And that second advance carries the car's Part and type-identity bonuses but not the Boosts already spent on the turn, since a Boost is spent once. Effective weight is also floored at 1 lb, so weight reductions can never divide by zero.

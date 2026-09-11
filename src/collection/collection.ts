@@ -262,6 +262,12 @@ export function packIds(pack: Pack): string[] {
   return packCards(pack).map((card) => card.id)
 }
 
+/**
+ * Every car, for a tier with none. Unreachable while every tier has cars, which a test holds; the
+ * fallback used to be every card, so an emptied tier would have put a mod in a car slot (G19).
+ */
+const ANY_CAR: readonly string[] = CARS.map((car) => car.id)
+
 const CARS_BY_TIER: ReadonlyMap<Tier, readonly string[]> = new Map(
   TIERS.map((tier) => [tier, CARS.filter((car) => car.tier === tier).map((car) => car.id)]),
 )
@@ -314,7 +320,7 @@ export function openPack(
     let tier: Tier
     ;[tier, rng] = rollTier(rng, t.collection.carTierOdds)
     let car: string
-    ;[car, rng] = pick(rng, CARS_BY_TIER.get(tier) ?? ALL_CARD_IDS)
+    ;[car, rng] = pick(rng, CARS_BY_TIER.get(tier) ?? ANY_CAR)
     cars.push(finish(car))
   }
   for (let i = 0; i < t.collection.packMods; i++) {

@@ -30,6 +30,12 @@ export const TUNABLES = {
   } as Readonly<Record<CarType, number>>,
   /** Advance multiplier lost per wear point. */
   wearRate: 0.1,
+  /**
+   * The least of its advance a worn car keeps, however much wear it carries (backlog G18). At the
+   * rate above a car reaches it at 9 wear, 18 for Luxury; without it, 10 wear stopped a car dead
+   * and a race between two worn cars never ended.
+   */
+  wearFloor: 0.1,
   partSlots: 2,
   partSlotsJdm: 3,
   garageSize: 5,
