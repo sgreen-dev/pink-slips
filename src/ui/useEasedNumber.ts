@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { prefersReducedMotion } from './motion.ts'
 
 /**
  * A number that walks to its new value instead of snapping to it.
@@ -27,10 +28,6 @@ export const SLIDE_MS = 600
  */
 export function easeOutCubic(t: number): number {
   return 1 - (1 - t) ** 3
-}
-
-function prefersReducedMotion(): boolean {
-  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
 /**

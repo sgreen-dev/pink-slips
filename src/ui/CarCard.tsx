@@ -8,6 +8,7 @@ import { fuelCost, type CarState } from '../engine/index.ts'
 import { initialArtState, nextArtState, showsImage } from './artState.ts'
 import { iconUrl, typeFrameUrl } from './artwork.ts'
 import { useDetail } from './useDetail.ts'
+import { useTilt } from './useTilt.ts'
 import { useVariant } from './variants.ts'
 
 export type CardSize = 'sm' | 'md' | 'lg'
@@ -121,6 +122,7 @@ export const CarCard = memo(function CarCard({
   const car = getCar(carId)
   const variant = useVariant(carId, variantProp)
   const openDetail = useDetail()
+  const tilt = useTilt('card')
   const [art, setArt] = useState(() => initialArtState(car.imageUrl))
   const frame = typeFrameUrl(car.type)
   const frameStyle = frame ? ({ '--frame': `url(${frame})` } as CSSProperties) : undefined
@@ -202,6 +204,7 @@ export const CarCard = memo(function CarCard({
         style={frameStyle}
         onClick={onClick}
         aria-pressed={selected}
+        {...tilt}
       >
         {body}
       </button>
@@ -229,13 +232,14 @@ export const CarCard = memo(function CarCard({
         style={frameStyle}
         aria-label={dimmed ? `Details for ${car.name}, not owned` : `Details for ${car.name}`}
         onClick={() => openDetail({ kind: 'car', id: carId })}
+        {...tilt}
       >
         {body}
       </button>
     )
   }
   return (
-    <div className={className} style={frameStyle}>
+    <div className={className} style={frameStyle} {...tilt}>
       {body}
     </div>
   )

@@ -3,6 +3,7 @@ import { memo, type CSSProperties } from 'react'
 import { getMod } from '../data/mods.ts'
 import { familyFrameUrl, iconUrl, modArtUrl } from './artwork.ts'
 import { useDetail } from './useDetail.ts'
+import { useTilt } from './useTilt.ts'
 import { useVariant } from './variants.ts'
 
 interface ModCardProps {
@@ -38,6 +39,7 @@ export const ModCard = memo(function ModCard({
   const mod = getMod(modId)
   const variant = useVariant(modId, variantProp)
   const openDetail = useDetail()
+  const tilt = useTilt('mod')
   const art = modArtUrl(modId)
   const frame = familyFrameUrl(mod.family)
   const frameStyle = frame ? ({ '--mod-frame': `url(${frame})` } as CSSProperties) : undefined
@@ -94,6 +96,7 @@ export const ModCard = memo(function ModCard({
         disabled={!playable && !onRefuse}
         aria-disabled={playable ? undefined : true}
         aria-pressed={selected}
+        {...tilt}
       >
         {body}
       </button>
@@ -121,13 +124,14 @@ export const ModCard = memo(function ModCard({
         style={frameStyle}
         aria-label={dimmed ? `Details for ${mod.name}, not owned` : `Details for ${mod.name}`}
         onClick={() => openDetail({ kind: 'mod', id: modId })}
+        {...tilt}
       >
         {body}
       </button>
     )
   }
   return (
-    <div className={className} style={frameStyle}>
+    <div className={className} style={frameStyle} {...tilt}>
       {body}
     </div>
   )

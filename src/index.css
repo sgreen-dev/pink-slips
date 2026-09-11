@@ -163,7 +163,21 @@ h2,
     var(--type-color);
   color: var(--ink);
   text-align: left;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 50%);
+  /*
+   * The card as a physical object rather than a coloured rectangle (DESIGN.md 8). Two cast
+   * shadows read as one light: a tight dark contact where the card meets the surface, and a
+   * wider softer ambient below it. The two insets light the top edge of the frame and shade the
+   * bottom, so its 0.5em of padding reads as the thickness of a slab.
+   *
+   * In em, not px. Everything inside the card is already em off font-size: calc(var(--w) / 12),
+   * so one set of numbers works from --w: 6rem in the dealt row to 14rem in the detail panel.
+   * The old fixed 2px/6px was the same weight on both and looked heavy on the small one.
+   */
+  box-shadow:
+    0 0.05em 0.1em rgb(0 0 0 / 40%),
+    0 0.25em 0.55em rgb(0 0 0 / 45%),
+    inset 0 0.05em 0 rgb(255 255 255 / 28%),
+    inset 0 -0.06em 0.06em rgb(0 0 0 / 25%);
   transition: transform 0.15s ease;
 }
 .card--sm {
@@ -200,6 +214,9 @@ h2,
   display: flex;
   flex-direction: column;
   gap: 0.3em;
+  /* Seated into the frame rather than printed flat on it: the boxed face DESIGN.md 8 takes from
+     the Base Set, given the depth the frame around it now has. */
+  box-shadow: inset 0 0.06em 0.12em rgb(0 0 0 / 18%);
 }
 .card__name {
   font-family: var(--font-display);
@@ -355,6 +372,38 @@ h2,
 .card--clickable:hover {
   transform: translateY(-0.25em);
 }
+/*
+ * The lean under a pointer (DESIGN.md 8). `useTilt` adds the class and sets --rx/--ry as the
+ * pointer moves, and --mx/--my as where in the card it is, which the shine and the glare below
+ * both read.
+ *
+ * hover: hover so a touch screen, which has no pointer to lean towards, never gets it. The class
+ * is only ever on the one card being pointed at, so the transform, the layer will-change asks
+ * for, and the glare's pseudo-element cost one card rather than the 126 the collection mounts
+ * (backlog P2 and P4).
+ *
+ * Written as .card.card--tilt to match the specificity of .card--clickable:hover above, which a
+ * single class would lose to; equal specificity, so this one wins by coming after it.
+ */
+@media (hover: hover) {
+  .card.card--tilt {
+    transform: perspective(40em) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))
+      translateY(-0.3em);
+    will-change: transform;
+  }
+  .card--tilt::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(
+      circle at var(--mx, 50%) var(--my, 50%),
+      rgb(255 255 255 / 22%),
+      rgb(255 255 255 / 0%) 45%
+    );
+  }
+}
 .card--target {
   outline: 0.25em solid var(--pink);
   outline-offset: 0.15em;
@@ -393,6 +442,19 @@ h2,
   gap: 0.25rem;
   font-size: 0.8rem;
   font-family: var(--font-body);
+  /*
+   * The same light as the car card, in em off this card's own font-size. A mod has a real border
+   * rather than the car card's padded frame, so it takes the cast shadows and the lit top edge
+   * but not the inner shade, which the border-image would cover.
+   *
+   * Named, because box-shadow does not merge across rules: the playable ring and the selected
+   * ring below each replace the whole list, so they have to restate the depth alongside the ring
+   * rather than adding to it.
+   */
+  --depth:
+    0 0.05em 0.1em rgb(0 0 0 / 35%), 0 0.25em 0.55em rgb(0 0 0 / 40%),
+    inset 0 0.05em 0 rgb(255 255 255 / 22%);
+  box-shadow: var(--depth);
 }
 .mod--part {
   --family: var(--part);
@@ -428,10 +490,24 @@ h2,
 }
 .mod--playable {
   cursor: pointer;
-  box-shadow: 0 0 0 0.15rem var(--pink);
+  box-shadow:
+    0 0 0 0.15rem var(--pink),
+    var(--depth);
 }
 .mod--playable:hover {
   transform: translateY(-0.25rem);
+}
+/*
+ * The mod card's half of the lean; see the note on .card--tilt above. No glare layer here: the
+ * car card puts one on its free ::after, but a mod's ::after is already the holo sheet, and an
+ * element has only the one. The lean and the depth carry it.
+ */
+@media (hover: hover) {
+  .mod.mod--tilt {
+    transform: perspective(40rem) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))
+      translateY(-0.3rem);
+    will-change: transform;
+  }
 }
 .mod--unplayable {
   opacity: 0.5;
@@ -440,7 +516,9 @@ h2,
   cursor: help;
 }
 .mod--selected {
-  box-shadow: 0 0 0 0.25rem #fff;
+  box-shadow:
+    0 0 0 0.25rem #fff,
+    var(--depth);
 }
 
 /* Race track */
@@ -808,7 +886,9 @@ h2,
   min-width: 0;
   gap: 0.4rem;
   overflow-x: auto;
-  padding: 0.3rem 0.1rem;
+  /* overflow-x: auto computes overflow-y to auto as well, so this row clips vertically. The
+     block padding is the headroom a leaning card and its shadow need to not be shaved. */
+  padding: 0.55rem 0.1rem;
 }
 .dealt__cars .card {
   --w: 6rem;
@@ -887,7 +967,8 @@ h2,
   display: flex;
   gap: 0.4rem;
   overflow-x: auto;
-  padding: 0.3rem 0.1rem;
+  /* Headroom for the lean and its shadow; see .dealt__cars above. */
+  padding: 0.55rem 0.1rem;
 }
 .picker__cars .card {
   --w: 6rem;
@@ -1204,6 +1285,18 @@ h2,
   .card--holo:hover .card__art::after,
   .mod--holo:hover::after {
     transition: none;
+  }
+  /*
+   * No lean and no glare. `useTilt` already refuses to attach under this setting, so the class
+   * should never appear; this is here so the rule holds if a later component reaches for the
+   * class without the hook. The resting depth stays — it is light, not motion.
+   */
+  .card.card--tilt,
+  .mod.mod--tilt {
+    transform: none;
+  }
+  .card--tilt::after {
+    background: none;
   }
 }
 
@@ -1676,6 +1769,17 @@ h2,
 .mod--foil:hover::before {
   background-position: 70% 70%;
 }
+/*
+ * While a card is being leaned, the shimmer goes where the pointer is instead of running its
+ * fixed sweep, so the finish and the lean agree about where the light is. transition: none
+ * because the sweep's own 1s ease would lag a frame-by-frame position badly; letting go restores
+ * the rule above and it eases back.
+ */
+.card--tilt.card--foil::before,
+.mod--tilt.mod--foil::before {
+  background-position: var(--mx, 35%) var(--my, 35%);
+  transition: none;
+}
 .card--holo .card__art::after,
 .mod--holo::after {
   content: '';
@@ -1702,6 +1806,12 @@ h2,
 .card--holo:hover .card__art::after,
 .mod--holo:hover::after {
   background-position: 100% 100%;
+}
+/* The holo sheet tracks the pointer too, for the same reason as the foil above. */
+.card--tilt.card--holo .card__art::after,
+.mod--tilt.mod--holo::after {
+  background-position: var(--mx, 0%) var(--my, 0%);
+  transition: none;
 }
 .card__variant,
 .mod__variant {
