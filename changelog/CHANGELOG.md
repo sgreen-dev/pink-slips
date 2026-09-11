@@ -4,6 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-11
 
+- The link preview a messenger shows for the game now uses the game's own neon wordmark (backlog U42). It had been drawn before the title became Monoton, in a plain condensed face. A new command, `npm run social`, redraws it from a template with the site's own fonts and the stylesheet's colours, so it keeps up with any change to the wordmark or tagline. The card is a JPEG at 87 KB, well inside what messengers accept; links already sent keep the old picture, and new ones show the new card. (b92d8a3)
 - The garage you pick on the start and online screens now has its name glowing gold (backlog U41), on top of the pink frame it already had, so the choice is plain at a glance on a phone. The glow stays still, since in this game a pulse means something waiting to be done. (f4bbee8)
 - The Scrap button on the collection screen now pulses gold while you have spare cards to scrap (backlog U40), the same ring the next step wears in a match, so the credits sitting in duplicates are hard to miss. It stops once you tap it, and with Reduce Motion on it stays as a still ring. (7a8fdf6)
 - After a match, the last pack you open from the pop-up shows from its top again on a phone (backlog U39). Handing focus to the Done button, added earlier today so a keyboard never loses its place, also scrolled the pop-up down to that button, past the pack just opened; with one pack earned it happened every time. The button now takes focus without moving the view. (25a9ffc)
