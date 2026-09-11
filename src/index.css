@@ -2366,6 +2366,12 @@ h2,
   box-shadow: 0 0 0 0.15rem rgba(242, 193, 78, 0.45);
   animation: glow 1.2s ease-in-out infinite;
 }
+/* Something waiting that a player might not go looking for (backlog U40): the same gold ring as
+   the next step, on a button that is not the next step. Scrap wears it while spare cards wait. */
+.button--attention {
+  box-shadow: 0 0 0 0.15rem rgba(242, 193, 78, 0.45);
+  animation: glow 1.2s ease-in-out infinite;
+}
 /* Guided first match (DESIGN.md 8): one callout under the prompt, pointing up at the garage or
    down at the buttons and hand. */
 .guide {
@@ -2748,6 +2754,7 @@ h2,
   .log__lines li,
   .controls__prompt--live,
   .button--next,
+  .button--attention,
   .guide,
   .online__bar__clock--urgent {
     animation: none;

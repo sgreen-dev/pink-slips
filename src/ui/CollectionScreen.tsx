@@ -387,7 +387,11 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
                   </button>
                 </span>
               ) : (
-                <button type="button" className="button" onClick={() => setConfirmScrap(true)}>
+                <button
+                  type="button"
+                  className="button button--attention"
+                  onClick={() => setConfirmScrap(true)}
+                >
                   Scrap {spareCount} spare {spareCount === 1 ? 'card' : 'cards'}
                 </button>
               ))}
