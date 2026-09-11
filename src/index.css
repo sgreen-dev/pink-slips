@@ -544,16 +544,22 @@ h2,
   position: absolute;
   top: 50%;
   left: 0;
-  width: 100%;
   pointer-events: none;
+  /* The travel is inset by one dot: the box is the road less the dot's width, so translating it
+     to 100% leaves the dot's trailing edge exactly on the finish line and 0% leaves its leading
+     edge exactly on the start. Centring the dot on its point instead put half of it outside the
+     lane at both ends, which is fine until the lane clips — and then the car is cut in half on
+     the start line of every race. The cost is that the dot's centre reads up to half its own
+     width off the true point at the extremes, 24px in 1200; nothing can see that, and everything
+     could see the other. */
+  width: calc(100% - 2.4rem);
   transform: translateY(-50%) translateX(var(--at, 0%));
   transition: transform 0.6s cubic-bezier(0.33, 1, 0.68, 1);
   will-change: transform;
 }
-/* Centred on the marker's leading edge, which is the point being reported. */
+/* Sits at the marker's leading edge. Not centred on it: see `.lane__marker` for why. */
 .lane__dot {
   display: block;
-  transform: translateX(-50%);
   width: 2.4rem;
   height: 1.2rem;
   border-radius: 0.6rem 0.9rem 0.9rem 0.6rem;
