@@ -1,9 +1,17 @@
 import { useCallback, useContext, useEffect, useReducer, useRef, useState } from 'react'
 import { packsEarned } from '../collection/collection.ts'
 import { addPacks, loadCollection } from '../collection/persist.ts'
-import { currentPlayer, isModPlay, isOver, type Action, type PlayerIndex } from '../engine/index.ts'
+import {
+  currentPlayer,
+  isModPlay,
+  isOver,
+  type Action,
+  type MatchState,
+  type PlayerIndex,
+} from '../engine/index.ts'
 import { EMPTY_TRANSFER, type Transfer } from '../collection/stakes.ts'
 import { AccountContext, fetchMe } from './account.ts'
+import { count } from './analytics.ts'
 import { copyText } from './clipboard.ts'
 import { Board } from './Board.tsx'
 import { recordMatch } from './counter.ts'
@@ -35,6 +43,14 @@ interface OnlineMatchProps {
 
 /** How long to wait for the room's result message after the final state before going local. */
 const RESULT_GRACE_MS = 3000
+
+/**
+ * A match nobody has moved in yet: the first race, both players still to stage. The stats count a
+ * start there and nowhere later, so a refresh that rejoins a match under way is not a second one.
+ */
+function atStart(view: MatchState): boolean {
+  return view.race.number === 1 && view.phase.kind === 'staging' && view.phase.pending.length === 2
+}
 
 /** How often the turn clock redraws, and when it starts warning. Screen timings, not rules. */
 const CLOCK_TICK_MS = 1000
@@ -148,6 +164,19 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
       setSettled(null)
     }
   }
+  // Each browser counts its own start for the stats. A finished match clears the mark, so the
+  // rematch that follows counts as the new start it is.
+  const startCounted = useRef(false)
+  useEffect(() => {
+    if (view === null) return
+    if (winner !== null) {
+      startCounted.current = false
+      return
+    }
+    if (startCounted.current || !atStart(view)) return
+    startCounted.current = true
+    count('match-start-online')
+  }, [view, winner])
   useEffect(() => {
     if (winner === null || seat === null || recorded) return
     const settle = (
@@ -157,8 +186,10 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
     ) => {
       setRecorded(true)
       setSettled(stakes)
-      // One count per match: the first seat reports it.
+      // One count per match on the public counter: the first seat reports it. The private stats
+      // count per browser, so each seat counts its own finish, as it counted its own start.
       if (seat === 0) void recordMatch()
+      count('match-finish-online')
       if (packs === null || !account) {
         const local = packs ?? packsEarned('online', winner === seat)
         if (!addPacks(local).saved) setUnstored(true)

@@ -217,6 +217,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
       if (!next.saved) setLapError(notStored('The lap was taken'))
       setState(next.state)
     }
+    count('lap-taken')
     setConfirmLap(false)
     setKeepsake('')
     setOpened(null)

@@ -5,6 +5,7 @@ import { RulesButton, RulesDialog } from './RulesDialog.tsx'
 import type { PlayerConfig } from '../engine/index.ts'
 import { MAX_NAME_LENGTH } from '../protocol/messages.ts'
 import { AccountContext, QueueClient, queueUrl, type QueueStatus } from './account.ts'
+import { count } from './analytics.ts'
 import { garageOptions, type GarageOption } from './builder.ts'
 import { GaragePicker } from './GaragePicker.tsx'
 import { RandomGarages } from './RandomGarages.tsx'
@@ -73,6 +74,7 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
       setError('The room service did not answer. Try again in a moment.')
       return
     }
+    count('room-made')
     onPlay({ code: fresh, name: cleanName, garage: config(), token: null, ticket: null, stakes })
   }
   const join = () => {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { count } from '../analytics.ts'
 import { useSound } from './useSound.ts'
 
 /** The speaker button and its two switches: Music and Effects. */
@@ -7,6 +8,11 @@ export function SoundButton() {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
   const anyOn = settings.music || settings.effects
+  // Counted when the game goes from silent to making a sound, which is what the speaker shows.
+  const change = (next: typeof settings) => {
+    if (!anyOn && (next.music || next.effects)) count('sound-on')
+    setSettings(next)
+  }
 
   useEffect(() => {
     if (!open) return
@@ -42,7 +48,7 @@ export function SoundButton() {
             <input
               type="checkbox"
               checked={settings.music}
-              onChange={(event) => setSettings({ ...settings, music: event.target.checked })}
+              onChange={(event) => change({ ...settings, music: event.target.checked })}
             />
             Music
           </label>
@@ -50,7 +56,7 @@ export function SoundButton() {
             <input
               type="checkbox"
               checked={settings.effects}
-              onChange={(event) => setSettings({ ...settings, effects: event.target.checked })}
+              onChange={(event) => change({ ...settings, effects: event.target.checked })}
             />
             Effects
           </label>
