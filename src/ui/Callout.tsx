@@ -6,6 +6,11 @@ interface CalloutProps {
   /** Gold for the guide; the correction colour for a refused play. */
   tone?: 'guide' | 'notice'
   text: string
+  /**
+   * Changes when the box should play its entrance again, as a second refusal does. The box is
+   * kept rather than rebuilt, so a button inside it that has focus keeps it (backlog A11).
+   */
+  replay?: number
   /** The action buttons under the text. */
   children?: ReactNode
 }
@@ -15,7 +20,7 @@ interface CalloutProps {
  * the board under the prompt, and it brings itself into view when its text changes, which
  * matters on a phone, where the board scrolls.
  */
-export function Callout({ toward, tone = 'guide', text, children }: CalloutProps) {
+export function Callout({ toward, tone = 'guide', text, replay, children }: CalloutProps) {
   const box = useRef<HTMLElement | null>(null)
   useEffect(() => {
     const el = box.current
@@ -23,7 +28,21 @@ export function Callout({ toward, tone = 'guide', text, children }: CalloutProps
     const reduced =
       typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
     el.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' })
-  }, [text])
+  }, [text, replay])
+  // The entrance again, on the same box. Rebuilding the box is how this used to replay, and it
+  // took focus from whatever inside had it; restarting the animation does not. Under reduced
+  // motion there is no animation to restart.
+  const played = useRef(replay)
+  useEffect(() => {
+    if (played.current === replay) return
+    played.current = replay
+    const el = box.current
+    if (!el || typeof el.getAnimations !== 'function') return
+    for (const animation of el.getAnimations()) {
+      animation.cancel()
+      animation.play()
+    }
+  }, [replay])
   return (
     <aside ref={box} className={`guide guide--${toward} guide--${tone}`} role="status">
       <p className="guide__text">{text}</p>

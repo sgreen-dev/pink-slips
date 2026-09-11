@@ -138,8 +138,11 @@ export function Board({
   const track = useRef<HTMLDivElement | null>(null)
   const mine = useRef<HTMLElement | null>(null)
   // A turn's end: after a beat, the hand returns to its start and the track comes into view, so
-  // the other player's turn plays where it can be seen.
+  // the other player's turn plays where it can be seen. Nothing has ended when the board opens,
+  // and a board opens at its top (DESIGN.md 8), so the count's first value moves nothing; without
+  // this a new match scrolled itself down to the track a beat after it appeared (backlog U34).
   useEffect(() => {
+    if (turns.ended === 0) return
     const timer = setTimeout(() => {
       scrollRowBack(hand.current)
       reveal(track.current)
@@ -241,9 +244,13 @@ export function Board({
     return () => window.removeEventListener('keydown', onKey)
   }, [busy, onSelect, onOptions])
 
+  // Each line keeps the place its entry holds in the whole log and is keyed by it, so when the
+  // last-eight window slides only the new line mounts and slides in (backlog U33); keyed by its
+  // place in the window, every line was new each turn and all eight slid in again. The words ride
+  // in the key too, since an undo takes an entry back and the next play lands in the same place.
   const log = state.log
-    .map((entry) => describeLogEntry(entry, names))
-    .filter((line): line is string => line !== null)
+    .map((entry, at) => ({ at, line: describeLogEntry(entry, names) }))
+    .filter((item): item is { at: number; line: string } => item.line !== null)
     .slice(-8)
 
   return (
@@ -337,7 +344,7 @@ export function Board({
         </p>
         {guide}
         {notice && (
-          <Callout key={notice.at} tone="notice" toward={notice.toward} text={notice.text}>
+          <Callout tone="notice" toward={notice.toward} text={notice.text} replay={notice.at}>
             <button
               type="button"
               className="button button--ghost button--small"
@@ -436,8 +443,8 @@ export function Board({
       <section className="log">
         <header className="log__header">Match log</header>
         <ol className="log__lines">
-          {log.map((line, i) => (
-            <li key={`${i}-${line}`}>{line}</li>
+          {log.map(({ at, line }) => (
+            <li key={`${at}-${line}`}>{line}</li>
           ))}
         </ol>
       </section>
