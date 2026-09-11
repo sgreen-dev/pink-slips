@@ -535,7 +535,7 @@ Fonts load from Google Fonts. The wordmark and the meter are requested with Goog
 
 ---
 
-**Start backdrop**: the start screen shows the owner's neon road scene edge to edge, served as WebP from `public/backgrounds/`, under a dark wash that runs from about 55 percent at the top to 85 percent at the bottom so the title reads over the sun and the garage pickers sit on the dark road. The other screens keep the flat asphalt.
+**Start backdrop**: the start screen shows the owner's neon road scene edge to edge, served as WebP from `public/backgrounds/`, under a dark wash that runs from about 55 percent at the top to 85 percent at the bottom so the title reads over the sun and the garage pickers sit on the dark road. The collection, builder, online, profile and result screens have their own; the match board reuses the start screen's scene under a much heavier wash, since it is the densest screen in the game and nothing should compete with a card.
 
 **Stakes toggle**: in CPU mode the start screen shows "Play for stakes" under the levels with one line on what it means, disabled at Rookie with the reason; the online screen shows the same toggle to a signed-in player above the ranked and friend sections, with a note that both players need it on. The result screen's Stakes block follows the packs line.
 

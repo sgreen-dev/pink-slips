@@ -2050,15 +2050,26 @@ h2,
 .start {
   position: relative;
 }
+/* The wash is a pair of custom properties so a screen can set its own depth. The default is
+   the start screen's, light enough at the top for the sun to read behind the title. */
 .backdrop {
   position: fixed;
   inset: 0;
   z-index: -1;
   background-image:
-    linear-gradient(rgba(23, 23, 26, 0.55), rgba(23, 23, 26, 0.85)), var(--backdrop);
+    linear-gradient(rgb(23 23 26 / var(--wash-top, 55%)), rgb(23 23 26 / var(--wash-bottom, 85%))),
+    var(--backdrop);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+}
+
+/* The board borrows the start screen's road scene rather than going bare, but it is the densest
+   screen in the game — five cards a side, two lanes, a hand and a log — so it sits under a much
+   heavier wash than the start screen's. Atmosphere at the edges, nothing competing with a card. */
+.board .backdrop {
+  --wash-top: 88%;
+  --wash-bottom: 95%;
 }
 
 /* The sound readout, only with ?sound=debug. */
