@@ -1,18 +1,23 @@
 /**
- * Draws the link-preview card, `public/social.jpg`, from `scripts/social.html` (backlog U42):
+ * Draws the two pictures a phone or a messenger shows for the site, from the templates beside this
+ * script (backlog U42 and U43):
  *
  *   npm run social
  *
- * A messenger shows this card for every shared link, rooms included, so it should look like the
- * game: the wordmark in Monoton with the start screen's glow, the tagline in Barlow and the last
- * line in Space Mono, all from `src/fonts/`, and the colours read from `src/index.css`, so the
- * card cannot drift from the stylesheet. Run it again after changing the wordmark or the tagline.
+ * - `public/social.jpg`, the link-preview card a messenger shows for every shared link, rooms
+ *   included, from `scripts/social.html`: the wordmark in Monoton with the start screen's glow,
+ *   the tagline in Barlow and the last line in Space Mono. It is 1438x755, the 1.91:1 shape every
+ *   reader crops to, and has to stay under 300 KB, above which some messengers quietly drop the
+ *   preview (backlog note 28). A JPEG: as a PNG the glow's soft halos came to 420 KB.
+ * - `public/apple-touch-icon-ps.png`, the icon a phone shows for the site, on its home screen and in
+ *   its Dynamic Island while the music plays, from `scripts/icon.html`: PS in the same neon. The
+ *   whole wordmark was tried first and read as a smudge at the size the island shows it. It is
+ *   180x180, the size iOS asks for, and square, since iOS rounds the corners itself.
  *
- * It is drawn in a headless Chromium browser, Edge or Chrome (set CHROME to use another), at
- * exactly 1438x755, the 1.91:1 shape every reader crops to, and it has to stay under 300 KB,
- * above which some messengers quietly drop the preview (backlog note 28). A capture that caught a
- * fallback font, or came out too heavy, is refused rather than written. It is a JPEG: as a PNG
- * the glow's soft halos came to 420 KB, and a JPEG at quality 90 keeps them smooth for far less.
+ * The fonts come from `src/fonts/` and the colours from `src/index.css`, so neither picture can
+ * drift from the game; run it again after changing the wordmark, the tagline or the palette. Both
+ * are drawn in a headless Chromium browser, Edge or Chrome (set CHROME to use another), and a
+ * capture that caught a fallback font, or came out over its size, is refused rather than written.
  */
 import { spawn } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -21,22 +26,48 @@ import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url))
-const TEMPLATE = join(ROOT, 'scripts', 'social.html')
-const OUT = join(ROOT, 'public', 'social.jpg')
-const WIDTH = 1438
-const HEIGHT = 755
-const MAX_BYTES = 300_000
-const QUALITY = 90
 const MARKER = '/* fonts and colours */'
+const JPEG_QUALITY = 90
 
-/** Each face the card sets, and its file in src/fonts/. */
-const FONTS: ReadonlyArray<readonly [family: string, weight: number, file: string]> = [
-  ['Monoton', 400, 'monoton-400-wordmark.woff2'],
-  ['Barlow', 500, 'barlow-500-latin.woff2'],
-  ['Space Mono', 400, 'space-mono-400-latin.woff2'],
+type Face = readonly [family: string, weight: number, file: string]
+const MONOTON: Face = ['Monoton', 400, 'monoton-400-wordmark.woff2']
+const BARLOW: Face = ['Barlow', 500, 'barlow-500-latin.woff2']
+const SPACE_MONO: Face = ['Space Mono', 400, 'space-mono-400-latin.woff2']
+
+interface Drawing {
+  /** The template, in scripts/. */
+  template: string
+  /** Where the picture goes, in public/. */
+  out: string
+  width: number
+  height: number
+  format: 'jpeg' | 'png'
+  maxBytes: number
+  faces: readonly Face[]
+}
+
+const DRAWINGS: readonly Drawing[] = [
+  {
+    template: 'social.html',
+    out: 'social.jpg',
+    width: 1438,
+    height: 755,
+    format: 'jpeg',
+    maxBytes: 300_000,
+    faces: [MONOTON, BARLOW, SPACE_MONO],
+  },
+  {
+    template: 'icon.html',
+    out: 'apple-touch-icon-ps.png',
+    width: 180,
+    height: 180,
+    format: 'png',
+    maxBytes: 100_000,
+    faces: [MONOTON],
+  },
 ]
 
-/** The stylesheet's colours the card uses. */
+/** The stylesheet's colours the templates use. */
 const TOKENS = [
   'asphalt',
   'paper-ink',
@@ -66,24 +97,25 @@ interface Message {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-/** The template with the fonts inlined and the colours set, ready to open from a file. */
-function page(): string {
+/** A template with its fonts inlined and the colours set, ready to open from a file. */
+function page(drawing: Drawing): string {
   const css = readFileSync(join(ROOT, 'src', 'index.css'), 'utf8')
   const colours = TOKENS.map((name) => {
     const value = new RegExp(`--${name}:\\s*([^;]+);`).exec(css)?.[1]
     if (!value) throw new Error(`No --${name} in src/index.css`)
     return `--${name}: ${value.trim()};`
   })
-  const faces = FONTS.map(([family, weight, file]) => {
+  const faces = drawing.faces.map(([family, weight, file]) => {
     const data = readFileSync(join(ROOT, 'src', 'fonts', file)).toString('base64')
     return `@font-face { font-family: '${family}'; font-weight: ${weight}; src: url(data:font/woff2;base64,${data}) format('woff2'); }`
   })
-  const html = readFileSync(TEMPLATE, 'utf8')
-  if (!html.includes(MARKER)) throw new Error(`No "${MARKER}" in ${TEMPLATE}`)
+  const template = join(ROOT, 'scripts', drawing.template)
+  const html = readFileSync(template, 'utf8')
+  if (!html.includes(MARKER)) throw new Error(`No "${MARKER}" in ${template}`)
   return html.replace(MARKER, [...faces, `:root { ${colours.join(' ')} }`].join('\n'))
 }
 
-async function capture(file: string): Promise<Buffer> {
+async function capture(file: string, drawing: Drawing): Promise<Buffer> {
   const browser = BROWSERS.find(
     (path): path is string => typeof path === 'string' && existsSync(path),
   )
@@ -148,7 +180,7 @@ async function capture(file: string): Promise<Buffer> {
     await send('Page.enable', {}, session)
     await send(
       'Emulation.setDeviceMetricsOverride',
-      { width: WIDTH, height: HEIGHT, deviceScaleFactor: 1, mobile: false },
+      { width: drawing.width, height: drawing.height, deviceScaleFactor: 1, mobile: false },
       session,
     )
     const loaded = new Promise<void>((resolve) => events.set('Page.loadEventFired', resolve))
@@ -167,15 +199,15 @@ async function capture(file: string): Promise<Buffer> {
     const families = ((result as { value?: string[] } | undefined)?.value ?? []).map((family) =>
       family.replace(/["']/g, ''),
     )
-    for (const [family] of FONTS) {
+    for (const [family] of drawing.faces) {
       if (!families.includes(family)) throw new Error(`${family} did not load; nothing was written`)
     }
     const { data } = await send(
       'Page.captureScreenshot',
       {
-        format: 'jpeg',
-        quality: QUALITY,
-        clip: { x: 0, y: 0, width: WIDTH, height: HEIGHT, scale: 1 },
+        format: drawing.format,
+        ...(drawing.format === 'jpeg' ? { quality: JPEG_QUALITY } : {}),
+        clip: { x: 0, y: 0, width: drawing.width, height: drawing.height, scale: 1 },
       },
       session,
     )
@@ -194,16 +226,20 @@ async function capture(file: string): Promise<Buffer> {
 }
 
 async function main(): Promise<void> {
-  const file = join(mkdtempSync(join(tmpdir(), 'pink-slips-card-')), 'social.html')
-  writeFileSync(file, page())
-  const image = await capture(file)
-  if (image.length > MAX_BYTES) {
-    throw new Error(
-      `The card came out at ${image.length.toLocaleString()} bytes, over the ${MAX_BYTES.toLocaleString()} some messengers accept; nothing was written`,
+  for (const drawing of DRAWINGS) {
+    const file = join(mkdtempSync(join(tmpdir(), 'pink-slips-card-')), drawing.template)
+    writeFileSync(file, page(drawing))
+    const image = await capture(file, drawing)
+    if (image.length > drawing.maxBytes) {
+      throw new Error(
+        `${drawing.out} came out at ${image.length.toLocaleString()} bytes, over its ${drawing.maxBytes.toLocaleString()}; nothing was written`,
+      )
+    }
+    writeFileSync(join(ROOT, 'public', drawing.out), image)
+    console.log(
+      `public/${drawing.out}: ${drawing.width}x${drawing.height}, ${image.length.toLocaleString()} bytes`,
     )
   }
-  writeFileSync(OUT, image)
-  console.log(`public/social.jpg: ${WIDTH}x${HEIGHT}, ${image.length.toLocaleString()} bytes`)
 }
 
 main().catch((error: unknown) => {

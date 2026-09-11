@@ -35,7 +35,7 @@ npm run dev
 | ------------------------------------------ | ----------------------------------------------- |
 | `npm run dev:stop`                         | stop a dev server left running (`-- --check` lists) |
 | `npm run fonts`                            | fetch the fonts into `src/fonts/` again, after changing the wordmark |
-| `npm run social`                           | redraw the link-preview card after changing the wordmark or tagline |
+| `npm run social`                           | redraw the link-preview card and phone icon after changing the wordmark or tagline |
 | `npm test`                                 | run the test suite once                         |
 | `npm run lint`                             | ESLint                                          |
 | `npm run format:check`                     | Prettier check                                  |

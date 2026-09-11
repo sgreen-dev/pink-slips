@@ -1,0 +1,47 @@
+<!doctype html>
+<!--
+  The phone icon, drawn to public/apple-touch-icon-ps.png by `npm run social` (scripts/social.ts):
+  PS in the start screen's neon, since the whole wordmark reads as a smudge at the size a phone's
+  Dynamic Island shows it. Square and full-bleed; iOS rounds the corners itself. The fonts and
+  colours are filled in from src/fonts/ and src/index.css where the marker below sits.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      /* fonts and colours */
+      html,
+      body {
+        margin: 0;
+      }
+      body {
+        width: 180px;
+        height: 180px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background:
+          radial-gradient(circle at 50% 50%, rgb(214 61 133 / 22%), transparent 65%),
+          linear-gradient(180deg, #221f2c, var(--asphalt));
+      }
+      h1 {
+        margin: 0;
+        font-family: 'Monoton', sans-serif;
+        font-weight: 400;
+        font-size: 84px;
+        line-height: 1.08;
+        color: var(--wordmark-ink);
+        text-shadow:
+          0 0 0.05em var(--pink),
+          0 0 0.15em var(--pink),
+          0 0 0.35em var(--pink),
+          0 0 0.7em var(--pink-2),
+          0 0 1.2em var(--pink-2);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>PS</h1>
+  </body>
+</html>
