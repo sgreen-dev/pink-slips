@@ -92,4 +92,20 @@ describe('the credits dialog', () => {
     const fallback = await screen.findByRole('link', { name: url })
     expect(fallback.getAttribute('href')).toBe(url)
   })
+
+  it('asks again the next time it is opened, after a request that failed (backlog Q52)', async () => {
+    stubDialog()
+    const fetcher = vi
+      .fn()
+      .mockImplementationOnce(() => Promise.reject(new Error('offline')))
+      .mockImplementation(() => Promise.resolve({ ok: true, text: () => Promise.resolve(TABLE) }))
+    vi.stubGlobal('fetch', fetcher)
+    draw(<CreditsDialog />)
+    const button = screen.getByRole('button', { name: 'Credits' })
+    fireEvent.click(button)
+    await screen.findByRole('link', { name: `${import.meta.env.BASE_URL}art/CREDITS.md` })
+    fireEvent.click(button)
+    await screen.findByText('HJUdall')
+    expect(fetcher).toHaveBeenCalledTimes(2)
+  })
 })

@@ -385,16 +385,16 @@ h2,
  * for, and the glare's pseudo-element cost one card rather than the 126 the collection mounts
  * (backlog P2 and P4).
  *
- * Written as .card.card--tilt to match the specificity of .card--clickable:hover above, which a
- * single class would lose to; equal specificity, so this one wins by coming after it.
+ * Written as .card[data-tilt] to match the specificity of .card--clickable:hover above, which a
+ * lone attribute would lose to; equal specificity, so this one wins by coming after it.
  */
 @media (hover: hover) {
-  .card.card--tilt {
+  .card[data-tilt] {
     transform: perspective(40em) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))
       translateY(-0.3em);
     will-change: transform;
   }
-  .card--tilt::after {
+  .card[data-tilt]::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -501,12 +501,12 @@ h2,
   transform: translateY(-0.25rem);
 }
 /*
- * The mod card's half of the lean; see the note on .card--tilt above. No glare layer here: the
+ * The mod card's half of the lean; see the note on .card[data-tilt] above. No glare layer here: the
  * car card puts one on its free ::after, but a mod's ::after is already the holo sheet, and an
  * element has only the one. The lean and the depth carry it.
  */
 @media (hover: hover) {
-  .mod.mod--tilt {
+  .mod[data-tilt] {
     transform: perspective(40rem) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))
       translateY(-0.3rem);
     will-change: transform;
@@ -1782,6 +1782,22 @@ h2,
 .collection__reveal > * {
   animation: raceend-card 0.4s ease-out both;
 }
+/* Read out, not drawn: words a screen reader needs that the screen already shows another way. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+/* The wrapper that lets the page go inert under the player dialog, and nothing else (A9). */
+.app__page {
+  display: contents;
+}
 .browse__owned {
   display: block;
   margin-top: 0.2rem;
@@ -1842,8 +1858,8 @@ h2,
  * because the sweep's own 1s ease would lag a frame-by-frame position badly; letting go restores
  * the rule above and it eases back.
  */
-.card--tilt.card--foil::before,
-.mod--tilt.mod--foil::before {
+[data-tilt].card--foil::before,
+[data-tilt].mod--foil::before {
   background-position: var(--mx, 35%) var(--my, 35%);
   transition: none;
 }
@@ -1875,8 +1891,8 @@ h2,
   background-position: 100% 100%;
 }
 /* The holo sheet tracks the pointer too, for the same reason as the foil above. */
-.card--tilt.card--holo .card__art::after,
-.mod--tilt.mod--holo::after {
+[data-tilt].card--holo .card__art::after,
+[data-tilt].mod--holo::after {
   background-position: var(--mx, 0%) var(--my, 0%);
   transition: none;
 }
@@ -2759,15 +2775,15 @@ h2,
     transition: none;
   }
   /*
-   * No lean and no glare. `useTilt` already refuses to attach under this setting, so the class
+   * No lean and no glare. `useTilt` already refuses to attach under this setting, so the attribute
    * should never appear; this is here so the rule holds if a later component reaches for the
-   * class without the hook. The resting depth stays — it is light, not motion.
+   * attribute without the hook. The resting depth stays — it is light, not motion.
    */
-  .card.card--tilt,
-  .mod.mod--tilt {
+  .card[data-tilt],
+  .mod[data-tilt] {
     transform: none;
   }
-  .card--tilt::after {
+  .card[data-tilt]::after {
     background: none;
   }
 }

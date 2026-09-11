@@ -43,6 +43,13 @@ export function PackDialog({ earned, onClose }: PackDialogProps) {
     scrollPanelTop(box.current)
   }, [opened])
 
+  // The last pack's Open another goes away under the player's focus, and Done's autoFocus counts
+  // only when it mounts, which it already had; so focus is handed over here (backlog A10).
+  const done = useRef<HTMLButtonElement | null>(null)
+  useEffect(() => {
+    if (remaining === 0) done.current?.focus()
+  }, [remaining])
+
   const open = async () => {
     const result = await openNext(account)
     if (!result) return
@@ -95,6 +102,7 @@ export function PackDialog({ earned, onClose }: PackDialogProps) {
           <button
             type="button"
             className={`button button--big ${remaining === 0 ? 'button--primary' : ''}`}
+            ref={done}
             onClick={() => onClose(remaining)}
             autoFocus={remaining === 0}
           >
