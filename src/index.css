@@ -50,16 +50,13 @@
 body {
   margin: 0;
   min-height: 100vh;
-}
-
-/*
- * Phones with a notch or a home indicator. `index.html` asks for the whole screen with
- * viewport-fit=cover, so the insets have to be given back here, or content sits under the notch
- * in landscape and under the home indicator at the bottom. `env()` is 0 on any device with
- * neither, so this changes nothing anywhere else. The backdrop is fixed at inset 0 and keeps
- * running edge to edge behind it on purpose, which is what viewport-fit=cover is for.
- */
-body {
+  /*
+   * Phones with a notch or a home indicator. `index.html` asks for the whole screen with
+   * viewport-fit=cover, so the insets have to be given back here, or content sits under the notch
+   * in landscape and under the home indicator at the bottom. `env()` is 0 on any device with
+   * neither, so this changes nothing anywhere else. The backdrop is fixed at inset 0 and keeps
+   * running edge to edge behind it on purpose, which is what viewport-fit=cover is for.
+   */
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top);
   padding-right: env(safe-area-inset-right);
@@ -429,6 +426,7 @@ h2,
 /* Mod card */
 
 .mod {
+  /* Positioned under Foil and holo finishes, beside the layers that need it. */
   --family: var(--line);
   width: 9.5rem;
   min-height: 8.5rem;
@@ -707,6 +705,7 @@ h2,
   font-size: 1.6rem;
   color: var(--pink);
   letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 .board__status {
   font-family: var(--font-mono);
@@ -745,14 +744,31 @@ h2,
   display: grid;
   gap: 0.5rem;
 }
+/* Holding the controls' shape across a turn.
+
+   This is what actually made a race look like it jumped, and no transition could have fixed it:
+   nothing was animating, the page was being laid out again. A step with one action is 57px
+   taller than a step with none, so every time the options appeared or emptied, the hand and
+   everything under it moved by that much in a single frame — measured at 1213px to 1270px, with
+   the document growing to match. On a desktop there is room to absorb it. On a phone, where the
+   board and the hand are stacked, it is the whole screen stepping.
+
+   So both parts of the panel hold their space whether or not they have anything in them. The
+   button row reserves one button; the prompt reserves two lines, which is what most of them wrap
+   to on a narrow screen. Reserving costs a little empty space in the quiet states and buys a
+   board that stays still, which is the trade worth making here. */
 .controls__prompt {
   margin: 0;
   font-size: 1.05rem;
+  /* `em` not `rem`: it tracks the prompt's own size rather than the root's. */
+  min-height: calc(2 * 1.55em);
 }
 .controls__buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+  /* One `.button`: 1.05rem of text, 0.5rem of padding each side, a 2px border. */
+  min-height: 2.85rem;
 }
 .hand__header,
 .log__header {
@@ -933,12 +949,10 @@ h2,
   color: var(--muted);
   font-size: 0.85rem;
   text-align: center;
-}
-/* A sibling of the garages, so it is a flex item too and would otherwise sit beside one. It
-   takes a line of its own, which also puts the button after it on a line of its own: the note
-   cannot shrink, so nothing shares its line and the button starts the next one. Stretching the
-   button as well only made it a full-width bar between two buttons sized to their labels. */
-.dealt__note {
+  /* A sibling of the garages, so it is a flex item too and would otherwise sit beside one. It
+     takes a line of its own, which also puts the button after it on a line of its own: the note
+     cannot shrink, so nothing shares its line and the button starts the next one. Stretching the
+     button as well only made it a full-width bar between two buttons sized to their labels. */
   flex: 0 0 100%;
 }
 
@@ -1340,9 +1354,6 @@ h2,
 .builder__browse > * {
   min-width: 0;
 }
-.board__brand {
-  white-space: nowrap;
-}
 
 @media (max-width: 720px) {
   .builder__header {
@@ -1380,6 +1391,7 @@ h2,
   width: min(34rem, calc(100vw - 2rem));
   max-height: 85vh;
   box-shadow: 0 1rem 3rem rgb(0 0 0 / 60%);
+  text-align: left;
 }
 .rules::backdrop {
   background: rgb(0 0 0 / 60%);
@@ -1459,29 +1471,6 @@ h2,
   font-size: 0.7rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-/* Holding the controls' shape across a turn.
-
-   This is what actually made a race look like it jumped, and no transition could have fixed it:
-   nothing was animating, the page was being laid out again. A step with one action is 57px
-   taller than a step with none, so every time the options appeared or emptied, the hand and
-   everything under it moved by that much in a single frame — measured at 1213px to 1270px, with
-   the document growing to match. On a desktop there is room to absorb it. On a phone, where the
-   board and the hand are stacked, it is the whole screen stepping.
-
-   So both parts of the panel hold their space whether or not they have anything in them. The
-   button row reserves one button; the prompt reserves two lines, which is what most of them wrap
-   to on a narrow screen. Reserving costs a little empty space in the quiet states and buys a
-   board that stays still, which is the trade worth making here. */
-
-.controls__prompt {
-  /* `em` not `rem`: it tracks the prompt's own size rather than the root's. */
-  min-height: calc(2 * 1.55em);
-}
-.controls__buttons {
-  /* One `.button`: 1.05rem of text, 0.5rem of padding each side, a 2px border. */
-  min-height: 2.85rem;
 }
 
 /* Things that arrive during a turn.
@@ -1661,10 +1650,6 @@ h2,
   text-align: center;
 }
 
-.rules {
-  text-align: left;
-}
-
 /* Race end: the track holds at the line, the winner's finish flashes, a banner names the winner */
 
 .lane--won .lane__finish {
@@ -1814,6 +1799,7 @@ h2,
 /* Foil and holo finishes: cosmetic only, CSS only. Foil shimmers on the frame, holo across the art. */
 
 .mod {
+  /* So the finishes below sit inside the card. The rest of the mod card is under Mod card. */
   position: relative;
 }
 .card--foil::before,
@@ -1953,6 +1939,7 @@ h2,
   padding: 0.1rem 0.5rem;
 }
 .card-back {
+  /* So the plate below sits inside it. Its size and look are further down, by `.garage__fan`. */
   position: relative;
 }
 .card-back__plate {
@@ -2683,6 +2670,7 @@ h2,
   margin-right: 0.1em;
 }
 .card-back {
+  /* Positioned earlier, beside `.card-back__plate`, which it holds. */
   --w: 8rem;
   width: var(--w);
   aspect-ratio: 5 / 7;
@@ -2711,6 +2699,7 @@ h2,
   height: 6rem;
   margin: 0.25rem auto 0.5rem;
 }
+/* Only positions these screens; the layout of each is set above, under its own heading. */
 .collection,
 .builder,
 .result {
@@ -2747,7 +2736,6 @@ h2,
 @media (prefers-reduced-motion: reduce) {
   .lane__marker,
   .card,
-  .mod,
   .card__image {
     transition: none;
   }
