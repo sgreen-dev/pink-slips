@@ -511,6 +511,11 @@ h2,
 }
 .lane__road {
   position: relative;
+  /* The marker is as wide as the road (see `.lane__marker`), so translating it to the finish
+     line puts its trailing edge a whole road-width past the right, and the page grew a
+     horizontal scrollbar. Clipping to the lane is both the fix and the truth: nothing is on the
+     road that is not on the road, and at the line the dot passes under the chequered stripe. */
+  overflow: hidden;
   height: 2.2rem;
   background: repeating-linear-gradient(90deg, #2c2c31 0 2rem, #26262b 2rem 4rem);
   border-top: 2px dashed #55555c;
@@ -1357,6 +1362,29 @@ h2,
   font-size: 0.7rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+/* Holding the controls' shape across a turn.
+
+   This is what actually made a race look like it jumped, and no transition could have fixed it:
+   nothing was animating, the page was being laid out again. A step with one action is 57px
+   taller than a step with none, so every time the options appeared or emptied, the hand and
+   everything under it moved by that much in a single frame — measured at 1213px to 1270px, with
+   the document growing to match. On a desktop there is room to absorb it. On a phone, where the
+   board and the hand are stacked, it is the whole screen stepping.
+
+   So both parts of the panel hold their space whether or not they have anything in them. The
+   button row reserves one button; the prompt reserves two lines, which is what most of them wrap
+   to on a narrow screen. Reserving costs a little empty space in the quiet states and buys a
+   board that stays still, which is the trade worth making here. */
+
+.controls__prompt {
+  /* `em` not `rem`: it tracks the prompt's own size rather than the root's. */
+  min-height: calc(2 * 1.55em);
+}
+.controls__buttons {
+  /* One `.button`: 1.05rem of text, 0.5rem of padding each side, a 2px border. */
+  min-height: 2.85rem;
 }
 
 /* Things that arrive during a turn.
