@@ -26,6 +26,7 @@
     "deploy:rooms": "node scripts/deploy-worker.ts rooms",
     "deploy:counter": "node scripts/deploy-worker.ts counter",
     "fonts": "node scripts/fonts.ts",
+    "social": "node scripts/social.ts",
     "errors": "node scripts/errors.ts",
     "stats": "node scripts/stats.ts",
     "admin": "node scripts/admin.ts"

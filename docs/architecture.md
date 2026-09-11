@@ -118,6 +118,7 @@ Where a row says no rationale is recorded, that is a gap in the record, not an e
 | `npm run dev` | Vite dev server, pinned to 5173; a second one fails rather than drifting to the next port |
 | `npm run dev:stop` | Stops this repo's dev servers, whatever port they are on. `wrangler dev` is listed but left running, since nothing on its command line says whose it is. `-- --check` lists them |
 | `npm run fonts` | Fetches the five typefaces and their licences into `src/fonts/` and writes `src/fonts.css`. Run it again after changing the wordmark, since Monoton is cut to its letters |
+| `npm run social` | Draws the link-preview card, `public/social.jpg`, from `scripts/social.html` in a headless Chromium browser with the game's own fonts and colours. Run it again after changing the wordmark or the tagline |
 | `npm run build` | `tsc -b` then `vite build` into `dist/` |
 | `npm test` | Vitest, `src/**/*.test.{ts,tsx}` and `counter/*.test.ts`; `node` by default, `happy-dom` per file |
 | `npm run lint` / `format:check` | ESLint / Prettier |

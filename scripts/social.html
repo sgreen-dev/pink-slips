@@ -1,0 +1,85 @@
+<!doctype html>
+<!--
+  The link-preview card, drawn to public/social.jpg by `npm run social` (scripts/social.ts). The
+  fonts and colours are filled in from src/fonts/ and src/index.css where the marker below sits,
+  so the card looks like the game and cannot drift from it: the wordmark is the start screen's,
+  Monoton in its pale ink under the same five pink halos.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      /* fonts and colours */
+      html,
+      body {
+        margin: 0;
+      }
+      body {
+        width: 1438px;
+        height: 755px;
+        overflow: hidden;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--paper-ink);
+        background:
+          radial-gradient(ellipse 60% 45% at 50% 100%, rgb(214 61 133 / 26%), transparent 70%),
+          radial-gradient(ellipse 70% 50% at 50% 0%, rgb(40 60 70 / 55%), transparent 70%),
+          linear-gradient(180deg, #221f2c 0%, var(--asphalt) 100%);
+      }
+      .accent {
+        position: absolute;
+        inset: 0 0 auto;
+        height: 4px;
+        background: linear-gradient(90deg, var(--pink-2), var(--type-ev) 50%, var(--pink-2));
+      }
+      h1 {
+        margin: 0;
+        font-family: 'Monoton', sans-serif;
+        font-weight: 400;
+        font-size: 118px;
+        line-height: 1.15;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--wordmark-ink);
+        text-shadow:
+          0 0 0.05em var(--pink),
+          0 0 0.15em var(--pink),
+          0 0 0.35em var(--pink),
+          0 0 0.7em var(--pink-2),
+          0 0 1.2em var(--pink-2);
+      }
+      .tagline {
+        margin: 40px 0 0;
+        font-family: 'Barlow', sans-serif;
+        font-weight: 500;
+        font-size: 42px;
+        line-height: 1.35;
+        text-align: center;
+      }
+      .rule {
+        width: 250px;
+        height: 6px;
+        margin: 34px 0 30px;
+        border-radius: 3px;
+        background: var(--gold);
+      }
+      .win {
+        margin: 0;
+        font-family: 'Space Mono', monospace;
+        font-size: 32px;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="accent"></div>
+    <h1>Pink Slips</h1>
+    <p class="tagline">Real cars drag race a quarter mile.<br />Win the race, take the car.</p>
+    <div class="rule"></div>
+    <p class="win">First to three pink slips wins</p>
+  </body>
+</html>
