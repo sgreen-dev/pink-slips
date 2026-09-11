@@ -18,7 +18,8 @@ export const TUNABLES = {
   >,
   /**
    * Multiplies the base advance by car type. The first lever for heavy types (DESIGN.md 7),
-   * set in phase 5 so Off-road, JDM, and Luxury garages can compete.
+   * set in phase 5 so Off-road, JDM, and Luxury garages can compete. Off-road came down from
+   * 1.2 to 1.17 in phase 50, when the type lab read its garages over the band (backlog G20).
    */
   typeDistanceMultiplier: {
     sports: 1,
@@ -26,7 +27,7 @@ export const TUNABLES = {
     muscle: 1,
     jdm: 1.2,
     ev: 1,
-    offroad: 1.2,
+    offroad: 1.17,
   } as Readonly<Record<CarType, number>>,
   /** Advance multiplier lost per wear point. */
   wearRate: 0.1,

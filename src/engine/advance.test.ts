@@ -121,7 +121,7 @@ it('pins each type multiplier to the number DESIGN.md 3.3 states', () => {
     muscle: 1,
     jdm: 1.2,
     ev: 1,
-    offroad: 1.2,
+    offroad: 1.17,
   })
 })
 

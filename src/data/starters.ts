@@ -9,19 +9,19 @@ import type { IntroSet, StarterGarage } from './types.ts'
  * an EV is; it does not teach them how to play, and the EV garage had drifted to three EVs and
  * two Off-road cars anyway. So each one is a way to take the match — race early, bank fuel, bolt
  * on parts, or stall the other side — and each spans several types, with all six across the
- * twenty cars. Type is a means here rather than the theme: JDM and Off-road carry the x1.2
- * distance multiplier, Luxury halves wear, Muscle adds top end, EV adds a launch, JDM gets a
- * third part slot, Sports fixes its first coin flip.
+ * twenty cars. Type is a means here rather than the theme: JDM carries a x1.2 distance
+ * multiplier and Off-road a x1.17, Luxury halves wear, Muscle adds top end, EV adds a launch,
+ * JDM gets a third part slot, Sports fixes its first coin flip.
  *
  * The four decks between them run **every one of the 33 mods**, so the set is also a tour of the
  * card pool. Redline and Fuel Drain had never appeared in a loaner deck before this.
  *
- * With the CPU on both sides each garage wins about half its matches overall -- 48, 49, 50 and
- * 53 at 40,000 matches on seed 1 -- and they beat each other in a cycle: Street Kings over The
- * Long Game, The Long Game over Tuners, Tuners over Spoilers, Spoilers over Street Kings. Every
- * link holds on seeds 1, 2 and 3, at 61/61/56, 56/55/55, 55/56/58 and 65/62/63. The two pairings
- * across the cycle are measured too and stay near even, so it is a finding rather than an
- * assumption.
+ * With the CPU on both sides each garage wins about half its matches overall -- 50, 49, 51 and
+ * 50 at 40,000 matches on seed 1, re-taken in phase 50 -- and they beat each other in a cycle:
+ * Street Kings over The Long Game, The Long Game over Tuners, Tuners over Spoilers, Spoilers over
+ * Street Kings. Every link holds on seeds 1, 2 and 3, at 65/64/60, 59/58/59, 55/55/59 and
+ * 58/57/54. The two pairings across the cycle are measured too: The Long Game and Spoilers stay
+ * near even and Tuners edges Street Kings 55 to 56, so it is a finding rather than an assumption.
  *
  * The link that took the work was The Long Game over Tuners. Both are build-up strategies -- bank
  * fuel against bolt on Parts -- so they raced past each other at 52, 50 and 49, which is level.
@@ -42,7 +42,7 @@ export const STARTERS: readonly StarterGarage[] = [
     name: 'Street Kings',
     style: 'race early and often',
     // Cheap to fuel and quick off the line: nothing here costs more than 2, so it can advance on
-    // turn 2 and keep restaging. Three of the five ride a x1.2 multiplier.
+    // turn 2 and keep restaging. Three of the five ride a raised multiplier, x1.2 or x1.17.
     cars: ['ford-mustang-gt', 'honda-civic-si', 'mazda-rx-7', 'bmw-x5-m', 'porsche-911-carrera-s'],
     // Everything here stacks on the first advance, which is also what a Traction sabotage takes
     // away: with no answer at all this garage lost 88% of its matches to Spoilers. One Launch
