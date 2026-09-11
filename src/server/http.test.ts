@@ -22,6 +22,13 @@ const from = (origin?: string) =>
   new Request('https://rooms.example/', origin ? { headers: { Origin: origin } } : undefined)
 
 describe('the CORS headers', () => {
+  it('lets a browser preflight every method a route serves', () => {
+    const methods = corsHeaders(from(SITE))['Access-Control-Allow-Methods']?.split(', ') ?? []
+    for (const method of ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']) {
+      expect(methods).toContain(method)
+    }
+  })
+
   it('echoes an origin the game is served from', () => {
     for (const origin of ALLOWED_ORIGINS) {
       expect(corsHeaders(from(origin))['Access-Control-Allow-Origin']).toBe(origin)

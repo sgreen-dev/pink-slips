@@ -22,9 +22,11 @@ npm run deploy:check                  # everything answers, and all on one commi
 
 If you want the rule anyway: `server/worker.ts` bundles `src/protocol/`, `src/server/`, `src/engine/`, `src/data/`, and two files from `src/collection/`. Only changes confined to `src/ui/`, `src/cpu/`, `src/sim/`, `public/`, or `src/index.css` are safe without it. Note that `src/engine/tunables.ts` is in that list, so **a tunable is a worker deploy** even though it reads like a game number.
 
+**The Actions run checks afterwards.** Once the site is live, the deploy workflow's last job waits for Pages to serve the new commit, then asks each worker whether it holds every change to its own code up to it (`deploy:check --expect`, backlog `Q42`). A push that changed only the site passes; a worker left behind a change it bundles turns the run red and names the command to run. It counts a change to anything under the paths each worker reaches, a little wider than the rule above, so it can raise a false alarm but not miss one. The site takes a minute or so to change over, so a worker deployed straight after the push is in time. It is a net, not the routine.
+
 **Done when**
 
-- The Actions run on `main` is green.
+- The Actions run on `main` is green, its last job included: that one checks the workers.
 - `npx wrangler deploy` printed a new Version ID.
 - `npm run deploy:check` says every deployed part answered.
 
@@ -39,7 +41,7 @@ If you want the rule anyway: `server/worker.ts` bundles `src/protocol/`, `src/se
 
 ## Checking
 
-`npm run deploy:check` fetches the site and one read-only route on each worker. It makes no players, opens no rooms, and adds nothing to the count, so it is safe to run as often as you like. `--rooms`, `--site` and `--counter` override the URLs; `--skip-counter` leaves it out.
+`npm run deploy:check` fetches the site and one read-only route on each worker. It makes no players, opens no rooms, and adds nothing to the count, so it is safe to run as often as you like. `--rooms`, `--site` and `--counter` override the URLs; `--skip-counter` leaves it out. `--expect <commit>` is the workflow's mode: it waits for the site to serve that commit, then fails only if a worker is missing a change to its own code.
 
 For a real match end to end, against the live service or a local `wrangler dev`:
 
@@ -54,7 +56,7 @@ Each run makes two players, and account creation is capped at five per address a
 
 ## What these checks cannot tell you
 
-Neither worker reports which commit it is running, so `deploy:check` proves things are **up**, not that they are **current**. Deploying the site and the room worker together every time is what keeps them in step.
+Every part reports the commit it was built from, so `deploy:check` says whether they are **current** as well as **up**. What it cannot do is deploy anything: the workers still ship from a developer's machine, and the check only says so afterwards. Deploying the site and the room worker together every time is what keeps them in step.
 
 Two consequences worth knowing:
 

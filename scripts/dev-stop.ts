@@ -21,56 +21,41 @@
  * nothing to do, and that is worse than having no tool, because it turns "I do not know" into a
  * confident wrong answer.
  *
- * So the match is now: anything running in one of our RUNTIMES whose command line names this
- * repo, whatever tool it happens to be. New kind of server, new library, does not matter. It is
- * still a list of runtimes rather than "any process under the repo", and that is deliberate --
- * an editor with the folder open carries the repo path too, and the cost of a wrong match is
- * killing someone's editor. Two things are carved back out by shape: vitest, because a watcher
- * is not a stray, and this script itself.
+ * So the match is now: anything running in one of our RUNTIMES on a file inside this repo,
+ * whatever tool it happens to be. New kind of server, new library, does not matter. It is not
+ * "the repo path anywhere on the line", which it was until backlog Q44: that also matched a tool
+ * started elsewhere and handed a path here as an argument -- a language server with this folder
+ * as its workspace, a codemod pointed at a file, another session's runtime -- and the cost of a
+ * wrong match is killing someone's work. Two things are carved back out by shape: vitest,
+ * because a watcher is not a stray, and this script itself. The rules live in
+ * `scripts/dev-stop-rules.ts`, where they are tested without anything being stopped.
+ *
+ * `wrangler dev` and the `workerd` it runs carry no repo path, because wrangler is resolved from
+ * the npx cache and workerd is handed its config on stdin. Nothing on their command lines says
+ * whose they are, so they are listed and never stopped: matched by program alone, as they were
+ * until backlog Q44, another project's `wrangler dev` died with this one's. Stop them by pid.
+ * Whatever is stopped, everything is listed again afterwards instead of the old pids being asked
+ * whether they are still alive: a supervisor can bring a replacement back under a new pid, and
+ * the old one answering "no such process" would read as success.
  *
  * The second half is the cross-check. Anything sitting on a port this repo serves on that the
  * rules did not claim is printed too, and never stopped -- it is as likely to be another project
  * as ours. Its whole job is to stop the script being able to imply a clean machine while one of
  * our ports is held, which is the exact way it was wrong before.
  *
- * `wrangler dev` and the `workerd` it runs are covered with one caveat the output states out
- * loud: neither carries a repo path, because wrangler is resolved from the npx cache and
- * workerd is handed its config on stdin, so those two are matched by which program they are
- * rather than by whose they are. The parent goes first, since stopping `workerd` alone achieves
- * nothing -- wrangler notices and starts another, and the giveaway is the pid changing between
- * two looks. That is also why everything is listed again afterwards instead of the old pids
- * being asked whether they are still alive: a replacement comes back under a new pid, and the
- * old one answering "no such process" would read as success.
  */
 
 import { execFileSync } from 'node:child_process'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
+import { claim, ownerUnknown, plain } from './dev-stop-rules.ts'
 
 /** Long enough for a supervisor to let go of its child, short enough not to feel hung. */
 const GIVE_UP_AFTER_MS = 5_000
 const LOOK_AGAIN_EVERY_MS = 250
 
-/** Backslashes to slashes and lower case, so one spelling of a path is compared against another. */
-function plain(text: string): string {
-  return text.replace(/\\/g, '/').toLowerCase()
-}
-
 /** This repo's root, in the shape a command line carries it. */
 const ROOT = plain(fileURLToPath(new URL('..', import.meta.url))).replace(/\/+$/, '')
-
-/**
- * The runtimes this repo starts things in. This is the list that matters: it is what makes the
- * match open rather than closed. Naming *tools* -- vite, wrangler, http.server -- meant every new
- * kind of server was invisible until someone thought to add it, which is how a static file server
- * held a port for most of a day while this script reported a clean machine. Naming runtimes
- * instead catches whatever is run in one of them, tool unknown.
- *
- * It is still a list rather than "anything under the repo", and deliberately: an editor with the
- * folder open can carry the repo path on its command line too, and the cost of a wrong match here
- * is killing someone's editor. Restricting the kill to a runtime we launch keeps that impossible.
- */
-const RUNTIMES = ['node', 'python', 'pythonw', 'deno', 'bun']
 
 /** Ports this repo is known to serve on, for the cross-check that only ever reports. */
 const OUR_PORTS = [4173, 4300, 5173, 8787]
@@ -87,16 +72,14 @@ interface Row {
 
 interface Target extends Row {
   name: string
-  /** False for wrangler and workerd, whose command lines cannot prove which repo they serve. */
-  repoScoped: boolean
 }
 
 /**
- * Every process that could be one of ours, with its parent and command line. python is here for
- * `python -m http.server`, which the art scripts use to look at `public/` and which had been
- * sitting on a port for hours before anyone noticed. The filter is on the program name and never
- * on this repo's path: a path in the query would put it on the probe's own command line, and the
- * script would go on to find itself.
+ * Every process that could be one of ours, with its parent and command line. A module run by
+ * name, like `python -m http.server`, names no file and so is never claimed; it shows up through
+ * the port cross-check instead, which is how one that sat on a port for hours is caught now. The
+ * filter is on the program name and never on this repo's path: a path in the query would put it
+ * on the probe's own command line, and the script would go on to find itself.
  */
 const PROBE = [
   '$p = @(Get-CimInstance Win32_Process |',
@@ -197,53 +180,6 @@ function run(file: string, args: string[]): string {
   }
 }
 
-/**
- * Vite has to carry both the repo and Vite's entry file. npm's Windows shim spells the way there
- * as `node_modules\.bin\\..\vite\bin\vite.js`, so the entry is matched loosely and the repo is
- * proved separately. The trailing slash on the root matters: without it a sibling checkout in
- * `pink-slips-old` would read as this one.
- */
-function nameFor(row: Row): { name: string; repoScoped: boolean } | null {
-  const text = plain(row.command)
-  const words = text.split(/\s+/)
-
-  // The open rule. Anything run in one of our runtimes whose command line names this repo is
-  // ours, whatever tool it happens to be. The trailing slash on the root matters: without it a
-  // sibling checkout in `pink-slips-old` would read as this one.
-  if (RUNTIMES.includes(row.image) && text.includes(`${ROOT}/`)) {
-    // `npm run test:watch` is a node process under this repo and must survive: vitest lives at
-    // `node_modules/vitest/vitest.mjs`, and a watcher is not a stray.
-    if (/\/vitest\//.test(text)) return null
-    // This script and its own probe are excluded by pid elsewhere; skip them by shape too, so a
-    // second copy started by hand cannot stop the first mid-run.
-    if (text.includes('dev-stop.ts')) return null
-    return { name: labelFor(text), repoScoped: true }
-  }
-
-  // The two that carry no repo path at all: wrangler resolves from the npx cache and workerd is
-  // handed its config on stdin, so these stay matched by which program they are.
-  // `dev` as a whole word, so `wrangler deploy` mid-flight is never mistaken for a dev server.
-  if (text.includes('/wrangler/') && words.includes('dev')) {
-    return { name: 'wrangler dev', repoScoped: false }
-  }
-  if (/\/workerd(\.exe)?\b/.test(text) && words.includes('serve')) {
-    return { name: 'workerd', repoScoped: false }
-  }
-  return null
-}
-
-/** A readable name for the report. Falls back to the runtime when the tool is not one we know. */
-function labelFor(text: string): string {
-  if (/\/vite\/bin\/vite\.js\b/.test(text)) {
-    return text.split(/\s+/).includes('preview') ? 'vite preview' : 'vite dev'
-  }
-  if (text.includes('http.server')) return 'http.server'
-  const known = ['vite', 'esbuild', 'rollup', 'wrangler', 'serve'].find((one) =>
-    text.includes(`/${one}/`),
-  )
-  return known ?? 'node or python'
-}
-
 /** This process and everything that started it, so the script cannot reach up its own chain. */
 function ancestry(rows: readonly Row[]): Set<number> {
   const byPid = new Map(rows.map((row) => [row.pid, row]))
@@ -261,10 +197,21 @@ function targets(rows: readonly Row[]): Target[] {
   const found: Target[] = []
   for (const row of rows) {
     if (mine.has(row.pid)) continue
-    const named = nameFor(row)
-    if (named) found.push({ ...row, ...named })
+    const name = claim(row.command, row.image, ROOT)
+    if (name) found.push({ ...row, name })
   }
   return parentsFirst(found, rows)
+}
+
+/** wrangler dev and workerd, named for the report and never stopped (see `ownerUnknown`). */
+function unknownOwners(rows: readonly Row[]): Target[] {
+  const mine = ancestry(rows)
+  const found: Target[] = []
+  for (const row of rows) {
+    const name = mine.has(row.pid) ? null : ownerUnknown(row.command)
+    if (name) found.push({ ...row, name })
+  }
+  return found
 }
 
 /**
@@ -335,10 +282,16 @@ async function main(): Promise<void> {
 
   const rows = look()
   let running = targets(rows)
+  const unowned = unknownOwners(rows)
 
   /** Printed whether or not anything was ours, since its whole job is to contradict a clean bill. */
-  const alsoOnOurPorts = squatters(rows, running)
-  const reportSquatters = () => {
+  const alsoOnOurPorts = squatters(rows, [...running, ...unowned])
+  const reportOthers = () => {
+    if (unowned.length > 0) {
+      console.log('\nRunning, but nothing on their command lines says whose they are:')
+      for (const target of unowned) console.log(describe(target))
+      console.log("  Left alone. Stop them yourself if they are this repo's.")
+    }
     if (alsoOnOurPorts.length === 0) return
     console.log('\nNot ours, but sitting on a port this repo uses:')
     for (const row of alsoOnOurPorts) {
@@ -350,18 +303,13 @@ async function main(): Promise<void> {
 
   if (running.length === 0) {
     console.log('No dev servers of this repo are running.')
-    reportSquatters()
+    reportOthers()
     return
   }
 
   const started = running.length
   for (const target of running) console.log(describe(target))
-  if (running.some((target) => !target.repoScoped)) {
-    console.log(
-      '\n  wrangler and workerd carry no path, so those are matched by program, not by repo.',
-    )
-  }
-  reportSquatters()
+  reportOthers()
 
   if (process.argv.includes('--check')) {
     console.log(`\n${started} running. Run \`npm run dev:stop\` to stop them.`)
@@ -370,9 +318,8 @@ async function main(): Promise<void> {
 
   console.log()
   let denied = false
-  // Windows has no signal concept -- every one of these is the same forceful stop -- so wrangler
-  // never runs its cleanup there and workerd has to be taken separately. On POSIX the second
-  // pass is a real escalation.
+  // Windows has no signal concept -- every one of these is the same forceful stop. On POSIX the
+  // second pass is a real escalation.
   let signal: NodeJS.Signals = 'SIGTERM'
   const until = Date.now() + GIVE_UP_AFTER_MS
   for (;;) {

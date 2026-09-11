@@ -28,10 +28,13 @@ export default defineConfig([
     },
   },
   {
-    // Everything the room worker bundles is pure TypeScript and never imports from the UI.
-    // `src/collection` and `src/data` are on this list because the worker reaches them too; the
-    // browser's storage wrapper lives in `src/browser` rather than `src/ui` so that holds.
+    // The two workers, and everything they bundle, are pure TypeScript and never import from the
+    // UI. `src/collection` and `src/data` are on this list because the room worker reaches them
+    // too; the browser's storage wrapper lives in `src/browser` rather than `src/ui` so that
+    // holds. The workers themselves were the two missing from it (backlog Q47).
     files: [
+      'server/**',
+      'counter/**',
       'src/engine/**',
       'src/cpu/**',
       'src/sim/**',

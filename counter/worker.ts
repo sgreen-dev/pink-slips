@@ -18,9 +18,11 @@
  * variable VITE_COUNTER_URL so the site build picks it up.
  */
 
+// The room worker's list, so the two cannot disagree about where the game is (backlog Q45).
+import { ALLOWED_ORIGINS } from '../src/server/http.ts'
+
 const KEY = 'matches'
 const ERRORS_KEY = 'errors'
-const ALLOWED_ORIGINS = ['https://sgreen-dev.github.io', 'http://localhost:5173']
 const MIN_GAP_MS = 10_000
 
 /**
