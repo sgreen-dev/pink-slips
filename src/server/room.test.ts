@@ -385,6 +385,8 @@ describe('stakes rooms', () => {
     const result = room.takeResult()
     expect(result?.transfers).not.toBeNull()
     expect(result?.transfers?.[0]).toEqual({ gained: [], lost: [] })
+    // The garages ride along, for the directory to check against each account (backlog S16).
+    expect(result?.garages).toEqual([garage(0).garage, garage(1).garage])
     expect(new Room('R', 1, room.snapshot()).stakes).toBe(true)
   })
 
@@ -404,7 +406,9 @@ describe('stakes rooms', () => {
     })
     joinAs(room, b, 1, bo, false, [a])
     playOut(a, b, 9)
-    expect(room.takeResult()?.transfers).toBeNull()
+    const plain = room.takeResult()
+    expect(plain?.transfers).toBeNull()
+    expect(plain?.garages).toBeNull()
   })
 
   it("carries the queue's stakes flag through setup", () => {

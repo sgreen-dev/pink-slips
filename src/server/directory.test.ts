@@ -668,24 +668,92 @@ describe('stakes on the service', () => {
     expect(hotseat?.data.collection.owned[F40]).toBe(1)
   })
 
+  /** A player holding these cars on top of the intro set, any of `chrome` as keepsakes. */
+  async function holder(directory: Directory, name: string, cars: string[], chrome: string[] = []) {
+    const made = await directory.createPlayer(name)
+    await directory.claim(made.token, {
+      collection: {
+        owned: grant(introCollection(), cars),
+        packs: 0,
+        variants: { ...NO_VARIANTS, chrome: Object.fromEntries(chrome.map((id) => [id, 1])) },
+        laps: 0,
+        grantVersion: GRANT_VERSION,
+        credits: 0,
+      } satisfies CollectionState,
+      garages: [],
+    })
+    return { token: made.token, id: made.data.profile.id }
+  }
+  const LOANERS = STARTERS[0]?.cars ?? []
+  const OTHER =
+    CARS.find((car) => !LOANER_CAR_IDS.has(car.id) && car.id !== CHIRON && car.id !== F40)?.id ?? ''
+  const copies = async (directory: Directory, token: string, id: string) =>
+    (await directory.accountFor(token))?.collection.owned[id] ?? 0
+
   it('moves the pink slips between two accounts at a match result', async () => {
     const { directory } = setUp()
-    const ann = await directory.createPlayer('Ann')
-    const bo = await directory.createPlayer('Bo')
-    const annId = (await directory.accountFor(ann.token))?.id ?? ''
-    const boId = (await directory.accountFor(bo.token))?.id ?? ''
-    const outcome = await directory.recordResult(annId, boId, true, true, {
-      winner: { gained: [CHIRON, F40], lost: [] },
-      loser: { gained: [], lost: [CHIRON, F40] },
-    })
+    const ann = await holder(directory, 'Ann', [])
+    const bo = await holder(directory, 'Bo', [CHIRON, F40])
+    const outcome = await directory.recordResult(
+      ann.id,
+      bo.id,
+      true,
+      true,
+      { winner: { gained: [CHIRON, F40], lost: [] }, loser: { gained: [], lost: [CHIRON, F40] } },
+      null,
+      { winner: LOANERS, loser: [CHIRON, F40] },
+    )
     expect(outcome.winner?.stakes).toEqual({ gained: [CHIRON, F40], lost: [] })
     expect(outcome.loser?.stakes).toEqual({ gained: [], lost: [CHIRON, F40] })
-    const annNow = await directory.accountFor(ann.token)
-    const boNow = await directory.accountFor(bo.token)
-    expect(annNow?.collection.owned[CHIRON]).toBe(1)
-    expect(boNow?.collection.owned[CHIRON] ?? 0).toBe(0)
-    const plain = await directory.recordResult(annId, boId, true, true)
+    expect(await copies(directory, ann.token, CHIRON)).toBe(1)
+    expect(await copies(directory, bo.token, CHIRON)).toBe(0)
+    const plain = await directory.recordResult(ann.id, bo.id, true, true)
     expect(plain.winner?.stakes).toBeNull()
+  })
+
+  it('gives a side that raced a car it does not own nothing, and still takes what it staked', async () => {
+    // The room seats any legal garage, so a client written for the purpose can stake a car it
+    // never opened (backlog S16). Cy raced an unowned Chiron beside an owned F40, won the match,
+    // and lost the F40 in a race along the way.
+    const { directory } = setUp()
+    const cy = await holder(directory, 'Cy', [F40])
+    const di = await holder(directory, 'Di', [OTHER])
+    const outcome = await directory.recordResult(
+      cy.id,
+      di.id,
+      true,
+      true,
+      { winner: { gained: [OTHER], lost: [F40] }, loser: { gained: [F40], lost: [OTHER] } },
+      null,
+      { winner: [CHIRON, F40], loser: [OTHER] },
+    )
+    expect(outcome.winner?.stakes).toEqual({ gained: [], lost: [F40] })
+    expect(outcome.loser?.stakes).toEqual({ gained: [F40], lost: [] })
+    expect(await copies(directory, cy.token, OTHER)).toBe(0)
+    expect(await copies(directory, cy.token, F40)).toBe(0)
+    expect(await copies(directory, di.token, OTHER)).toBe(1)
+    expect(await copies(directory, di.token, F40)).toBe(1)
+  })
+
+  it("keeps the winner's keepsake with the winner, and gives the loser no copy of it", async () => {
+    // Ann won the match but lost one race, and Bo took Ann's Chiron, held in chrome as a
+    // keepsake. S7 kept it in Ann's collection; nothing stopped Bo gaining one too (backlog S23).
+    const { directory } = setUp()
+    const ann = await holder(directory, 'Ann', [CHIRON], [CHIRON])
+    const bo = await holder(directory, 'Bo', [F40])
+    const outcome = await directory.recordResult(
+      ann.id,
+      bo.id,
+      true,
+      true,
+      { winner: { gained: [F40], lost: [CHIRON] }, loser: { gained: [CHIRON], lost: [F40] } },
+      null,
+      { winner: [CHIRON], loser: [F40] },
+    )
+    expect(outcome.winner?.stakes).toEqual({ gained: [F40], lost: [] })
+    expect(outcome.loser?.stakes).toEqual({ gained: [], lost: [F40] })
+    expect(await copies(directory, ann.token, CHIRON)).toBe(1)
+    expect(await copies(directory, bo.token, CHIRON)).toBe(0)
   })
 })
 describe('laps on the service', () => {

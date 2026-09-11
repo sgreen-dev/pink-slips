@@ -96,6 +96,12 @@ export interface RoomResult {
   racesPlayed: number
   /** Each seat's stakes transfer, seat 0 first, or null when the room played for none. */
   transfers: readonly [Transfer, Transfer] | null
+  /**
+   * The cars each seat raced, seat 0 first, or null when the room played for none. The room seats
+   * any legal garage, so the directory checks these against each account before it moves a car
+   * (backlog S16).
+   */
+  garages: readonly [readonly string[], readonly string[]] | null
   /** The name this match's result is reported under, the same on every retry (see `resultId`). */
   id: string
 }
@@ -545,6 +551,9 @@ export class Room {
       conceded: ['concede', 'timeout'].includes(this.state.log.at(-1)?.kind ?? ''),
       racesPlayed: this.state.players[0].pinkSlips.length + this.state.players[1].pinkSlips.length,
       transfers: this.forStakes ? stakesTransfer(this.state) : null,
+      garages: this.forStakes
+        ? [this.seats[0]?.garage.garage ?? [], this.seats[1]?.garage.garage ?? []]
+        : null,
       id: this.resultId(),
     }
   }

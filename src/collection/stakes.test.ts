@@ -5,7 +5,8 @@ import { starterConfig } from '../engine/test-helpers.ts'
 import { copiesOwned } from './collection.ts'
 import {
   applyTransfer,
-  protectKeepsakes,
+  sanitizeRaced,
+  settleStakes,
   carNames,
   isEmptyTransfer,
   isStakedCar,
@@ -81,20 +82,83 @@ describe('stakes', () => {
     expect(carNames([CHIRON, F40, DB5])).toBe('Bugatti Chiron, Ferrari F40 and Aston Martin DB5')
   })
 })
-describe('keepsakes under stakes', () => {
-  it('never change hands, on either side', () => {
-    const transfers = {
-      winner: { gained: ['x', 'y'], lost: [] },
-      loser: { gained: [], lost: ['x', 'y'] },
-    }
-    expect(protectKeepsakes(transfers, { x: 1 })).toEqual({
-      winner: { gained: ['y'], lost: [] },
-      loser: { gained: [], lost: ['y'] },
+describe('settling stakes', () => {
+  const side = (
+    owned: Record<string, number>,
+    raced: string[] | null,
+    chrome: Record<string, number> = {},
+  ) => ({ owned, chrome, raced })
+  /** Both sides' transfers when the winner took `won` and the loser took `lost`. */
+  const took = (won: string[], lost: string[]) => ({
+    winner: { gained: won, lost },
+    loser: { gained: lost, lost: won },
+  })
+
+  it('moves every captured car between two sides that own what they raced', () => {
+    const settled = settleStakes(took([F40], [DB5]), {
+      winner: side({ [DB5]: 1, [Z]: 1 }, [DB5, Z]),
+      loser: side({ [F40]: 1, [CHIRON]: 1 }, [F40, CHIRON]),
     })
+    expect(settled).toEqual(took([F40], [DB5]))
+  })
+
+  it('keeps a keepsake with whoever holds it, the winner as much as the loser', () => {
+    // Each side took the other's keepsake. The loser's always stayed put; the winner's stayed in
+    // the winner's collection and went to the loser as well (backlog S23).
+    const settled = settleStakes(took([F40], [DB5]), {
+      winner: side({ [DB5]: 1 }, [DB5], { [DB5]: 1 }),
+      loser: side({ [F40]: 1 }, [F40], { [F40]: 1 }),
+    })
+    expect(settled).toEqual(took([], []))
+    // The collection step refuses a keepsake too, as a second guard.
     expect(applyTransfer({ x: 1, y: 1 }, { gained: [], lost: ['x', 'y'] }, { x: 1 })).toEqual({
       x: 1,
       y: 0,
     })
+  })
+
+  it('moves a car out of a collection no more often than it holds one', () => {
+    const settled = settleStakes(took([F40, F40], []), {
+      winner: side({}, []),
+      loser: side({ [F40]: 1 }, [F40]),
+    })
+    expect(settled).toEqual(took([F40], []))
+  })
+
+  it('gives nothing to a side that raced a car it does not own, and still takes what it staked', () => {
+    // A client written for the purpose can race cars it never opened (backlog S16). This winner
+    // raced a Chiron it does not hold beside an F40 it does, and lost the F40 along the way.
+    const settled = settleStakes(took([DB5], [F40]), {
+      winner: side({ [F40]: 1 }, [CHIRON, F40]),
+      loser: side({ [DB5]: 1 }, [DB5]),
+    })
+    expect(settled).toEqual({
+      winner: { gained: [], lost: [F40] },
+      loser: { gained: [F40], lost: [] },
+    })
+  })
+
+  it('does not count a loaner car against a garage, since nobody owns one', () => {
+    const settled = settleStakes(took([DB5], []), {
+      winner: side({}, [STARTER]),
+      loser: side({ [DB5]: 1 }, [DB5]),
+    })
+    expect(settled).toEqual(took([DB5], []))
+  })
+
+  it('moves nothing when the room did not say what was raced', () => {
+    const settled = settleStakes(took([DB5], [F40]), {
+      winner: side({ [F40]: 1 }, null),
+      loser: side({ [DB5]: 1 }, null),
+    })
+    expect(settled).toEqual(took([], []))
+  })
+
+  it('reads the raced garages from the wire only as two lists of strings', () => {
+    expect(sanitizeRaced({ winner: [F40], loser: [] })).toEqual({ winner: [F40], loser: [] })
+    expect(sanitizeRaced({ winner: [F40] })).toBeNull()
+    expect(sanitizeRaced({ winner: [1], loser: [] })).toBeNull()
+    expect(sanitizeRaced(null)).toBeNull()
   })
 })
 

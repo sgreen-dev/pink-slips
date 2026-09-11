@@ -1,5 +1,9 @@
 import { seedRng, TUNABLES } from '../engine/index.ts'
-import { normalizeCollection, type CollectionState } from '../protocol/records.ts'
+import {
+  isCollectionState,
+  normalizeCollection,
+  type CollectionState,
+} from '../protocol/records.ts'
 import {
   browserStorage,
   loadGarages,
@@ -45,22 +49,18 @@ interface StoredState {
   credits?: number
 }
 
-function isCounts(value: unknown): value is Collection {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    Object.values(value as Record<string, unknown>).every((n) => typeof n === 'number')
-  )
-}
-
+/**
+ * A stored record the loader can use: the checks the service puts a claimed record through, with
+ * the one allowance an old browser needs, that a record written before phase 12 has no variants
+ * (backlog S24). This kept its own looser copy of those checks, which let an array, a negative or
+ * a fraction load as a count and never looked at credits, laps or the grant version, so a record
+ * the comment below calls corrupt was loaded as a collection instead of replaced.
+ */
 function isStored(value: unknown): value is StoredState {
   if (typeof value !== 'object' || value === null) return false
   const record = value as Record<string, unknown>
-  const variants = record['variants'] as Record<string, unknown> | undefined
-  return (
-    typeof record['packs'] === 'number' &&
-    isCounts(record['owned']) &&
-    (variants === undefined || (isCounts(variants['foil']) && isCounts(variants['holo'])))
+  return isCollectionState(
+    record['variants'] === undefined ? { ...record, variants: NO_VARIANTS } : record,
   )
 }
 

@@ -20,7 +20,7 @@ import {
 } from '../collection/collection.ts'
 import {
   applyTransfer,
-  protectKeepsakes,
+  settleStakes,
   losesOnly,
   sanitizeTransfer,
   type Transfer,
@@ -603,6 +603,9 @@ export class Directory {
    * as nothing having happened: the answer can be lost after everything here was saved, and
    * applying it a second time would pay the packs twice and move a stakes car twice. A repeat
    * is answered with the outcome the first one produced.
+   *
+   * Stakes are settled against both accounts as they stand, with the garage each side raced,
+   * which the room reports beside the transfers (backlog S16, S23): see `settleStakes`.
    */
   async recordResult(
     winnerId: string | null,
@@ -611,6 +614,7 @@ export class Directory {
     earnsPacks = true,
     transfers: { winner: Transfer; loser: Transfer } | null = null,
     resultId: string | null = null,
+    raced: { winner: readonly string[]; loser: readonly string[] } | null = null,
   ): Promise<MatchOutcome> {
     if (resultId) {
       const held = await this.store.get<HeldResult>(`${RESULT}${resultId}`)
@@ -618,9 +622,29 @@ export class Directory {
     }
     const winner = winnerId ? await this.load(winnerId) : null
     const loser = loserId ? await this.load(loserId) : null
-    // A keepsake never changes hands: the loser keeps it and the winner gains nothing for it.
-    if (transfers && loser)
-      transfers = protectKeepsakes(transfers, loser.collection.variants.chrome)
+    // Stakes move cars between two collections, so both have to be here for any to move, and
+    // what moves is what `settleStakes` allows: no keepsake, no copy its owner does not hold,
+    // and nothing to a side that raced a car it does not own.
+    const clean = (transfer: Transfer): Transfer =>
+      sanitizeTransfer(transfer) ?? { gained: [], lost: [] }
+    const settled =
+      transfers && winner && loser
+        ? settleStakes(
+            { winner: clean(transfers.winner), loser: clean(transfers.loser) },
+            {
+              winner: {
+                owned: winner.collection.owned,
+                chrome: winner.collection.variants.chrome,
+                raced: raced?.winner ?? null,
+              },
+              loser: {
+                owned: loser.collection.owned,
+                chrome: loser.collection.variants.chrome,
+                raced: raced?.loser ?? null,
+              },
+            },
+          )
+        : null
     const rated = ranked && winner !== null && loser !== null
     const ratings = rated ? updateRatings(winner.rating, loser.rating, this.t) : null
     const outcome: MatchOutcome = { winner: null, loser: null }
@@ -630,10 +654,9 @@ export class Directory {
       const packs = earnsPacks ? packsEarned('online', won, this.t) : 0
       const change = ratings ? (won ? ratings.winner : ratings.loser) : null
       if (rated && account.wins + account.losses === 0) newlyRated += 1
-      const transfer = transfers ? sanitizeTransfer(won ? transfers.winner : transfers.loser) : null
+      const transfer = settled ? (won ? settled.winner : settled.loser) : null
       const owned = transfer
-        ? // Each side's own keepsakes, so the winner keeps theirs too: protectKeepsakes above
-          // only ever sees the loser's, and a winner can lose a car to the loser mid-match.
+        ? // Each side's own keepsakes again, as a second guard: `settleStakes` already kept them.
           applyTransfer(account.collection.owned, transfer, account.collection.variants.chrome)
         : account.collection.owned
       const next: Account = {
