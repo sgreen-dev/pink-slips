@@ -123,18 +123,76 @@ export function sanitizeTransfer(value: unknown): Transfer | null {
 }
 
 /**
- * Keepsakes never change hands (DESIGN.md 12, Laps): a car the loser holds in chrome leaves
- * the loser's losses and the winner's gains alike.
+ * The cars each side raced, as the room reports them with a stakes result, or null when the shape
+ * is wrong. Only read here; what they mean is `settleStakes`'s business.
  */
-export function protectKeepsakes(
+export function sanitizeRaced(value: unknown): { winner: string[]; loser: string[] } | null {
+  if (typeof value !== 'object' || value === null) return null
+  const record = value as Record<string, unknown>
+  const list = (item: unknown): string[] | null =>
+    Array.isArray(item) && item.every((x) => typeof x === 'string') ? [...(item as string[])] : null
+  const winner = list(record['winner'])
+  const loser = list(record['loser'])
+  return winner && loser ? { winner, loser } : null
+}
+
+/** One side of a stakes settlement: its collection as it stands, and the garage it raced. */
+export interface StakesSide {
+  owned: Collection
+  /** The keepsakes in chrome, which never change hands. */
+  chrome: Collection
+  /** The cars the side raced, or null when the room did not say, which settles as not owned. */
+  raced: readonly string[] | null
+}
+
+/**
+ * What a stakes match actually moves (DESIGN.md 12, 13), from what each side captured and what
+ * each collection holds when the match is settled. Every rule keeps a car from appearing that
+ * nobody lost:
+ *
+ * - A keepsake never changes hands, whichever side holds it. This used to look at the loser's
+ *   chrome only, so a winner's keepsake the loser had captured stayed and moved at once (S23).
+ * - A car moves only out of a collection that holds it: a copy its owner does not have leaves the
+ *   owner's losses and the captor's gains together, rather than the captor gaining it from
+ *   nothing. Copies are counted, so two captures of one car need two copies to move twice.
+ * - A side that raced a car it does not own takes nothing (S16). The room seats any legal garage,
+ *   so a client written for the purpose could stake cars it never opened; now that wins nothing,
+ *   and whatever of its own it did stake still goes to the other side.
+ */
+export function settleStakes(
   transfers: { winner: Transfer; loser: Transfer },
-  keepsakes: Collection,
+  sides: { winner: StakesSide; loser: StakesSide },
 ): { winner: Transfer; loser: Transfer } {
-  const kept = (id: string) => (keepsakes[id] ?? 0) > 0
+  const winnerTakes = ownsWhatItRaced(sides.winner)
+  const loserTakes = ownsWhatItRaced(sides.loser)
   return {
-    winner: { ...transfers.winner, gained: transfers.winner.gained.filter((id) => !kept(id)) },
-    loser: { ...transfers.loser, lost: transfers.loser.lost.filter((id) => !kept(id)) },
+    winner: {
+      gained: winnerTakes ? movable(sides.loser, transfers.winner.gained) : [],
+      lost: loserTakes ? movable(sides.winner, transfers.winner.lost) : [],
+    },
+    loser: {
+      gained: loserTakes ? movable(sides.winner, transfers.loser.gained) : [],
+      lost: winnerTakes ? movable(sides.loser, transfers.loser.lost) : [],
+    },
   }
+}
+
+/** True when the side holds every staked car it raced, a copy for each time it raced one. */
+function ownsWhatItRaced(side: StakesSide): boolean {
+  if (side.raced === null) return false
+  const needed: Record<string, number> = {}
+  for (const id of side.raced) if (isStakedCar(id)) needed[id] = (needed[id] ?? 0) + 1
+  return Object.entries(needed).every(([id, count]) => (side.owned[id] ?? 0) >= count)
+}
+
+/** The cars in a list that can leave a side: held, not a keepsake, and no more often than held. */
+function movable(side: StakesSide, ids: readonly string[]): string[] {
+  const left: Record<string, number> = {}
+  return ids.filter((id) => {
+    const room = left[id] ?? ((side.chrome[id] ?? 0) > 0 ? 0 : (side.owned[id] ?? 0))
+    left[id] = room - 1
+    return room > 0
+  })
 }
 
 export function isEmptyTransfer(transfer: Transfer): boolean {

@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers'
-import { sanitizeTransfer, type Transfer } from '../src/collection/stakes.ts'
+import { sanitizeRaced, sanitizeTransfer, type Transfer } from '../src/collection/stakes.ts'
 import { safeDisplayName } from '../src/protocol/names.ts'
 import { Directory, type Store } from '../src/server/directory.ts'
 import { bearer, corsHeaders, json, readJson, sameSecret, text } from '../src/server/http.ts'
@@ -123,6 +123,7 @@ export class AccountDirectory extends DurableObject<Env> {
         body?.['earnsPacks'] !== false,
         readTransfers(body?.['transfers']),
         typeof resultId === 'string' ? resultId : null,
+        sanitizeRaced(body?.['raced']),
       )
       return json(outcome)
     }

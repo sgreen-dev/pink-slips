@@ -175,6 +175,9 @@ export class MatchRoom extends DurableObject<Env> {
           transfers: result.transfers
             ? { winner: result.transfers[result.winnerSeat], loser: result.transfers[loserSeat] }
             : null,
+          raced: result.garages
+            ? { winner: result.garages[result.winnerSeat], loser: result.garages[loserSeat] }
+            : null,
         }),
       })
       return response.ok ? ((await response.json()) as Outcome) : null

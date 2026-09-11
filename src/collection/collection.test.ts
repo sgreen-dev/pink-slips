@@ -285,6 +285,39 @@ describe('persistence', () => {
     expect(loadCollection(wrongShape).owned).toEqual(intro)
   })
 
+  it('replaces a record whose counts are not whole numbers at or above zero', () => {
+    // The loader kept a looser copy of the service's checks, so each of these loaded as if it
+    // were a collection (backlog S24). A browser only holds one through damage or a hand edit.
+    const good = {
+      owned: intro,
+      packs: 2,
+      variants: NO_VARIANTS,
+      laps: 0,
+      grantVersion: GRANT_VERSION,
+      credits: 0,
+    }
+    for (const broken of [
+      { ...good, owned: [1, 2, 3] },
+      { ...good, owned: { ...intro, [outsideCar]: -2 } },
+      { ...good, variants: { ...NO_VARIANTS, foil: { [outsideCar]: 0.5 } } },
+      { ...good, credits: 1.5 },
+      { ...good, laps: 'many' },
+      { ...good, grantVersion: -1 },
+    ]) {
+      const store = memoryStore({ [COLLECTION_KEY]: JSON.stringify(broken) })
+      expect(loadCollection(store).packs, JSON.stringify(broken)).toBe(0)
+    }
+    // The same record whole is kept, packs and all.
+    expect(loadCollection(memoryStore({ [COLLECTION_KEY]: JSON.stringify(good) })).packs).toBe(2)
+  })
+
+  it('still loads a record written before variants, laps, credits or the grant version', () => {
+    const old = { owned: { ...intro, [outsideCar]: 1 }, packs: 3 }
+    const state = loadCollection(memoryStore({ [COLLECTION_KEY]: JSON.stringify(old) }))
+    expect(state.packs).toBe(3)
+    expect(state.variants).toEqual(NO_VARIANTS)
+  })
+
   it('opens packs from the stack and keeps what they held', () => {
     const store = memoryStore()
     expect(addPacks(2, store).state.packs).toBe(2)
