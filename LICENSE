@@ -19,6 +19,10 @@ Everything else in public/ -- the music, the backgrounds, the card frames, the i
 illustrations -- is the copyright holder's own work and is covered by the MIT terms above, as the
 CREDITS.md file in each folder records.
 
+The fonts in src/fonts/ -- Barlow, Saira Condensed, Space Mono, Monoton and Wallpoet -- are
+their designers' work under the SIL Open Font License 1.1, not the terms above. Each family's
+licence sits beside its files.
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
