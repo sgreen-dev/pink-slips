@@ -4,7 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-11
 
-- The garage you pick on the start and online screens now has its name glowing gold (backlog U41), on top of the pink frame it already had, so the choice is plain at a glance on a phone. The glow stays still, since in this game a pulse means something waiting to be done. (the commit that records it)
+- The garage you pick on the start and online screens now has its name glowing gold (backlog U41), on top of the pink frame it already had, so the choice is plain at a glance on a phone. The glow stays still, since in this game a pulse means something waiting to be done. (f4bbee8)
 - The Scrap button on the collection screen now pulses gold while you have spare cards to scrap (backlog U40), the same ring the next step wears in a match, so the credits sitting in duplicates are hard to miss. It stops once you tap it, and with Reduce Motion on it stays as a still ring. (7a8fdf6)
 - After a match, the last pack you open from the pop-up shows from its top again on a phone (backlog U39). Handing focus to the Done button, added earlier today so a keyboard never loses its place, also scrolled the pop-up down to that button, past the pack just opened; with one pack earned it happened every time. The button now takes focus without moving the view. (25a9ffc)
 - A fix to the race-end wording change (backlog U38), which went to main with a lint error and a guide sentence past the guide's reading limit; the checks stopped it before anything went live. The helper that decides the wording moved out of the banner component, and the guide now says the car sits out this match. (1f59439)
