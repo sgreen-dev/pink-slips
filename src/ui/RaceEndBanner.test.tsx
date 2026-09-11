@@ -2,7 +2,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import { LOANER_CAR_IDS } from '../collection/stakes.ts'
 import { CARS } from '../data/cars.ts'
-import { captureFate, RaceEndBanner, type CaptureFate } from './RaceEndBanner.tsx'
+import { captureFate, type CaptureFate } from './celebration.ts'
+import { RaceEndBanner } from './RaceEndBanner.tsx'
 import { draw } from './testRender.tsx'
 
 /**

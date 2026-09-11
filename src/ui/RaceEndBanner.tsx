@@ -1,23 +1,7 @@
-import { isStakedCar } from '../collection/stakes.ts'
 import { getCar } from '../data/cars.ts'
 import { TUNABLES } from '../engine/index.ts'
 import { CarCard } from './CarCard.tsx'
-import type { RaceEnd } from './celebration.ts'
-
-/**
- * What taking a car as a pink slip means for it (backlog U38). Without stakes it only sits out the
- * rest of the match: the banner used to say it "changes hands", which read as losing it for good.
- * With stakes it changes hands for real when the match ends, unless it is a loaner car or a
- * keepsake in chrome, which stakes never move (DESIGN.md 12).
- */
-export type CaptureFate = 'match' | 'moves' | 'loaner' | 'keepsake'
-
-export function captureFate(carId: string, stakes: boolean, keepsake: boolean): CaptureFate {
-  if (!stakes) return 'match'
-  if (!isStakedCar(carId)) return 'loaner'
-  if (keepsake) return 'keepsake'
-  return 'moves'
-}
+import type { CaptureFate, RaceEnd } from './celebration.ts'
 
 function captureLine(name: string, fate: CaptureFate): string {
   const out = `The ${name} is out for the rest of this match`
@@ -37,7 +21,7 @@ interface RaceEndBannerProps {
   raceEnd: RaceEnd
   /** "You win", "The CPU wins", or "Player 2 wins". */
   headline: string
-  /** What taking the car means for it: see `captureFate`. */
+  /** What taking the car means for it: see `captureFate` in celebration.ts. */
   fate: CaptureFate
   /** The first-match guide's finish step, shown above Continue (DESIGN.md 8). */
   note?: string
