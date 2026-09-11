@@ -24,7 +24,7 @@ import { Guide } from './Guide.tsx'
 import { guideStep, guideSteps, loadGuideDone, saveGuideDone } from './guide.ts'
 import { HandOverScreen } from './HandOverScreen.tsx'
 import { NO_SELECTION, type Selection } from './interaction.ts'
-import { RaceEndBanner } from './RaceEndBanner.tsx'
+import { captureFate, RaceEndBanner } from './RaceEndBanner.tsx'
 import { ResultScreen } from './ResultScreen.tsx'
 import { beforeStart, soundsBetween } from './sound/events.ts'
 import { useSound } from './sound/useSound.ts'
@@ -247,6 +247,11 @@ export function Match({
         <RaceEndBanner
           raceEnd={raceEnd}
           headline={headline(raceEnd.winner)}
+          fate={captureFate(
+            raceEnd.capturedCarId,
+            stakes && cpu,
+            variantOf(raceEnd.capturedCarId) === 'chrome',
+          )}
           note={step === 'finish' ? guideSteps().finish.text : undefined}
           onContinue={
             step === 'finish'
