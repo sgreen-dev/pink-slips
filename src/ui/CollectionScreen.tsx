@@ -259,13 +259,19 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   return (
     <main className="collection">
       <Backdrop image={backdropUrl('collection')} />
-      <header className="builder__header">
-        <span className="board__brand">Pink Slips</span>
-        <h1 className="builder__title">Collection</h1>
-        <RulesButton dialogRef={rules} label="Rules" small />
-        <button type="button" className="button" onClick={onBack}>
-          Back to start
-        </button>
+      {/* Two stacked groups rather than one row of four: the screen title sits under the
+          wordmark, and Rules under Back to start. */}
+      <header className="builder__header collection__header">
+        <div className="collection__headline">
+          <span className="board__brand">Pink Slips</span>
+          <h1 className="builder__title">Collection</h1>
+        </div>
+        <div className="screen__nav">
+          <button type="button" className="button" onClick={onBack}>
+            Back to start
+          </button>
+          <RulesButton dialogRef={rules} label="Rules" small />
+        </div>
       </header>
 
       <section className="collection__packs">
