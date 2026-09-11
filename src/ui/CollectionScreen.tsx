@@ -48,6 +48,7 @@ import { Filter } from './Filter.tsx'
 import { ModCard } from './ModCard.tsx'
 import { PackReveal } from './PackReveal.tsx'
 import { RulesButton, RulesDialog } from './RulesDialog.tsx'
+import { useSound } from './sound/useSound.ts'
 
 interface CollectionScreenProps {
   onBack: () => void
@@ -98,6 +99,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   }, [ownedCars])
   const chosen = keepsake || defaultKeepsake
   // Scrapping spare copies for credits, and buying a card with them (DESIGN.md 12).
+  const sound = useSound()
   const [confirmScrap, setConfirmScrap] = useState(false)
   const [wanted, setWanted] = useState('')
   const [scrapError, setScrapError] = useState<string | null>(null)
@@ -145,6 +147,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
       }
       account.update(data)
       applyCollection(data.collection)
+      sound.play('scrap')
     } else {
       const next = scrapLocally()
       if (!next) {
@@ -153,6 +156,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
       }
       if (!next.saved) setScrapError(notStored('Scrapped'))
       applyCollection(next.state)
+      sound.play('scrap')
     }
   }
   /** What to say when the change happened on screen but the browser refused to store it. */
@@ -161,6 +165,8 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
 
   /** Shows the card just bought, the way its info button would, and leaves a line naming it. */
   const showBought = (id: string) => {
+    // Both buy paths meet here and only on success, so the register cannot ring for a refusal.
+    sound.play('buy')
     const target = detailTargetFor(id)
     setBoughtNote(nameOfCard(id) + ' is yours.')
     if (target) openDetail?.(target)
