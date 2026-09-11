@@ -1260,6 +1260,12 @@ h2,
   .builder__title {
     font-size: 1.4rem;
   }
+  /* Signage spacing costs width, and the phone header has none to spare. The sign still reads
+     as one; it just stops trying to span the screen. */
+  .builder .builder__title,
+  .collection .builder__title {
+    letter-spacing: 0.1em;
+  }
   .builder__header .button {
     font-size: 0.9rem;
     padding: 0.35rem 0.7rem;
@@ -1439,6 +1445,49 @@ h2,
   letter-spacing: 0.04em;
   color: var(--wordmark-ink);
   text-shadow: var(--wordmark-glow);
+}
+
+/* The screen title on the deck builder and the collection.
+
+   The wordmark beside it is a neon tube, so this deliberately is not: a second tube would read
+   as two signs shouting rather than one room. It is the other thing you find over a workshop
+   bay — a lettered panel with a light strip under it. Same light, different object.
+
+   It keeps the UI's own display face rather than the wordmark's, which is what separates a
+   label from a name; the distance comes from spacing and from the bar, not from a new typeface.
+   The hard dark shadow is not decoration: both these screens sit on photographs, and white
+   letters on a busy photograph need an edge to survive. The bar is drawn to the width of the
+   words and fades out at both ends, so it reads as light falling off rather than a rule that
+   stops.
+
+   Sizes are deliberately left to the existing rules so the responsive step at 720px still
+   holds. Scoped to these two screens: `.builder__title` is also the online screen's heading
+   and the profile's, and the profile's is a person's name, which is not a sign. */
+.builder .builder__title,
+.collection .builder__title {
+  position: relative;
+  width: fit-content;
+  padding-bottom: 0.3rem;
+  letter-spacing: 0.16em;
+  /* cooled a little away from the pink, so the two are clearly different lights */
+  color: #eef2f7;
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 70%),
+    0 0 0.6em rgb(255 92 168 / 22%);
+}
+.builder .builder__title::after,
+.collection .builder__title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--pink) 18%, var(--pink) 82%, transparent);
+  box-shadow:
+    0 0 0.35rem var(--pink-2),
+    0 0 0.9rem rgb(214 61 133 / 55%);
 }
 
 /* Matches-played counter */
