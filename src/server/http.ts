@@ -33,6 +33,19 @@ export function originAllowed(request: Request): boolean {
   return origin === null || ALLOWED_ORIGINS.includes(origin)
 }
 
+/**
+ * A write only the game's own pages make, where a missing origin fails instead of passing
+ * (backlog S17). Every browser path to `/events` sends one: `sendBeacon` is a POST, which carries
+ * an origin even with no preflight, and its fallback is a CORS fetch. So a request with none is a
+ * script, and there is nothing of the game's in it to count. A script can send the header too, so
+ * this stops the ones that do not bother and no more; what bounds the rest is the per-day
+ * ceiling in `src/server/analytics.ts`.
+ */
+export function sentFromTheSite(request: Request): boolean {
+  const origin = request.headers.get('Origin')
+  return origin !== null && ALLOWED_ORIGINS.includes(origin)
+}
+
 export function json(value: unknown, status = 200, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(value), {
     status,

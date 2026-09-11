@@ -6,6 +6,7 @@ import {
   HIDDEN_CARD,
   isOver,
   legalActions,
+  seedRng,
   type MatchState,
   type PlayerIndex,
 } from '../engine/index.ts'
@@ -487,6 +488,39 @@ describe('rematch in the same room', () => {
     expect(rematch(e, [f])).toEqual([{ type: 'error', reason: REASONS.noRematchStakes }])
   })
 })
+describe('the name a result is reported under', () => {
+  it('holds through a retry and a rebuild, and moves on with the next match', () => {
+    const [room, a, b] = seated()
+    playOut(a, b, 11)
+    const first = room.takeResult()?.id
+    expect(first).toMatch(/^ABCDEF\.[0-9a-f]{32}\.1$/)
+    // A report that failed puts the result back, and it is taken again under the same name,
+    // by this room or by one rebuilt from its storage. That is what lets the directory see a
+    // repeat for what it is (backlog S18).
+    room.retryResult()
+    expect(new Room('x', 0, room.snapshot()).takeResult()?.id).toBe(first)
+    expect(room.takeResult()?.id).toBe(first)
+    // Both seats ask for another match, and it reports under the next number.
+    a.send(JSON.stringify({ type: 'rematch' }), [b])
+    b.send(JSON.stringify({ type: 'rematch' }), [a])
+    playOut(a, b, 13)
+    expect(room.takeResult()?.id).toBe(first?.replace(/\.1$/, '.2'))
+  })
+
+  it('differs for a later room handed the same code', () => {
+    // A code goes back in the pool once its room is forgotten, and the next room to draw it
+    // counts its matches from one again. The seed is drawn afresh for every room, so that
+    // room's first match is still a different report.
+    const [room, a, b] = seated()
+    playOut(a, b, 11)
+    const later = new Room('x', 0, { ...room.snapshot(), seed: seedRng(8) })
+    const first = room.takeResult()?.id
+    const reused = later.takeResult()?.id
+    expect(reused).toMatch(/^ABCDEF\.[0-9a-f]{32}\.1$/)
+    expect(reused).not.toBe(first)
+  })
+})
+
 describe('plates', () => {
   it('sends each seat its laps, and none for a guest', () => {
     const room = new Room('PLATES', 7)

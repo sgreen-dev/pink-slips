@@ -5,9 +5,11 @@ import {
   originAllowed,
   readJson,
   sameSecret,
+  sentFromTheSite,
   text,
 } from '../src/server/http.ts'
 import { isRoomCode } from '../src/protocol/messages.ts'
+import { KEEP_DAYS } from '../src/server/analytics.ts'
 import type { SeatIdentity } from '../src/server/room.ts'
 import { analyticsOf } from './analytics.ts'
 import { directoryOf, type Env } from './env.ts'
@@ -45,10 +47,12 @@ export default {
     // the workers are the same commit rather than only that each one answered (backlog Q36).
     if (path === '/version') return json({ commit: env.COMMIT ?? 'unknown' }, 200, headers)
 
-    // What the game counts (backlog Q40). Origin-gated like every other write a browser makes,
-    // and answered the same whatever was sent: nothing here is worth telling a caller about.
+    // What the game counts (backlog Q40). Only the game's own pages send these, and every one of
+    // them sends its origin, so a request with none is refused here instead of being let through
+    // the way a socket is (backlog S17). Otherwise answered the same whatever was sent: nothing
+    // here is worth telling a caller about.
     if (path === '/events' && request.method === 'POST') {
-      if (!originAllowed(request)) return text('Origin not allowed', 403, headers)
+      if (!sentFromTheSite(request)) return text('Origin not allowed', 403, headers)
       await analyticsOf(env).record(await readJson(request), Date.now())
       return new Response(null, { status: 204, headers })
     }
@@ -60,7 +64,8 @@ export default {
       if (!secret) return text('Not found', 404, headers)
       if (!sameSecret(bearer(request) ?? '', secret)) return text('Not allowed', 403, headers)
       const days = Number(url.searchParams.get('days') ?? '30')
-      const window = Number.isFinite(days) ? Math.min(Math.max(Math.trunc(days), 1), 400) : 30
+      // No wider than the days the object keeps, so a report never reads a day a prune dropped.
+      const window = Number.isFinite(days) ? Math.min(Math.max(Math.trunc(days), 1), KEEP_DAYS) : 30
       return json(await analyticsOf(env).report(Date.now(), window), 200, headers)
     }
 

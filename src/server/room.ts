@@ -96,6 +96,8 @@ export interface RoomResult {
   racesPlayed: number
   /** Each seat's stakes transfer, seat 0 first, or null when the room played for none. */
   transfers: readonly [Transfer, Transfer] | null
+  /** The name this match's result is reported under, the same on every retry (see `resultId`). */
+  id: string
 }
 
 export const REASONS = {
@@ -543,7 +545,20 @@ export class Room {
       conceded: ['concede', 'timeout'].includes(this.state.log.at(-1)?.kind ?? ''),
       racesPlayed: this.state.players[0].pinkSlips.length + this.state.players[1].pinkSlips.length,
       transfers: this.forStakes ? stakesTransfer(this.state) : null,
+      id: this.resultId(),
     }
+  }
+
+  /**
+   * The name a result is reported under: the room's code, its first match's seed and the match's
+   * number in the room (backlog S18). All three are in the snapshot, so a result taken back and
+   * taken again carries the same name, even after the object was evicted and rebuilt between
+   * the two. A code is reused once a room expires, but the seed is drawn afresh for every room,
+   * so no two matches anywhere share one.
+   */
+  private resultId(): string {
+    const seed = this.seed.map((word) => (word >>> 0).toString(16).padStart(8, '0')).join('')
+    return `${this.code}.${seed}.${this.matches}`
   }
 }
 

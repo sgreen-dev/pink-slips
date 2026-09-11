@@ -115,12 +115,14 @@ export class AccountDirectory extends DurableObject<Env> {
       const body = (await readJson(request)) as Record<string, unknown> | null
       const winnerId = body?.['winnerId']
       const loserId = body?.['loserId']
+      const resultId = body?.['resultId']
       const outcome = await this.directory.recordResult(
         typeof winnerId === 'string' ? winnerId : null,
         typeof loserId === 'string' ? loserId : null,
         body?.['ranked'] === true,
         body?.['earnsPacks'] !== false,
         readTransfers(body?.['transfers']),
+        typeof resultId === 'string' ? resultId : null,
       )
       return json(outcome)
     }

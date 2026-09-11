@@ -2,6 +2,10 @@
 
 Every change to Pink Slips, by the day it landed. Dates are commit dates, newest first. Each line ends with the commit that made the change, so anything here can be traced in the history. A phase entry names its phase from `BUILD_PLAN.md`; the commit that marks a phase done is listed with it. Every commit adds a line here under its day.
 
+## 2026-09-11
+
+- Backlog S17 and S18, the two high security rows from the review. A finished online match's packs, rating and stakes cars no longer vanish when the call to the account directory throws: the room keeps the result and sends it again, the way it already did when the directory refused one. Sending again was only safe once the directory could spot a repeat, since an answer lost on its way back looks exactly like a report that never arrived, so each result is now named from the room's code, its seed and the match's number, and the directory applies a name once and remembers it for a week. The counting route turns away requests with no origin, a day holds at most 2,000 browsers so a script can fill one day and no more, and the counts prune themselves daily, including the list of first sightings, which nothing had ever pruned. No address is read for any of it. (f0464aa)
+
 ## 2026-09-10
 
 - The review's D9 reached one citation short: the changelog's own U6 line also filed the tier floor as a G18 that never existed, and a gate meant to catch exactly that printed nothing instead of failing, so the first commit went through with it. It points at G5 now like the other six, D9 says seven, and the gate exits non-zero. (be47e97)
