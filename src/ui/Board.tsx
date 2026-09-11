@@ -26,6 +26,8 @@ import {
 import { ModCard } from './ModCard.tsx'
 import { describeLogEntry } from './narrate.ts'
 import { RaceTrack } from './RaceTrack.tsx'
+import { backdropUrl } from './artwork.ts'
+import { Backdrop } from './Backdrop.tsx'
 import { RulesButton, RulesDialog } from './RulesDialog.tsx'
 import { reveal, scrollPageTop, scrollRowBack, TURN_END_RESET_MS } from './scroll.ts'
 import { SoundButton } from './sound/SoundButton.tsx'
@@ -246,6 +248,10 @@ export function Board({
 
   return (
     <main className="board" inert={inert}>
+      {/* The board had no backdrop while every other screen did, which left the race looking
+          like the one unfinished room. It borrows the start screen's road scene, under a much
+          heavier wash than the start screen uses (see `.board .backdrop`). */}
+      <Backdrop image={backdropUrl('start-screen2')} />
       <header className="board__header">
         <span className="board__brand">Pink Slips</span>
         <span className="board__status">{turnSummary(state, names)}</span>
