@@ -255,6 +255,44 @@ export function readyAdvance(car: CarState): number {
   }).finalFt
 }
 
+/** A car's race with nothing played on it: the advances it needs, and how far they go on average. */
+export interface RaceEstimate {
+  advances: number
+  meanFt: number
+}
+
+/** A race estimate stops here; the wear floor keeps every car moving well inside it. */
+const MAX_RACE_ADVANCES = 200
+
+/**
+ * A car's race from `fromFt` to the line with nothing played on it, each advance from where it
+ * really starts. A bonus that waits for a distance counts where it applies (Muscle's top end,
+ * Aero Package, past 660 ft) and one for the first advance counts once (EV's launch). The CPU
+ * ranks cars and counts turns by this. It used `readyAdvance`, a single standing-start advance,
+ * which credited EV's launch on every advance and never saw a distance bonus at all (backlog G21).
+ */
+export function raceAdvance(car: CarState, fromFt = 0, firstAdvance = true): RaceEstimate {
+  const parts = partModifiers(car)
+  const spec = getCar(car.carId)
+  let at = fromFt
+  let advances = 0
+  while (at < TUNABLES.trackLengthFt && advances < MAX_RACE_ADVANCES) {
+    const isFirst = firstAdvance && advances === 0
+    const ft = computeAdvance({
+      car: spec,
+      wear: car.wear,
+      startFt: at,
+      isFirstAdvanceOfRace: isFirst,
+      hpPercent: parts.hpPercent,
+      weightReductionLb: parts.weightReductionLb,
+      flatBonusFt: sumWindowed(parts.flatBonuses, at, isFirst),
+    }).finalFt
+    at += ft
+    advances++
+  }
+  return { advances, meanFt: advances === 0 ? 0 : (at - fromFt) / advances }
+}
+
 /** Fuel a car still needs before it can advance. */
 export function fuelNeeded(car: CarState): number {
   return Math.max(0, fuelCost(car) - car.fuel)

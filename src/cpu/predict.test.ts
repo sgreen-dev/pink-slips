@@ -8,6 +8,7 @@ import {
   forcedHeads,
   fuelNeeded,
   partValue,
+  raceAdvance,
   readyAdvance,
   usefulFt,
   weakestPart,
@@ -94,5 +95,35 @@ describe('what the CPU forecasts', () => {
     // A car of any other type never forces one.
     expect(getCar(LUXURY).type).not.toBe('sports')
     expect(forcedHeads(withCars([LUXURY]), 0)).toBe(false)
+  })
+})
+
+describe('a car judged by its race', () => {
+  const MUSTANG = 'ford-mustang-gt'
+  const LEAF = 'nissan-leaf'
+  const race = (id: string, parts: string[] = []) =>
+    raceAdvance(carOf(withCars([{ id, parts }]), id))
+  const ready = (id: string, parts: string[] = []) =>
+    readyAdvance(carOf(withCars([{ id, parts }]), id))
+
+  it('reads the same as a standing start for a car no distance bonus touches', () => {
+    expect(race(MIATA).meanFt).toBe(ready(MIATA))
+  })
+
+  it("counts Muscle's top end, which a standing start never reaches", () => {
+    expect(race(MUSTANG).meanFt).toBeGreaterThan(ready(MUSTANG))
+  })
+
+  it("counts EV's launch once, not on every advance", () => {
+    const launch = TUNABLES.typeIdentity.evFirstAdvanceFt
+    expect(race(LEAF).meanFt).toBeLessThan(ready(LEAF))
+    expect(race(LEAF).meanFt).toBeGreaterThan(ready(LEAF) - launch)
+    // The old turn count divided the track by the launch advance, and came up short.
+    expect(race(LEAF).advances).toBeGreaterThan(Math.ceil(TUNABLES.trackLengthFt / ready(LEAF)))
+  })
+
+  it('counts a Part bonus that waits for a distance', () => {
+    expect(ready(MIATA, ['aero-package'])).toBe(ready(MIATA))
+    expect(race(MIATA, ['aero-package']).meanFt).toBeGreaterThan(race(MIATA).meanFt)
   })
 })

@@ -65,6 +65,7 @@
 | 46 | Close the loaner cycle | done | f86787b |
 | 47 | Button form across every screen | done | 0565835 |
 | 48 | Measure the car types | done | 0f59ee0 |
+| 49 | The CPU judges a car by its race | done | 19169e1 |
 
 ---
 

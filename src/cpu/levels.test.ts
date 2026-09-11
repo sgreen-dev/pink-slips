@@ -136,18 +136,23 @@ describe('levels against each other', () => {
     return { rate: wins / matches, msPerAction: ms / actions }
   }
 
-  // 58, not the 60 this held before the loaner garages were tuned for a cycle. Same cause as the
-  // floor below and the same trade: the four garages are now built to counter each other, and
-  // a matchup decided by which garage is on the table is one decided less by how well it is
-  // played. Six ways of recovering the two points were measured and every one either broke a
-  // cycle link or made this worse -- coin-flip cards included, which thin the deck Street draws
-  // from more than they cost it, since Street never plays them anyway.
+  // 56 since Street learned to judge a car by its whole race (phase 49, backlog G21), and 58
+  // before that. Pro did not get worse; Street got better: it had been staging slow EVs for a
+  // launch bonus it counted on every advance, and passing over Muscle's top end. Over seeds 13
+  // to 17 this pairing went from 57.5% to 55.4% on average, and on this seed from 58.4% to
+  // 56.6%, while over random garages Pro and Street went from 52/48 to an even split. Only two
+  // of those five seeds cleared 58 before the change, so the old floor was partly this seed.
   //
-  // The rules did not move: over random garages Pro and Street still split 51/49, as they did
-  // before any of this. Recovering the two points means giving up the cycle in DESIGN.md 5.
-  it('Pro beats Street at least 58% over 2,000 matches', () => {
+  // 58 was itself down from the 60 this held before the loaner garages were tuned for a cycle.
+  // Same cause as the floor below and the same trade: the four garages are now built to counter
+  // each other, and a matchup decided by which garage is on the table is one decided less by
+  // how well it is played. Six ways of recovering those two points were measured and every one
+  // either broke a cycle link or made this worse -- coin-flip cards included, which thin the
+  // deck Street draws from more than they cost it, since Street never plays them anyway.
+  // Recovering them means giving up the cycle in DESIGN.md 5.
+  it('Pro beats Street at least 56% over 2,000 matches', () => {
     const { rate, msPerAction } = winRate('pro', 'street', 2000)
-    expect(rate).toBeGreaterThanOrEqual(0.58)
+    expect(rate).toBeGreaterThanOrEqual(0.56)
     expect(msPerAction).toBeLessThan(50)
   }, 120_000)
 

@@ -19,7 +19,7 @@ import {
   forecastOwnAdvance,
   fuelNeeded,
   partValue,
-  readyAdvance,
+  raceAdvance,
   usefulFt,
   VALUE,
   type Forecast,
@@ -102,9 +102,14 @@ function carOf(state: MatchState, player: PlayerIndex, carId: string): CarState 
   return car
 }
 
+/** How far a car goes per advance over a clean race: what the CPU ranks cars by (`raceAdvance`). */
+function pace(car: CarState): number {
+  return raceAdvance(car).meanFt
+}
+
 /**
- * Priority 5: stage the car with the highest ready advance, preferring lower wear. Rookie
- * looks only at the advance, so it will stage a car that cannot move yet.
+ * Priority 5: stage the car that covers the most ground per advance over a race, preferring lower
+ * wear. Rookie looks only at that, so it will stage a car that cannot move yet.
  */
 function chooseStage(
   state: MatchState,
@@ -116,7 +121,7 @@ function chooseStage(
   const current = state.players[player].stagedCarId
   const stages = actions.filter((a) => a.type === 'stage')
   if (profile.stageByAdvanceOnly) {
-    return best(stages, (action) => [readyAdvance(carOf(state, player, action.carId))], rng)
+    return best(stages, (action) => [pace(carOf(state, player, action.carId))], rng)
   }
   if (profile.stageByTurns) {
     // Staging second, Pro can see the opponent's car: race the weakest car that still finishes
@@ -131,10 +136,10 @@ function chooseStage(
         const turns = turnsFromStart(car)
         if (rivalTurns !== null) {
           const margin = rivalTurns - turns + (movesFirst ? 0 : -1)
-          if (margin >= 1) return [2, -readyAdvance(car), -car.wear]
-          if (margin >= 0) return [1, -turns, -car.wear, readyAdvance(car)]
+          if (margin >= 1) return [2, -pace(car), -car.wear]
+          if (margin >= 0) return [1, -turns, -car.wear, pace(car)]
         }
-        return [0, -turns, -car.wear, readyAdvance(car), action.carId === current ? 1 : 0]
+        return [0, -turns, -car.wear, pace(car), action.carId === current ? 1 : 0]
       },
       rng,
     )
@@ -144,7 +149,7 @@ function chooseStage(
     (action) => {
       const car = carOf(state, player, action.carId)
       const needed = fuelNeeded(car)
-      const advance = readyAdvance(car)
+      const advance = pace(car)
       return [
         needed === 0 ? 1 : 0,
         needed === 0 ? advance : -needed,
@@ -159,7 +164,7 @@ function chooseStage(
 
 /** Turns a car needs to finish a race from a standing start, fueling included. */
 function turnsFromStart(car: CarState): number {
-  return fuelNeeded(car) + Math.ceil(TUNABLES.trackLengthFt / Math.max(1, readyAdvance(car)))
+  return fuelNeeded(car) + raceAdvance(car).advances
 }
 
 /**
@@ -194,8 +199,8 @@ function turnsLeftInRace(state: MatchState, player: PlayerIndex): number {
   const turns = (p: PlayerIndex): number => {
     const car = stagedCar(state, p)
     if (!car) return Infinity
-    const remaining = TUNABLES.trackLengthFt - state.race.distanceFt[p]
-    return fuelNeeded(car) + Math.ceil(remaining / Math.max(1, readyAdvance(car)))
+    const from = state.race.distanceFt[p]
+    return fuelNeeded(car) + raceAdvance(car, from, state.race.advances[p] === 0).advances
   }
   return Math.max(1, Math.min(turns(player), turns(otherPlayer(player))))
 }
@@ -227,17 +232,14 @@ function chooseFuel(
       (action) => {
         const car = carOf(state, player, action.carId)
         const needed = fuelNeeded(car)
-        return [needed <= turnsLeft ? 1 : 0, readyAdvance(car) / needed, -car.wear]
+        return [needed <= turnsLeft ? 1 : 0, pace(car) / needed, -car.wear]
       },
       rng,
     )
   }
   return best(
     fuels,
-    (action) => [
-      action.carId === staged?.carId ? 1 : 0,
-      readyAdvance(carOf(state, player, action.carId)),
-    ],
+    (action) => [action.carId === staged?.carId ? 1 : 0, pace(carOf(state, player, action.carId))],
     rng,
   )
 }
@@ -321,7 +323,7 @@ function chooseMod(
     .map((play) => ({ ...play, value: partValue(play.car, play.action.modId) }))
     .filter((play) => play.value > 0)
   if (parts.length > 0) {
-    return best(parts, (play) => [-play.car.wear, play.value, readyAdvance(play.car)], rng).action
+    return best(parts, (play) => [-play.car.wear, play.value, pace(play.car)], rng).action
   }
 
   const baseline = forecastOwnAdvance(state, player, undefined, profile.coinFlips)
