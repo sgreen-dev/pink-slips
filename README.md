@@ -34,6 +34,7 @@ npm run dev
 | Command                                    | What it does                                    |
 | ------------------------------------------ | ----------------------------------------------- |
 | `npm run dev:stop`                         | stop a dev server left running (`-- --check` lists) |
+| `npm run fonts`                            | fetch the fonts into `src/fonts/` again, after changing the wordmark |
 | `npm test`                                 | run the test suite once                         |
 | `npm run lint`                             | ESLint                                          |
 | `npm run format:check`                     | Prettier check                                  |
