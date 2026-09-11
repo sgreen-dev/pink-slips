@@ -752,7 +752,7 @@ h2,
 .controls__buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 .hand__header,
 .log__header {
@@ -1298,44 +1298,6 @@ h2,
 .picker__option:focus-within {
   border-color: #fff;
 }
-@media (prefers-reduced-motion: reduce) {
-  .lane__marker,
-  .card,
-  .mod {
-    transition: none;
-  }
-  .card--target,
-  .lane--won .lane__finish,
-  .raceend,
-  .raceend__card,
-  .collection__reveal > *,
-  .controls__buttons > button,
-  .log__lines li {
-    animation: none;
-  }
-  .card--foil::before,
-  .mod--foil::before,
-  .card--holo .card__art::after,
-  .mod--holo::after,
-  .card--foil:hover::before,
-  .mod--foil:hover::before,
-  .card--holo:hover .card__art::after,
-  .mod--holo:hover::after {
-    transition: none;
-  }
-  /*
-   * No lean and no glare. `useTilt` already refuses to attach under this setting, so the class
-   * should never appear; this is here so the rule holds if a later component reaches for the
-   * class without the hook. The resting depth stays — it is light, not motion.
-   */
-  .card.card--tilt,
-  .mod.mod--tilt {
-    transform: none;
-  }
-  .card--tilt::after {
-    background: none;
-  }
-}
 
 /* Phone sizing */
 
@@ -1389,16 +1351,6 @@ h2,
   }
   .builder__title {
     font-size: 1.4rem;
-  }
-  /* Signage spacing costs width, and the phone header has none to spare. The sign still reads
-     as one; it just stops trying to span the screen. */
-  .builder .builder__title,
-  .collection .builder__title {
-    letter-spacing: 0.1em;
-  }
-  .builder__header .button {
-    font-size: 0.9rem;
-    padding: 0.35rem 0.7rem;
   }
 }
 
@@ -1618,6 +1570,18 @@ h2,
   box-shadow:
     0 0 0.35rem var(--pink-2),
     0 0 0.9rem rgb(214 61 133 / 55%);
+}
+/* Signage spacing costs width, and the phone header has none to spare. The sign still reads as
+   one; it just stops trying to span the screen.
+
+   It sits here, directly after the rule it overrides, for the reason `.screen__nav` does below:
+   the selectors are the same, so the specificity is the same, and a media query adds none.
+   Written with the other phone rules further up the file, it never applied (backlog U31). */
+@media (max-width: 720px) {
+  .builder .builder__title,
+  .collection .builder__title {
+    letter-spacing: 0.1em;
+  }
 }
 
 /* The collection's header, stacked into two columns.
@@ -2443,7 +2407,7 @@ h2,
 .guide__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 @keyframes guide-in {
   from {
@@ -2468,14 +2432,6 @@ h2,
   margin: 0 0 1rem;
   color: var(--muted);
   font-size: 0.95rem;
-}
-@media (prefers-reduced-motion: reduce) {
-  .controls__prompt--live,
-  .button--next,
-  .guide,
-  .online__bar__clock--urgent {
-    animation: none;
-  }
 }
 
 /* Leaving a local match from the header: the question and its two answers. */
@@ -2762,5 +2718,56 @@ h2,
 @media (min-width: 1500px) {
   html {
     font-size: 20px;
+  }
+}
+
+/* Reduced motion, for every animation and transition in this file (DESIGN.md 8).
+
+   This is the last block in the file and has to stay the last. A media query adds no
+   specificity, so each rule here wins only by coming after the rule it switches off; for as long
+   as it sat in the middle of the file, the eight rules written after it kept moving under Reduce
+   Motion (backlog U30). Anything new that animates or transitions gets its selector added here,
+   and `src/ui/stylesheet.test.ts` fails until it has been. */
+@media (prefers-reduced-motion: reduce) {
+  .lane__marker,
+  .card,
+  .mod,
+  .card__image {
+    transition: none;
+  }
+  .card--target,
+  .lane--won .lane__finish,
+  .raceend,
+  .raceend__card,
+  .collection__reveal > *,
+  .controls__buttons > button,
+  .log__lines li,
+  .controls__prompt--live,
+  .button--next,
+  .guide,
+  .online__bar__clock--urgent {
+    animation: none;
+  }
+  .card--foil::before,
+  .mod--foil::before,
+  .card--holo .card__art::after,
+  .mod--holo::after,
+  .card--foil:hover::before,
+  .mod--foil:hover::before,
+  .card--holo:hover .card__art::after,
+  .mod--holo:hover::after {
+    transition: none;
+  }
+  /*
+   * No lean and no glare. `useTilt` already refuses to attach under this setting, so the class
+   * should never appear; this is here so the rule holds if a later component reaches for the
+   * class without the hook. The resting depth stays — it is light, not motion.
+   */
+  .card.card--tilt,
+  .mod.mod--tilt {
+    transform: none;
+  }
+  .card--tilt::after {
+    background: none;
   }
 }
