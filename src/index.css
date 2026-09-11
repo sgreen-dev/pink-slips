@@ -525,14 +525,30 @@ h2,
   width: 0.6rem;
   background: repeating-conic-gradient(#fff 0 25%, #111 0 50%) 0 0 / 0.6rem 0.6rem;
 }
+/* The marker moves on `transform`, not `left`, and that is the whole point of the shape below.
+   Animating `left` puts a layout on the main thread for every one of the ~36 frames in a slide,
+   competing with the turn logic and the counting readout; a transform is handed to the
+   compositor and costs none. To translate by a share of the *track* rather than of the dot, the
+   marker spans the full road and the dot is centred on its leading edge — a percentage
+   translate is relative to the element's own width, so the element has to be the width being
+   measured against. It covers the road, hence `pointer-events: none`.
+
+   easeOutCubic, matching `useEasedNumber` so the marker and the figure beside it read as one
+   movement. The duration lives in both places: `SLIDE_MS` there, 0.6s here. */
 .lane__marker {
   position: absolute;
   top: 50%;
-  transform: translate(-50%, -50%);
-  transition: left 0.6s ease-out;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  transform: translateY(-50%) translateX(var(--at, 0%));
+  transition: transform 0.6s cubic-bezier(0.33, 1, 0.68, 1);
+  will-change: transform;
 }
+/* Centred on the marker's leading edge, which is the point being reported. */
 .lane__dot {
   display: block;
+  transform: translateX(-50%);
   width: 2.4rem;
   height: 1.2rem;
   border-radius: 0.6rem 0.9rem 0.9rem 0.6rem;
@@ -1160,7 +1176,9 @@ h2,
   .lane--won .lane__finish,
   .raceend,
   .raceend__card,
-  .collection__reveal > * {
+  .collection__reveal > *,
+  .controls__buttons > button,
+  .log__lines li {
     animation: none;
   }
   .card--foil::before,
@@ -1339,6 +1357,33 @@ h2,
   font-size: 0.7rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+/* Things that arrive during a turn.
+
+   Both of these run on mount and need no key or state: a new action button or a new log line is
+   a new element, so it animates, while one that survives the step keeps its identity and stays
+   put. That is the behaviour worth having — only what actually changed moves, and focus is
+   never dropped by a remount. */
+
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.3rem);
+  }
+}
+@keyframes log-in {
+  from {
+    opacity: 0;
+    transform: translateX(-0.4rem);
+  }
+}
+
+.controls__buttons > button {
+  animation: step-in 0.22s ease-out both;
+}
+.log__lines li {
+  animation: log-in 0.25s ease-out both;
 }
 
 /* Matches-played counter */

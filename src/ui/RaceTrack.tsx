@@ -1,9 +1,10 @@
-import type { Ref } from 'react'
+import type { CSSProperties, Ref } from 'react'
 import { getCar } from '../data/cars.ts'
 import { TUNABLES, type MatchState, type PlayerIndex } from '../engine/index.ts'
 import { backdropUrl } from './artwork.ts'
 import type { RaceEnd } from './celebration.ts'
 import { laneNotes } from './explain.ts'
+import { useEasedNumber } from './useEasedNumber.ts'
 
 interface RaceTrackProps {
   state: MatchState
@@ -18,6 +19,20 @@ interface RaceTrackProps {
 
 /** Quarter marks along the track, so the labels follow the tunable rather than repeat it. */
 const MARKS = [0, 0.25, 0.5, 0.75, 1].map((part) => Math.round(TUNABLES.trackLengthFt * part))
+
+/**
+ * The distance beside a lane, counting up in step with the marker rather than snapping.
+ * Its own component because `useEasedNumber` is a hook and the lanes are rendered in a map.
+ * The lane's `aria-label` carries the real figure, so nothing reads out a value mid-count.
+ */
+function LaneDistance({ ft }: { ft: number }) {
+  const shown = useEasedNumber(ft)
+  return (
+    <div className="lane__distance">
+      <span className="lane__meter">{Math.round(shown)}</span> ft
+    </div>
+  )
+}
 
 /** Two lanes seen from above. Markers slide toward the finish line at 1320 ft. */
 export function RaceTrack({ state, names, lanes, frozen, ref }: RaceTrackProps) {
@@ -71,14 +86,17 @@ export function RaceTrack({ state, names, lanes, frozen, ref }: RaceTrackProps) 
             <div className="lane__road" style={roadStyle}>
               <div className="lane__finish" />
               {car && (
-                <div className="lane__marker" style={{ left: `${(ft / track) * 100}%` }}>
+                <div
+                  className="lane__marker"
+                  // A custom property, so the movement is a transform the compositor owns
+                  // rather than a `left` that lays the road out again on every frame.
+                  style={{ '--at': `${(ft / track) * 100}%` } as CSSProperties}
+                >
                   <span className="lane__dot" />
                 </div>
               )}
             </div>
-            <div className="lane__distance">
-              <span className="lane__meter">{ft}</span> ft
-            </div>
+            <LaneDistance ft={ft} />
           </div>
         )
       })}
