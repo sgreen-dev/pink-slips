@@ -17,12 +17,15 @@ import { mean, rate, wilson, type Tally } from './stats.ts'
  * either way; this reads the verdict over ten thousand, one point either way, and adds two
  * readings that say where a result comes from.
  *
- * - **Against the field**: five of the type's cars against five of any. The verdict.
+ * - **Against the field**: five of the type's cars against five of any, the Street CPU on both
+ *   sides. The verdict, since Street is the CPU most matches are played against.
  * - **Same tiers**: both garages hold the same five tiers, one side all of the type. What the
  *   type's own rules and cars do, apart from which tiers its cars sit in; the gap to the field
  *   reading is the part that does come from its tiers.
- * - **Pro**: the field reading again with the Pro CPU on both sides. A type that reads very
- *   differently there is saying something about the CPU, not about the rules.
+ * - **Pro**: the field reading again with the Pro CPU on both sides, which stages the car that
+ *   needs the fewest turns to finish, fueling included. Counting fueling turns favours cheap cars,
+ *   so types read very differently that way; a Pro reading outside the band is a warning rather
+ *   than a failure, since it says the type's balance depends on how its cars are staged (G22).
  *
  * Every game is its own draw. The measured garage sits in each seat in turn and seat 0 always moves
  * first, so it moves first in exactly half its games. Each reading of each type plays from its own
@@ -50,9 +53,6 @@ export const TYPE_LAB_DEFAULTS: Readonly<TypeLabOptions> = {
   intro: 5_000,
   seed: 1,
 }
-
-/** Points either way past which a type's Pro reading is flagged as a question about the CPU. */
-const PRO_GAP = 0.04
 
 export interface TypeCell extends Tally {
   /** Games in which the measured garage moved first: half of them, by construction. */
@@ -165,6 +165,19 @@ export function checkTypeTargets(report: TypeLabReport): TypeTarget[] {
   })
 }
 
+/** Types whose Pro reading sits outside the band: warnings, not failures (backlog G22). */
+export function typeWarnings(report: TypeLabReport): string[] {
+  const [low, high] = TUNABLES.sim.typeWin
+  return CAR_TYPES.flatMap((type) => {
+    const cell = report.pro.get(type) ?? EMPTY
+    const value = rate(cell)
+    if (cell.games === 0 || (value >= low && value <= high)) return []
+    return [
+      `${CAR_TYPE_LABEL[type]} wins ${tenth(value)} (${range(cell)}) against the field with the Pro CPU, outside ${whole(low)} to ${whole(high)}`,
+    ]
+  })
+}
+
 // Formatting
 
 function whole(value: number): string {
@@ -201,7 +214,7 @@ export function formatTypeLabReport(report: TypeLabReport): string {
     `Pink Slips type lab: seed ${options.seed}, ${options.games} games a type against the field, ${options.tiered} with the tiers held equal, ${options.pro} with the Pro CPU, ${(report.elapsedMs / 1000).toFixed(1)} s`,
   )
   lines.push(
-    `Type tunables: multiplier ${CAR_TYPES.map((type) => `${CAR_TYPE_LABEL[type]} ${TUNABLES.typeDistanceMultiplier[type]}`).join(', ')}; EV launch ${identity.evFirstAdvanceFt} ft; Muscle top end ${identity.muscleTopEndFt} ft from ${identity.muscleTopEndFromFt} ft; Luxury wear x${identity.luxuryWearMultiplier}; JDM slots ${TUNABLES.partSlotsJdm}`,
+    `Type tunables: multiplier ${CAR_TYPES.map((type) => `${CAR_TYPE_LABEL[type]} ${TUNABLES.typeDistanceMultiplier[type]}`).join(', ')}; EV launch ${identity.evFirstAdvanceFt} ft; Muscle top end ${identity.muscleTopEndFt} ft from ${identity.muscleTopEndFromFt} ft; Luxury wear x${identity.luxuryWearMultiplier}; JDM slots ${TUNABLES.partSlotsJdm}; fuel by tier ${Object.values(TUNABLES.fuelCostByTier).join('/')}`,
   )
 
   lines.push(
@@ -223,7 +236,6 @@ export function formatTypeLabReport(report: TypeLabReport): string {
     const onField = rate(field)
     const same = rate(report.sameTiers.get(type) ?? EMPTY)
     const pro = rate(report.pro.get(type) ?? EMPTY)
-    const flag = Math.abs(pro - onField) > PRO_GAP ? '  CPU?' : ''
     lines.push(
       padEnd(CAR_TYPE_LABEL[type], 10) +
         padStart(tenth(onField), 8) +
@@ -232,8 +244,7 @@ export function formatTypeLabReport(report: TypeLabReport): string {
         padStart(tenth(same), 11) +
         padStart(points(onField - same), 12) +
         padStart(tenth(pro), 8) +
-        padStart(points(pro - onField), 11) +
-        flag,
+        padStart(points(pro - onField), 11),
     )
   }
   const rates = CAR_TYPES.map((type) => rate(report.field.get(type) ?? EMPTY))
@@ -250,8 +261,9 @@ export function formatTypeLabReport(report: TypeLabReport): string {
     '- same tiers: both garages hold the same five tiers, one side all of the type, so this is the',
     "  type's own rules and cars. from tiers: the field reading less this one, the part that comes",
     "  from which tiers the type's cars sit in.",
-    `- Pro-field: more than ${PRO_GAP * 100} points either way marks the type CPU?, a question about how the`,
-    '  CPU plays it rather than about the rules.',
+    '- Pro: the Pro CPU on both sides, which stages the car that needs the fewest turns to finish,',
+    "  fueling included. A Pro reading outside the band is a warning: the type's balance depends on",
+    '  how its cars are staged (backlog G22). The verdict is the Street reading.',
   )
 
   lines.push('', 'Targets (DESIGN.md section 7)')
@@ -259,5 +271,8 @@ export function formatTypeLabReport(report: TypeLabReport): string {
     const close = target.close ? '  (close: the range crosses an edge)' : ''
     lines.push(`${target.pass ? 'PASS' : 'FAIL'}  ${target.name}: ${target.value}${close}`)
   }
+  const warnings = typeWarnings(report)
+  lines.push('', 'Warnings (Pro CPU, backlog G22)')
+  lines.push(...(warnings.length > 0 ? warnings.map((warning) => `WARN  ${warning}`) : ['none']))
   return lines.join('\n')
 }
