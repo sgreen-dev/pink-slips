@@ -52,15 +52,21 @@ export default defineConfig({
     strictPort: true,
     watch: { ignored: ['**/game-images/**', '**/music/**'] },
   },
-  // Pinned for the same reason: a drifted preview origin is in neither worker's allow list.
+  // Pinned for the same reason: both workers allow this one preview origin (backlog Q45), and a
+  // drifted port would be refused by both.
   preview: { port: 4173, strictPort: true },
   plugins: [react(), versionFile()],
   // Sent with a crash report so a stack can be read against the code that threw (backlog Q38).
   define: { __COMMIT__: JSON.stringify(commit()) },
   test: {
     environment: 'node',
-    // The two workers keep their own code outside src, so their tests sit beside it.
-    include: ['src/**/*.test.{ts,tsx}', 'counter/*.test.ts', 'server/*.test.ts'],
+    // The workers and the scripts keep their own code outside src, so their tests sit beside it.
+    include: [
+      'src/**/*.test.{ts,tsx}',
+      'counter/*.test.ts',
+      'server/*.test.ts',
+      'scripts/*.test.ts',
+    ],
     // The objects under server/ import the platform's own module, which exists only inside a
     // worker; their tests load a stand-in with the same shape instead (backlog Q41).
     alias: {

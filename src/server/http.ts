@@ -5,11 +5,16 @@
  * touches Cloudflare, so it can be tested directly.
  */
 
+/**
+ * Where the game is served from: the site, the dev server, and `vite preview`, pinned to 4173 in
+ * `vite.config.ts`. Both workers read this one list, so they cannot disagree (backlog Q45).
+ */
 export const ALLOWED_ORIGINS = [
   'https://sgreen-dev.github.io',
   'http://localhost:5173',
   'http://localhost:5174',
   'http://127.0.0.1:5173',
+  'http://localhost:4173',
 ]
 
 /**
@@ -20,7 +25,8 @@ export function corsHeaders(request: Request): Record<string, string> {
   const origin = request.headers.get('Origin') ?? ''
   return {
     'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]!,
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+    // Every method a route serves, the admin route's DELETE included (backlog Q46).
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Authorization, Content-Type',
     'Cache-Control': 'no-store',
     Vary: 'Origin',

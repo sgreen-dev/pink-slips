@@ -5,10 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+# Nothing by default: each job asks for what it uses and no more (backlog Q43). The build runs
+# every dependency's install scripts, so it holds read access only, and the rights to publish to
+# Pages and to mint a sign-in token belong to the one job that publishes.
+permissions: {}
 
 concurrency:
   group: pages
@@ -17,8 +17,14 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
     steps:
+      # The token stays out of .git/config, where any install script could read it.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 24
@@ -39,9 +45,32 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
+
+  # Once the site is live, fail if a worker is missing a change to its own code (backlog Q42).
+  # The workers ship from a developer's machine, so this is what says one needs deploying again,
+  # on the run itself, before a player finds out.
+  verify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # Every commit, for the history the check reads, but no file it does not need.
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+      - run: node scripts/deploy-check.ts --expect "$GITHUB_SHA"
