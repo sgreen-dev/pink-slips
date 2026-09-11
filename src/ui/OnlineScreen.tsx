@@ -133,13 +133,17 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
   return (
     <main className="start online">
       <Backdrop image={backdropUrl('online')} />
-      <header className="builder__header">
+      {/* The same header as the deck builder: brand, centred title, and the two ways off the
+          screen stacked on the right (DESIGN.md 8). */}
+      <header className="builder__header builder__header--split">
         <span className="board__brand">Pink Slips</span>
         <h1 className="builder__title">Play online</h1>
-        <RulesButton dialogRef={rules} label="Rules" small />
-        <button type="button" className="button" onClick={onBack}>
-          Back to start
-        </button>
+        <div className="screen__nav">
+          <button type="button" className="button button--small" onClick={onBack}>
+            Back to start
+          </button>
+          <RulesButton dialogRef={rules} />
+        </div>
       </header>
       <p className="start__tagline">
         Find a ranked opponent, or make a room and send the link to a friend. The room runs the
@@ -166,7 +170,7 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
           >
             Rejoin
           </button>
-          <button type="button" className="button button--ghost" onClick={forget}>
+          <button type="button" className="button" onClick={forget}>
             Forget it
           </button>
         </section>
@@ -239,7 +243,7 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
               <span className="online__status" role="status">
                 Looking for an opponent… {waited}s
               </span>
-              <button type="button" className="button" onClick={leaveQueue}>
+              <button type="button" className="button button--big" onClick={leaveQueue}>
                 Cancel
               </button>
             </div>

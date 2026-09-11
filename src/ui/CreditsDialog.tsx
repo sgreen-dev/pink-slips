@@ -41,7 +41,7 @@ export function CreditsDialog() {
   return (
     <>
       <button type="button" className="button button--ghost button--small" onClick={open}>
-        Where the art comes from
+        Credits
       </button>
       <dialog
         ref={dialogRef}

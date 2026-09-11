@@ -356,7 +356,7 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
           <>
             <button
               type="button"
-              className="button button--small button--primary"
+              className="button button--primary button--small"
               onClick={() => {
                 setConceding(false)
                 client.current?.concede()
@@ -366,7 +366,7 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
             </button>
             <button
               type="button"
-              className="button button--small button--ghost"
+              className="button button--small"
               onClick={() => setConceding(false)}
             >
               Stay

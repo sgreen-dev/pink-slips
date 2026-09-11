@@ -114,14 +114,14 @@ export function StartScreen({
               <span className="account__note">You will need your recovery code to come back.</span>
               <button
                 type="button"
-                className="button button--small button--ghost"
+                className="button button--small"
                 onClick={() => setConfirmOut(false)}
               >
                 Stay
               </button>
               <button
                 type="button"
-                className="button button--small button--primary"
+                className="button button--primary button--small"
                 onClick={account.signOut}
               >
                 Sign out
@@ -130,7 +130,7 @@ export function StartScreen({
           ) : (
             <button
               type="button"
-              className="button button--small button--ghost"
+              className="button button--small"
               onClick={() => setConfirmOut(true)}
             >
               Sign out
@@ -147,7 +147,7 @@ export function StartScreen({
           </span>
           <button
             type="button"
-            className="button button--small button--ghost"
+            className="button button--small"
             onClick={() => onPlayer('recover')}
           >
             I have a recovery code
@@ -241,20 +241,25 @@ export function StartScreen({
       <button type="button" className="button button--primary button--big" onClick={start}>
         Start the match
       </button>
-      {/* Everything that leaves this screen, plus the utilities. Kept out of the Mode group so a
-          screen reader does not announce the speaker as a way to play (DESIGN.md 8). */}
+      {/* Two rows, not one. These seven used to share a single wrapping row at two sizes and two
+          backgrounds, which is why nothing in it read as related to anything else. Split by what
+          they do: where you can go, then the things that only open a panel of words. Both are
+          kept out of the Mode group so a screen reader is never told the speaker is a way to
+          play (DESIGN.md 8). */}
       <div className="start__nav">
         {onOnline && (
           <button type="button" className="button" onClick={onOnline}>
             Play online
           </button>
         )}
-        <button type="button" className="button button--ghost" onClick={onBuilder}>
+        <button type="button" className="button" onClick={onBuilder}>
           Deck builder
         </button>
-        <button type="button" className="button button--ghost" onClick={onCollection}>
+        <button type="button" className="button" onClick={onCollection}>
           Collection{packs > 0 ? ` · ${packs} ${packs === 1 ? 'pack' : 'packs'} to open` : ''}
         </button>
+      </div>
+      <div className="start__links">
         <RulesButton dialogRef={rules} />
         <PrivacyDialog />
         <CreditsDialog />

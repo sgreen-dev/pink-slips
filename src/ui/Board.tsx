@@ -255,36 +255,41 @@ export function Board({
       <header className="board__header">
         <span className="board__brand">Pink Slips</span>
         <span className="board__status">{turnSummary(state, names)}</span>
-        <RulesButton dialogRef={rules} label="Rules" small />
-        <SoundButton />
-        {onExit &&
-          (confirmExit ? (
-            <span className="board__confirm">
-              Leave this match? It will not count.
+        {/* The three controls are one group so they can be pinned to the right edge. Loose in a
+            `space-between` row they were spaced by the turn summary beside them, which changes
+            length every turn — so the controls slid left and right all match. */}
+        <div className="board__nav">
+          <RulesButton dialogRef={rules} />
+          <SoundButton />
+          {onExit &&
+            (confirmExit ? (
+              <span className="board__confirm">
+                Leave this match? It will not count.
+                <button
+                  type="button"
+                  className="button button--small"
+                  onClick={() => setConfirmExit(false)}
+                >
+                  Stay
+                </button>
+                <button
+                  type="button"
+                  className="button button--primary button--small"
+                  onClick={onExit}
+                >
+                  Leave
+                </button>
+              </span>
+            ) : (
               <button
                 type="button"
-                className="button button--small button--ghost"
-                onClick={() => setConfirmExit(false)}
+                className="button button--small"
+                onClick={() => setConfirmExit(true)}
               >
-                Stay
+                Exit match
               </button>
-              <button
-                type="button"
-                className="button button--small button--primary"
-                onClick={onExit}
-              >
-                Leave
-              </button>
-            </span>
-          ) : (
-            <button
-              type="button"
-              className="button button--ghost button--small"
-              onClick={() => setConfirmExit(true)}
-            >
-              Exit match
-            </button>
-          ))}
+            ))}
+        </div>
       </header>
 
       <VariantContext value={plainOpponent ? BASE_ONLY : variantOf}>
@@ -378,7 +383,7 @@ export function Board({
           {busy && (
             <button
               type="button"
-              className="button button--ghost"
+              className="button"
               onClick={() => {
                 onSelect({ kind: 'none' })
                 onOptions(null)
@@ -388,7 +393,7 @@ export function Board({
             </button>
           )}
           {canUndo && !busy && onUndo && (
-            <button type="button" className="button button--ghost" onClick={onUndo}>
+            <button type="button" className="button" onClick={onUndo}>
               Undo
             </button>
           )}

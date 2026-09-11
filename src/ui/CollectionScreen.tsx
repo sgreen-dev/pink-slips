@@ -267,10 +267,10 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
           <h1 className="builder__title">Collection</h1>
         </div>
         <div className="screen__nav">
-          <button type="button" className="button" onClick={onBack}>
+          <button type="button" className="button button--small" onClick={onBack}>
             Back to start
           </button>
-          <RulesButton dialogRef={rules} label="Rules" small />
+          <RulesButton dialogRef={rules} />
         </div>
       </header>
 
@@ -355,9 +355,11 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
                     ))}
                   </select>
                 </label>
+                {/* Plain while the scrap pair is armed: Buy and the confirm share this panel,
+                    and only one thing in a panel is pink (DESIGN.md 8, one primary per panel). */}
                 <button
                   type="button"
-                  className="button button--primary"
+                  className={`button ${confirmScrap ? '' : 'button--primary'}`}
                   disabled={wanted === '' || (cardPrice(wanted) ?? 0) > state.credits}
                   onClick={() => void doBuy()}
                 >
@@ -369,11 +371,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
               (confirmScrap ? (
                 <span className="board__confirm">
                   Scrap them?
-                  <button
-                    type="button"
-                    className="button button--ghost"
-                    onClick={() => setConfirmScrap(false)}
-                  >
+                  <button type="button" className="button" onClick={() => setConfirmScrap(false)}>
                     Keep them
                   </button>
                   <button
@@ -421,11 +419,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
             {confirmLap ? (
               <span className="board__confirm">
                 Start over?
-                <button
-                  type="button"
-                  className="button button--ghost"
-                  onClick={() => setConfirmLap(false)}
-                >
+                <button type="button" className="button" onClick={() => setConfirmLap(false)}>
                   Not yet
                 </button>
                 <button

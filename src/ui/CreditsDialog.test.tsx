@@ -42,7 +42,7 @@ describe('the credits dialog', () => {
       vi.fn(() => Promise.resolve({ ok: true, text: () => Promise.resolve(TABLE) })),
     )
     draw(<CreditsDialog />)
-    fireEvent.click(screen.getByRole('button', { name: 'Where the art comes from' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Credits' }))
 
     expect(await screen.findByText('HJUdall')).toBeTruthy()
     const photo = screen.getByRole('link', { name: '25 Honda Civic Si.jpg' })
@@ -58,7 +58,7 @@ describe('the credits dialog', () => {
       vi.fn(() => new Promise(() => {})),
     )
     draw(<CreditsDialog />)
-    fireEvent.click(screen.getByRole('button', { name: 'Where the art comes from' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Credits' }))
 
     const license = screen.getByRole('link', { name: 'CC BY-SA 4.0' })
     expect(license.getAttribute('href')).toBe('https://creativecommons.org/licenses/by-sa/4.0/')
@@ -69,7 +69,7 @@ describe('the credits dialog', () => {
     const fetcher = vi.fn(() => Promise.resolve({ ok: true, text: () => Promise.resolve(TABLE) }))
     vi.stubGlobal('fetch', fetcher)
     draw(<CreditsDialog />)
-    const button = screen.getByRole('button', { name: 'Where the art comes from' })
+    const button = screen.getByRole('button', { name: 'Credits' })
     fireEvent.click(button)
     await screen.findByText('HJUdall')
     fireEvent.click(button)
@@ -84,7 +84,7 @@ describe('the credits dialog', () => {
       vi.fn(() => Promise.resolve({ ok: false, status: 404 })),
     )
     draw(<CreditsDialog />)
-    fireEvent.click(screen.getByRole('button', { name: 'Where the art comes from' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Credits' }))
 
     // Derived, not written out: the site is served under a base path, and a hardcoded `/art/...`
     // would keep passing here while 404ing in production.
