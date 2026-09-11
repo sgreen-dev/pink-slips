@@ -60,6 +60,21 @@ describe('the turn clock on the wire', () => {
     expect(parseServerMessage(JSON.stringify(base))).not.toBeNull()
   })
 
+  it('refuses a view whose phase or turn step the engine does not know (backlog Q50)', () => {
+    const view = base.view
+    const frame = (patch: object) => JSON.stringify({ ...base, view: { ...view, ...patch } })
+    expect(parseServerMessage(frame({ turn: { ...view.turn, step: 'dance' } }))).toBeNull()
+    expect(parseServerMessage(frame({ turn: { player: 0 } }))).toBeNull()
+    expect(parseServerMessage(frame({ phase: { kind: 'intermission' } }))).toBeNull()
+    expect(parseServerMessage(frame({ phase: { kind: 'staging' } }))).toBeNull()
+    expect(parseServerMessage(frame({ phase: { kind: 'over', winner: 2 } }))).toBeNull()
+    // Every kind the engine does know still parses.
+    expect(parseServerMessage(frame({ phase: { kind: 'turn' } }))).not.toBeNull()
+    expect(parseServerMessage(frame({ phase: { kind: 'over', winner: 1 } }))).not.toBeNull()
+    const choice = { kind: 'choice', player: 0, choice: { kind: 'discardPart', carId: 'x' } }
+    expect(parseServerMessage(frame({ phase: choice }))).not.toBeNull()
+  })
+
   it('reads a remainder when the room sends one', () => {
     expect(parseServerMessage(JSON.stringify({ ...base, turnMsLeft: 42_000 }))).toMatchObject({
       type: 'state',

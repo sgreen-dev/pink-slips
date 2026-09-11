@@ -254,6 +254,29 @@ describe('Boosts', () => {
     expect(advanceFt(tails)).toBe(baseFt(CIVIC))
   })
 
+  it("carries the car's Parts into Overdrive's second advance (DESIGN.md 3.3, backlog Q49)", () => {
+    // The Miata is Sports, so its first flip of the race is heads. A Turbo Kit is fitted and
+    // must count on both advances; with one Boost a turn and Overdrive being it, there is no
+    // other Boost on the turn for the second advance to leave out.
+    const car = getCar(MIATA)
+    const kitted = duel({
+      cars: [{ id: MIATA, fuel: 1, parts: ['turbo-kit'] }],
+      hand: ['overdrive'],
+    })
+    const state = boost(kitted, 'overdrive')
+    const first = baseFt(MIATA, { hpPercent: 0.2 })
+    const second = computeAdvance({
+      car,
+      wear: 0,
+      startFt: first,
+      isFirstAdvanceOfRace: false,
+      hpPercent: 0.2,
+      finalMultiplier: 0.5,
+    }).finalFt
+    expect(second).toBeGreaterThan(Math.floor(baseFt(MIATA) / 2))
+    expect(advanceFt(state)).toBe(first + second)
+  })
+
   it('launch-control shields the next advance from Traction sabotage, then is used up', () => {
     let state = duel({ hand: ['launch-control'], pending: { halve: true, flatReductionFt: 50 } })
     state = boost(state, 'launch-control')

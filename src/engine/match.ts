@@ -364,6 +364,10 @@ export function legalActions(state: MatchState, player: PlayerIndex): Action[] {
     }
     case 'turn':
       break
+    default:
+      // Unreachable for a state the engine made. A frame from the wire is checked against the
+      // unions before it gets here (backlog Q50); this keeps the promise of the return type.
+      return []
   }
   if (state.turn.player !== player) return []
   switch (state.turn.step) {
@@ -379,6 +383,8 @@ export function legalActions(state: MatchState, player: PlayerIndex): Action[] {
     }
     case 'advance':
       return [{ type: 'advance', player }]
+    default:
+      return []
   }
 }
 

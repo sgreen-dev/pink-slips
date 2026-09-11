@@ -92,10 +92,11 @@ describe('advance formula (DESIGN.md 3.3)', () => {
   })
 
   it('never goes below 0 feet', () => {
-    expect(plain('honda-civic-si', { wear: 50 }).finalFt).toBe(0)
-    expect(
-      plain('honda-civic-si', { sabotage: { flatReductionFt: 5000, halve: false } }).finalFt,
-    ).toBe(0)
+    // Wear can no longer take a car to nothing (see the wear floor below), so the floor at zero
+    // is a Sabotage's to reach: one bigger than the whole advance leaves nothing, and no less.
+    const swamped = plain('honda-civic-si', { sabotage: { flatReductionFt: 5000, halve: false } })
+    expect(swamped.afterSabotageFt).toBe(0)
+    expect(swamped.finalFt).toBe(0)
   })
 
   it('keeps wear math exact where floating point would round down', () => {
@@ -155,5 +156,36 @@ describe('type identities in the formula (DESIGN.md 2.3)', () => {
     ]) {
       expect(plain(id, { isFirstAdvanceOfRace: true, startFt: 700 }).typeBonusFt, id).toBe(0)
     }
+  })
+})
+
+describe('the order of the steps (DESIGN.md 3.3, backlog Q49)', () => {
+  // A Civic Si advances 243 ft plain, and every figure below starts from it.
+  it('multiplies a Boost in after the flat bonuses and before the Sabotage', () => {
+    // Redline and a Wheelspin's 100 ft: 243 x 1.5 is 364, less 100 is 264. The reduction taken
+    // first would give (243 - 100) x 1.5, which is 214.
+    const wheelspin = { flatReductionFt: 100, halve: false }
+    expect(plain('honda-civic-si', { distancePercent: 0.5, sabotage: wheelspin }).finalFt).toBe(264)
+    // A halving cuts the boosted number too: 364 / 2 is 182, where halving first gives 181.
+    const halving = { flatReductionFt: 0, halve: true }
+    expect(plain('honda-civic-si', { distancePercent: 0.5, sabotage: halving }).finalFt).toBe(182)
+  })
+
+  it("takes Overdrive's fraction after wear, not before it", () => {
+    // 3 wear keeps 70%, so 243 becomes 170 and half of that is 85. Halving first gives 84.
+    expect(plain('honda-civic-si', { wear: 3, finalMultiplier: 0.5 }).finalFt).toBe(85)
+  })
+})
+
+describe('wear (DESIGN.md 3.3, backlog G18)', () => {
+  it('slows a car to a tenth of its distance and no further, however much it carries', () => {
+    const kept = (carId: string, wear: number) => plain(carId, { wear }).wearMultiplier
+    expect(kept('honda-civic-si', 8)).toBeCloseTo(0.2)
+    expect(kept('honda-civic-si', 9)).toBeCloseTo(0.1)
+    expect(kept('honda-civic-si', 25)).toBeCloseTo(0.1)
+    expect(plain('honda-civic-si', { wear: 25 }).finalFt).toBe(24)
+    // Luxury wears at half the rate, so it reaches the floor at 18.
+    expect(kept('lexus-lc-500', 17)).toBeCloseTo(0.15)
+    expect(kept('lexus-lc-500', 40)).toBeCloseTo(0.1)
   })
 })

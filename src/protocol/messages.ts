@@ -1,5 +1,5 @@
 import type { Transfer } from '../collection/stakes.ts'
-import type { Action, MatchState, PlayerConfig, PlayerIndex } from '../engine/index.ts'
+import type { Action, MatchState, PlayerConfig, PlayerIndex, TurnStep } from '../engine/index.ts'
 import { MAX_NAME_LENGTH, safeDisplayName } from './names.ts'
 
 /**
@@ -220,12 +220,49 @@ function isMatchStateShape(value: unknown): value is MatchState {
   const seats = value['players']
   if (!Array.isArray(seats) || seats.length !== 2 || !seats.every(isPlayerStateShape)) return false
   if (value['firstPlayer'] !== 0 && value['firstPlayer'] !== 1) return false
-  if (!isRecord(value['phase']) || typeof value['phase']['kind'] !== 'string') return false
-  if (!isRecord(value['turn']) || !isRecord(value['race'])) return false
+  // The phase and the turn step have to be on their unions, not just present: the engine's
+  // switches over them had no default, so an unknown kind or step made `legalActions` return
+  // nothing at all and the board's next line throw (backlog Q50).
+  if (!isPhaseShape(value['phase'])) return false
+  if (!isTurnShape(value['turn']) || !isRecord(value['race'])) return false
   if (!Array.isArray(value['log'])) return false
   // The generator's state: four words, zeroed in a redacted view (DESIGN.md 13).
   const rng = value['rng']
   return Array.isArray(rng) && rng.length === 4 && rng.every((w) => typeof w === 'number')
+}
+
+function isSeatIndex(value: unknown): boolean {
+  return value === 0 || value === 1
+}
+
+/** A phase the engine knows, with the fields its code for that phase reads. */
+function isPhaseShape(value: unknown): boolean {
+  if (!isRecord(value)) return false
+  switch (value['kind']) {
+    case 'turn':
+      return true
+    case 'staging':
+      return Array.isArray(value['pending']) && value['pending'].every(isSeatIndex)
+    case 'choice': {
+      const choice = value['choice']
+      return (
+        isSeatIndex(value['player']) &&
+        isRecord(choice) &&
+        choice['kind'] === 'discardPart' &&
+        typeof choice['carId'] === 'string'
+      )
+    }
+    case 'over':
+      return isSeatIndex(value['winner'])
+    default:
+      return false
+  }
+}
+
+const TURN_STEPS: readonly unknown[] = ['fuel', 'mods', 'advance'] satisfies TurnStep[]
+
+function isTurnShape(value: unknown): boolean {
+  return isRecord(value) && isSeatIndex(value['player']) && TURN_STEPS.includes(value['step'])
 }
 
 function isPlayerStateShape(value: unknown): boolean {

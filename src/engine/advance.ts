@@ -108,8 +108,10 @@ export function computeAdvance(input: AdvanceInput): AdvanceBreakdown {
   let afterSabotageFt = Math.max(0, beforeSabotageFt - sabotage.flatReductionFt)
   if (sabotage.halve) afterSabotageFt = Math.floor(afterSabotageFt / 2)
 
-  // 6: wear, then the Overdrive fraction
-  const remainingBasisPoints = Math.max(0, 10000 - wearRateBasisPoints(car) * wear)
+  // 6: wear, then the Overdrive fraction. Wear stops at the floor rather than at zero, so a worn
+  // car still covers some ground and a race always ends (backlog G18).
+  const floorBasisPoints = Math.round(TUNABLES.wearFloor * 10000)
+  const remainingBasisPoints = Math.max(floorBasisPoints, 10000 - wearRateBasisPoints(car) * wear)
   const afterWearFt = Math.floor((afterSabotageFt * remainingBasisPoints) / 10000)
   const finalFt = Math.max(0, Math.floor(afterWearFt * finalMultiplier + 1e-9))
 
