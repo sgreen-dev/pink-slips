@@ -1,3 +1,4 @@
+import { isStakedCar } from '../collection/stakes.ts'
 import { chooseAction, type Level } from '../cpu/index.ts'
 import {
   apply,
@@ -31,6 +32,21 @@ export interface RaceEnd {
   slips: number
   /** True when this pink slip ends the match. */
   matchOver: boolean
+}
+
+/**
+ * What taking a car as a pink slip means for it (backlog U38). Without stakes it only sits out the
+ * rest of the match: the race-end banner used to say it "changes hands", which read as losing it
+ * for good. With stakes it changes hands for real when the match ends, unless it is a loaner car
+ * or a keepsake in chrome, which stakes never move (DESIGN.md 12).
+ */
+export type CaptureFate = 'match' | 'moves' | 'loaner' | 'keepsake'
+
+export function captureFate(carId: string, stakes: boolean, keepsake: boolean): CaptureFate {
+  if (!stakes) return 'match'
+  if (!isStakedCar(carId)) return 'loaner'
+  if (keepsake) return 'keepsake'
+  return 'moves'
 }
 
 /**

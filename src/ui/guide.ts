@@ -61,7 +61,7 @@ export function guideSteps(
       toward: 'down',
     },
     finish: {
-      text: `That was one race. The winner takes the losing car as a pink slip, and it is out for the rest of this match. Collect ${t.pinkSlipsToWin} pink slips and you win the match. Press Continue for the next race.`,
+      text: `That was one race. The winner takes the losing car as a pink slip: it sits out this match. Collect ${t.pinkSlipsToWin} pink slips and you win the match. Press Continue for the next race.`,
       toward: 'none',
     },
   }
