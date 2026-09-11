@@ -66,7 +66,7 @@ Bands are guidelines. A car sitting within 0.005 of a boundary may be placed by 
 
 Consequences of this rule, accepted as honest to the real cars:
 
-- Heavy types top out low. Off-road has no Super or Hyper cars. JDM has no Hyper cars.
+- Heavy types top out low. Off-road and JDM have no Hyper cars, and Off-road has only three Super cars.
 - Some famous cars land lower than their badge suggests. The F-150 Raptor is Daily. The Rolls-Royce Wraith is Performance.
 - The roster grid is uneven. Two cars per tier-and-type cell is the target, not a rule.
 
@@ -470,6 +470,7 @@ A headless command, `npm run sim`, that plays CPU against CPU for thousands of m
 **Reports**
 
 - Win rate by garage type composition and by tier composition
+- Win rate by car type with the tiers held equal, and with the Pro CPU (the type lab, below)
 - Win rate of the player who goes first, which a coin flip decides and a rematch alternates
 - The weakest tier as well as the strongest, since a cap says nothing about a band nobody can win with
 - Average match length in turns per player, and distribution
@@ -478,7 +479,7 @@ A headless command, `npm run sim`, that plays CPU against CPU for thousands of m
 
 **Starting targets** (tunable)
 
-- No single-type garage wins more than 60% against the field
+- Every single-type garage wins between 45% and 55% against the field, checked by the type lab over 10,000 games a type (phase 48; it was a 60% cap on the highest type)
 - No single-tier garage wins more than 65% against the field
 - A Daily-only garage against a Hyper-only garage lands between 35% and 65%
 - Median match is 25 or fewer turns per player
@@ -486,6 +487,10 @@ A headless command, `npm run sim`, that plays CPU against CPU for thousands of m
 - No single-tier garage wins less than 20% against the field (added in phase 43; not met yet, see backlog G5)
 
 All six live under `sim` in `src/engine/tunables.ts`.
+
+**Type lab** (phase 48, `npm run sim:types`, about three minutes). The default run reads each type over about a thousand games, three points either way, with the tiers of its cars left to chance: enough for a 60% cap, too loose for a band. The lab plays each type 10,000 times against the field, one point either way, with the type moving first in exactly half its games, and adds two readings that say where a result comes from. *Same tiers*: both garages hold the same five tiers, drawn from the tiers every type has cars in (so no Hyper), one side all of the type; it reads the type's own rules and cars, and the gap to the field reading is what its tier mix is worth. *Pro*: the field reading with the Pro CPU on both sides; a gap of more than 4 points says the CPU plays the type differently at Pro, a question about the CPU rather than the rules. A type passes when its reading is inside the band, and the report marks it close when its range crosses an edge.
+
+Baseline (field reading at seeds 1 and 2; same tiers and Pro at seed 1): Sports 54.9 / 56.1, same tiers 49.0, Pro 46.4. Luxury 51.5 / 50.9, 51.6, 51.1. Muscle 52.1 / 52.6, 52.7, 49.8. JDM 49.1 / 49.4, 51.5, 45.2. EV 46.4 / 46.2, 36.7, 48.0. Off-road 56.0 / 56.4, 64.8, 67.1. Off-road is over the band on both seeds and Sports on the second. Off-road's rules and cars are the strongest for their tier by far, and only its cheap tiers keep its field reading down. Sports is the reverse: strong through its tier mix, and through the Street CPU reading every coin flip as tails except the one the Sports rule makes heads, which is why it drops 9 points under Pro. EV's cars below Hyper are the weakest for their tier. The six types average 51.7%, not 50, so the band's top edge is the one that binds. The intro set reads 44.4% and 46.9% against the field on the two seeds.
 
 **Known risks the simulator must check first**
 

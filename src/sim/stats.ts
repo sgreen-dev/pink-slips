@@ -17,6 +17,21 @@ export function rate(t: Tally): number {
   return t.games === 0 ? Number.NaN : t.wins / t.games
 }
 
+/**
+ * The 95% Wilson range for a win rate: where the true rate sits, 19 times in 20, given the games
+ * played. Unlike the plain plus-or-minus it stays between 0 and 1, and it still says something at
+ * no wins or all of them.
+ */
+export function wilson(t: Tally, z = 1.96): [number, number] {
+  if (t.games === 0) return [Number.NaN, Number.NaN]
+  const n = t.games
+  const p = t.wins / n
+  const z2 = z * z
+  const centre = (p + z2 / (2 * n)) / (1 + z2 / n)
+  const half = (z * Math.sqrt((p * (1 - p)) / n + z2 / (4 * n * n))) / (1 + z2 / n)
+  return [Math.max(0, centre - half), Math.min(1, centre + half)]
+}
+
 export interface RaceOutcome {
   winnerTier: Tier
   loserTier: Tier

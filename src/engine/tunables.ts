@@ -90,13 +90,17 @@ export const TUNABLES = {
   },
   /** Online accounts and matchmaking (DESIGN.md 13). */
   /**
-   * The balance targets `npm run sim` checks (DESIGN.md 7). They were written inline in
-   * `src/sim/run.ts`, though DESIGN.md 7 calls them tunable and section 4 says no number lives
-   * anywhere but here (backlog Q51).
+   * The balance targets `npm run sim` checks, and the type band `npm run sim:types` checks
+   * (DESIGN.md 7). They were written inline in `src/sim/run.ts`, though DESIGN.md 7 calls them
+   * tunable and section 4 says no number lives anywhere but here (backlog Q51).
    */
   sim: {
-    /** No single-type garage wins more than this against the field. */
-    maxTypeWin: 0.6,
+    /**
+     * Every single-type garage wins inside this band against the field. The type lab checks it
+     * over ten thousand games a type; the default run's thousand read a type three points either
+     * way, too loose for a band this narrow (backlog G20).
+     */
+    typeWin: [0.45, 0.55] as readonly [number, number],
     /** No single-tier garage wins more than this against the field. */
     maxTierWin: 0.65,
     /** Nor less than this: the floor, which today's tiers do not meet (backlog G5). */

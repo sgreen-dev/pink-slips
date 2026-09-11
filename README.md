@@ -39,7 +39,8 @@ npm run dev
 | `npm run lint`                             | ESLint                                          |
 | `npm run format:check`                     | Prettier check                                  |
 | `npm run build`                            | type-check the app and the room worker, build to `dist/` |
-| `npm run sim -- --matches 5000 --seed 1`   | play CPU against CPU and print the balance report |
+| `npm run sim`                              | play CPU against CPU and print the balance report |
+| `npm run sim:types`                        | measure each car type closely against the field (about two minutes) |
 | `npm run data:report`                      | print the roster grid by tier and type          |
 
 ## Deploy

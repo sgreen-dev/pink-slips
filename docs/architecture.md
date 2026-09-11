@@ -122,6 +122,7 @@ Where a row says no rationale is recorded, that is a gap in the record, not an e
 | `npm test` | Vitest, `src/**/*.test.{ts,tsx}` and `counter/*.test.ts`; `node` by default, `happy-dom` per file |
 | `npm run lint` / `format:check` | ESLint / Prettier |
 | `npm run sim` | CPU against CPU, prints the balance report |
+| `npm run sim:types` | The type lab: each car type against the field over 10,000 games, again with the tiers held equal and with the Pro CPU, and the type band of `DESIGN.md` 7. About two minutes |
 | `npm run deploy:check` | Says whether the site and both workers answer |
 | `npm run online:smoke -- <url>` | Plays a real ranked match against a deployment |
 
