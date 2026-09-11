@@ -21,6 +21,8 @@
   },
   "include": [
     "worker.ts",
+    "testing.ts",
+    "*.test.ts",
     "../src/server/*.ts",
     "../src/protocol/*.ts",
     "../src/collection/collection.ts",
