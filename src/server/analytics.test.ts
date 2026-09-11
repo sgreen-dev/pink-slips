@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
+  admitsBrowser,
   dayKey,
   EVENTS,
   isEventName,
   isVisitorId,
+  KEEP_DAYS,
+  MAX_BROWSERS_PER_DAY,
   MAX_EVENTS_PER_BATCH,
   parseBatch,
+  pruneCutoff,
 } from './analytics.ts'
 
 /**
@@ -88,5 +92,36 @@ describe('a batch from a browser', () => {
   it('keeps nothing a browser adds beyond the two fields it is asked for', () => {
     const batch = parseBatch({ visitor: ID, events: ['visit'], name: 'Ann', ip: '1.2.3.4' })
     expect(batch).toEqual({ visitor: ID, events: ['visit'] })
+  })
+})
+
+describe('how much a day may hold', () => {
+  it('lets new browsers in while the day has room, and none once it is full', () => {
+    expect(admitsBrowser(0, false)).toBe(true)
+    expect(admitsBrowser(MAX_BROWSERS_PER_DAY - 1, false)).toBe(true)
+    expect(admitsBrowser(MAX_BROWSERS_PER_DAY, false)).toBe(false)
+  })
+
+  it('always lets a browser already counted today through, so a full day keeps counting', () => {
+    expect(admitsBrowser(MAX_BROWSERS_PER_DAY, true)).toBe(true)
+    expect(admitsBrowser(MAX_BROWSERS_PER_DAY + 50, true)).toBe(true)
+  })
+})
+
+describe('what a prune keeps', () => {
+  it('keeps exactly KEEP_DAYS of days behind today', () => {
+    const now = Date.UTC(2026, 8, 10, 12)
+    expect(pruneCutoff(now)).toBe('2025-08-06')
+    expect(pruneCutoff(now)).toBe(dayKey(now - KEEP_DAYS * 86_400_000))
+  })
+
+  it('never drops a day the widest report can read', () => {
+    // The admin report is clamped to KEEP_DAYS, today included, so its oldest day is one later
+    // than the cutoff; this is the relationship that makes pruning invisible to the owner.
+    for (const hour of [0, 12, 23]) {
+      const now = Date.UTC(2026, 8, 10, hour, 59)
+      const oldestRead = dayKey(now - (KEEP_DAYS - 1) * 86_400_000)
+      expect(pruneCutoff(now) < oldestRead).toBe(true)
+    }
   })
 })

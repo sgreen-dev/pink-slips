@@ -4,7 +4,13 @@ import type { RngState } from '../src/engine/index.ts'
 import { parseClientMessage, type ServerMessage } from '../src/protocol/messages.ts'
 import { readJson, text } from '../src/server/http.ts'
 import { randomToken } from '../src/server/ids.ts'
-import { Room, type RoomSnapshot, type SeatIdentity, type Ticket } from '../src/server/room.ts'
+import {
+  Room,
+  type RoomResult,
+  type RoomSnapshot,
+  type SeatIdentity,
+  type Ticket,
+} from '../src/server/room.ts'
 import { planRoomWrite, type WrittenRoom } from '../src/server/roomWrites.ts'
 import { directoryOf, type Env } from './env.ts'
 import { attachment, send, type Attachment } from './sockets.ts'
@@ -16,6 +22,14 @@ import { attachment, send, type Attachment } from './sockets.ts'
  */
 
 const ROOM_TTL_MS = 24 * 60 * 60 * 1000
+
+/** One seat's share of a reported result, as the directory answers it. */
+type Side = {
+  packs: number
+  rating: { before: number; after: number } | null
+  stakes: Transfer | null
+} | null
+type Outcome = { winner: Side; loser: Side }
 
 export class MatchRoom extends DurableObject<Env> {
   private room: Room | null = null
@@ -111,35 +125,20 @@ export class MatchRoom extends DurableObject<Env> {
   private async report(room: Room): Promise<void> {
     const result = room.takeResult()
     if (!result) return
-    type Side = {
-      packs: number
-      rating: { before: number; after: number } | null
-      stakes: Transfer | null
-    } | null
-    let outcome = { winner: null, loser: null } as { winner: Side; loser: Side }
+    let outcome: Outcome = { winner: null, loser: null }
     const loserSeat = result.winnerSeat === 0 ? 1 : 0
     if (result.winner || result.loser) {
-      const response = await directoryOf(this.env).fetch('https://directory/internal/result', {
-        method: 'POST',
-        body: JSON.stringify({
-          winnerId: result.winner?.accountId ?? null,
-          loserId: result.loser?.accountId ?? null,
-          ranked: result.ranked,
-          earnsPacks: !result.conceded || result.racesPlayed > 0,
-          transfers: result.transfers
-            ? { winner: result.transfers[result.winnerSeat], loser: result.transfers[loserSeat] }
-            : null,
-        }),
-      })
-      if (response.ok) outcome = (await response.json()) as typeof outcome
-      else {
+      const answered = await this.tell(result, loserSeat)
+      if (!answered) {
         // The match really happened, so its packs, ratings and cars are not dropped because one
-        // subrequest failed. The room takes the result back and the next message or alarm
-        // reports it again; the seats are told nothing yet rather than told nulls.
+        // subrequest failed, whether it failed with a status or by throwing. The room takes the
+        // result back and the next message or alarm reports it again under the same id; the
+        // seats are told nothing yet rather than told nulls (backlog S18).
         room.retryResult()
         await this.persist()
         return
       }
+      outcome = answered
     }
     this.broadcast(result.winnerSeat, {
       type: 'result',
@@ -153,6 +152,35 @@ export class MatchRoom extends DurableObject<Env> {
       rating: outcome.loser?.rating ?? null,
       stakes: outcome.loser?.stakes ?? null,
     })
+  }
+
+  /**
+   * Hands a result to the directory, and gives back its answer, or null when there was none to
+   * read: a refusal, a throw, or a body that would not parse (backlog S18). A throw used to
+   * escape from here with the result already taken and nothing persisted, so the next message
+   * found it gone and the packs, the ratings and the stakes cars with it. Sending it again is
+   * safe only because the report carries the match's id and the directory answers a repeat with
+   * what it already applied.
+   */
+  private async tell(result: RoomResult, loserSeat: 0 | 1): Promise<Outcome | null> {
+    try {
+      const response = await directoryOf(this.env).fetch('https://directory/internal/result', {
+        method: 'POST',
+        body: JSON.stringify({
+          resultId: result.id,
+          winnerId: result.winner?.accountId ?? null,
+          loserId: result.loser?.accountId ?? null,
+          ranked: result.ranked,
+          earnsPacks: !result.conceded || result.racesPlayed > 0,
+          transfers: result.transfers
+            ? { winner: result.transfers[result.winnerSeat], loser: result.transfers[loserSeat] }
+            : null,
+        }),
+      })
+      return response.ok ? ((await response.json()) as Outcome) : null
+    } catch {
+      return null
+    }
   }
 
   override async webSocketClose(ws: WebSocket): Promise<void> {

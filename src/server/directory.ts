@@ -127,6 +127,12 @@ export interface MatchOutcome {
   loser: SideOutcome | null
 }
 
+/** An applied result, kept so a repeat of it is answered rather than applied again. */
+interface HeldResult {
+  at: number
+  outcome: MatchOutcome
+}
+
 interface Session {
   accountId: string
   expiresAt: number
@@ -147,6 +153,13 @@ export const CPU_RESULT_GAP_MS = 60_000
 export const LEADERBOARD_SIZE = 50
 /** How long a built leaderboard is reused before the accounts are read again. */
 export const LEADERBOARD_CACHE_MS = 30_000
+/**
+ * How long an applied result's id is remembered (backlog S18). A room sends an unanswered report
+ * again on its next message or alarm, and forgets itself a day after its last message, so a week
+ * is several times the longest a repeat can take to arrive. One arriving after that is applied
+ * again, which is the price of the memory not growing with every match ever played.
+ */
+export const RESULT_MEMORY_MS = 7 * 24 * 60 * 60 * 1000
 
 const ACCOUNT = 'acct:'
 const PROVIDER = 'prov:'
@@ -155,6 +168,8 @@ const RECOVERY = 'rec:'
 /** When each address last made players, for the creation limit. Pruned as it is read. */
 const CREATIONS = 'made:'
 const STATS = 'stats'
+/** A result the directory has applied, by the id the room reported it under (backlog S18). */
+const RESULT = 'result:'
 
 function cleanName(raw: string): string {
   // Invisible characters are cut before the trim, so a name that is only bidi marks becomes
@@ -582,6 +597,12 @@ export class Directory {
    * A finished online match, reported by the room. Each signed-in side earns packs by the
    * online rule, unless the room says the match earns none, as for one conceded before any
    * race; a ranked match between two accounts also moves their ratings and records.
+   *
+   * A report that carries an id is applied once, however many times it arrives (backlog S18).
+   * The room sends it again whenever it did not hear back, and not hearing back is not the same
+   * as nothing having happened: the answer can be lost after everything here was saved, and
+   * applying it a second time would pay the packs twice and move a stakes car twice. A repeat
+   * is answered with the outcome the first one produced.
    */
   async recordResult(
     winnerId: string | null,
@@ -589,7 +610,12 @@ export class Directory {
     ranked: boolean,
     earnsPacks = true,
     transfers: { winner: Transfer; loser: Transfer } | null = null,
+    resultId: string | null = null,
   ): Promise<MatchOutcome> {
+    if (resultId) {
+      const held = await this.store.get<HeldResult>(`${RESULT}${resultId}`)
+      if (held) return held.outcome
+    }
     const winner = winnerId ? await this.load(winnerId) : null
     const loser = loserId ? await this.load(loserId) : null
     // A keepsake never changes hands: the loser keeps it and the winner gains nothing for it.
@@ -626,6 +652,7 @@ export class Directory {
       const stats = (await this.store.get<Stats>(STATS)) ?? { rated: 0 }
       await this.store.put(STATS, { rated: stats.rated + newlyRated })
     }
+    if (resultId) await this.rememberResult(resultId, outcome)
     return outcome
   }
 
@@ -694,6 +721,18 @@ export class Directory {
     // The board shows this player, so the cached copy is now wrong.
     this.board = null
     return true
+  }
+
+  /**
+   * Keeps an applied result under its id, and drops any older than `RESULT_MEMORY_MS` while it is
+   * there, so the set holds about a week of online matches and never more.
+   */
+  private async rememberResult(id: string, outcome: MatchOutcome): Promise<void> {
+    const now = this.now()
+    for (const [key, held] of await this.store.list<HeldResult>(RESULT)) {
+      if (now - held.at >= RESULT_MEMORY_MS) await this.store.delete(key)
+    }
+    await this.store.put(`${RESULT}${id}`, { at: now, outcome } satisfies HeldResult)
   }
 
   private async save(account: Account): Promise<void> {

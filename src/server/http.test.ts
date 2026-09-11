@@ -7,6 +7,7 @@ import {
   json,
   originAllowed,
   readJson,
+  sentFromTheSite,
   text,
 } from './http.ts'
 
@@ -50,6 +51,22 @@ describe('the origin gate on a socket', () => {
   it('refuses another site', () => {
     expect(originAllowed(from('https://elsewhere.example'))).toBe(false)
     expect(originAllowed(from('null'))).toBe(false)
+  })
+})
+
+describe('the origin gate on a count', () => {
+  it('lets every page the game is served from through', () => {
+    for (const origin of ALLOWED_ORIGINS) expect(sentFromTheSite(from(origin))).toBe(true)
+  })
+
+  it('refuses a request with no origin, which the socket gate lets through', () => {
+    expect(sentFromTheSite(from())).toBe(false)
+    expect(originAllowed(from())).toBe(true)
+  })
+
+  it('refuses another site, and the opaque origin a sandboxed page sends', () => {
+    expect(sentFromTheSite(from('https://elsewhere.example'))).toBe(false)
+    expect(sentFromTheSite(from('null'))).toBe(false)
   })
 })
 

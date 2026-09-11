@@ -20,6 +20,7 @@ import {
   Directory,
   LEADERBOARD_CACHE_MS,
   recoveryCodeFrom,
+  RESULT_MEMORY_MS,
   SESSION_RENEW_MS,
   SESSION_TTL_MS,
   type Store,
@@ -525,6 +526,37 @@ describe('directory', () => {
     const solo = await directory.recordResult(null, a, true)
     expect(solo.winner).toBeNull()
     expect(solo.loser).toEqual({ packs: packsPerMatch, rating: null, stakes: null })
+  })
+
+  it('applies a report once, however many times the room sends it', async () => {
+    const { directory, store, tick } = setUp()
+    const a = (await directory.createPlayer('Ann')).data.profile.id
+    const b = (await directory.createPlayer('Bo')).data.profile.id
+    const first = await directory.recordResult(a, b, true, true, null, 'ROOM.seed.1')
+    // Copies, since the store hands back the object it holds, and an account changed in place
+    // would compare equal to itself.
+    const winner = structuredClone(await directory.load(a))
+    const loser = structuredClone(await directory.load(b))
+    // The same report again, as the room sends it when the first answer never reached it: the
+    // same answer comes back and nothing moves, not the packs, not the rating, not the record.
+    const again = await directory.recordResult(a, b, true, true, null, 'ROOM.seed.1')
+    expect(again).toEqual(first)
+    expect(await directory.load(a)).toEqual(winner)
+    expect(await directory.load(b)).toEqual(loser)
+    // The next match in the room is a different report and is applied.
+    await directory.recordResult(a, b, true, true, null, 'ROOM.seed.2')
+    expect((await directory.load(a))?.wins).toBe(2)
+    // A report with no id is applied every time, as before.
+    await directory.recordResult(a, b, false)
+    await directory.recordResult(a, b, false)
+    expect((await directory.load(a))?.collection.packs).toBe(
+      (winner?.collection.packs ?? 0) + 3 * packsPerCpuWin,
+    )
+    // The memory is a week long and prunes itself as the next result arrives.
+    tick(RESULT_MEMORY_MS)
+    await directory.recordResult(a, b, false, true, null, 'OTHER.seed.1')
+    const held = [...store.data.keys()].filter((key) => key.startsWith('result:'))
+    expect(held).toEqual(['result:OTHER.seed.1'])
   })
 
   it('ranks the leaderboard by rating among players with a record', async () => {

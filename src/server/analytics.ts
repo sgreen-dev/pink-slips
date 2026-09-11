@@ -52,6 +52,37 @@ export function dayKey(at: number): string {
 /** How many events one browser may file in one send, so a loop cannot fill the table. */
 export const MAX_EVENTS_PER_BATCH = 24
 
+/**
+ * How many browsers one day may hold (backlog S17). The service cannot tell a browser from a
+ * script inventing a fresh id per request, and it will not look at an address to try, because the
+ * game promises players an address is never stored and this is where that promise is kept. So a
+ * day is refused once it is full, rather than a sender: a loop can fill a day and no more, and
+ * with rows dropped after `KEEP_DAYS` the tables cannot outgrow this many rows a day for that many
+ * days. The number is far above anything this game sees, so a day that reads exactly this was
+ * cut short, and that is the tell.
+ */
+export const MAX_BROWSERS_PER_DAY = 2_000
+
+/** Days a row is kept. Every report window fits inside it, so nothing a report reads is dropped. */
+export const KEEP_DAYS = 400
+
+/** How often the kept rows are pruned. */
+export const PRUNE_EVERY_MS = 86_400_000
+
+/**
+ * Whether a batch from this browser may be filed today. A browser already counted today is always
+ * let through, so a full day still counts what its browsers do; a new one gets in only while the
+ * day has room.
+ */
+export function admitsBrowser(browsersToday: number, alreadySeen: boolean): boolean {
+  return alreadySeen || browsersToday < MAX_BROWSERS_PER_DAY
+}
+
+/** The first day a prune at `now` keeps: everything filed on an earlier day is dropped. */
+export function pruneCutoff(now: number): string {
+  return dayKey(now - KEEP_DAYS * 86_400_000)
+}
+
 export interface Batch {
   visitor: string
   events: EventName[]
