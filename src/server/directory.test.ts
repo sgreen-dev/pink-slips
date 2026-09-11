@@ -17,6 +17,7 @@ import { normalizeRecoveryCode, RECOVERY_LENGTH } from '../protocol/messages.ts'
 import type { CollectionState } from '../protocol/records.ts'
 import {
   CPU_RESULT_GAP_MS,
+  creationBucket,
   Directory,
   LEADERBOARD_CACHE_MS,
   recoveryCodeFrom,
@@ -287,23 +288,59 @@ describe('directory', () => {
 
     it('keeps nothing for an address whose times have all aged out', async () => {
       const { directory, store, tick } = setUp()
+      const key = 'made:hash(address:1.2.3.4)'
       await directory.allowCreation('1.2.3.4')
-      expect(store.data.get('made:1.2.3.4')).toEqual([1_000_000])
+      expect(store.data.get(key)).toEqual([1_000_000])
       tick(WINDOW + 1)
       await directory.allowCreation('1.2.3.4')
       // The old time is gone rather than accumulating for every address ever seen.
-      expect(store.data.get('made:1.2.3.4')).toEqual([1_000_000 + WINDOW + 1])
+      expect(store.data.get(key)).toEqual([1_000_000 + WINDOW + 1])
+    })
+
+    it('keeps a hash of the address, never the address, and sweeps out every count that has run out', async () => {
+      // The fake hash here is readable on purpose; the service's is SHA-256. What matters is that
+      // the key is the hash's output, and that an address gone quiet leaves nothing behind: no
+      // key was ever deleted, so one was kept for every address that had made a player (S21).
+      const { directory, store, tick } = setUp()
+      await directory.allowCreation('1.2.3.4')
+      tick(WINDOW)
+      await directory.allowCreation('5.6.7.8')
+      const kept = [...store.data.keys()].filter((key) => key.startsWith('made:'))
+      expect(kept).toEqual(['made:hash(address:5.6.7.8)'])
+    })
+
+    it('counts an IPv6 client by its /64, however it rotates inside it', async () => {
+      const { directory } = setUp()
+      for (let i = 0; i < CAP; i++) {
+        expect(await directory.allowCreation(`2001:db8:1:2::${i + 1}`)).toBe(true)
+      }
+      expect(await directory.allowCreation('2001:db8:1:2:abcd:ef01:2345:6789')).toBe(false)
+      expect(await directory.allowCreation('2001:db8:1:3::1')).toBe(true)
+    })
+
+    it('buckets addresses the way the limit counts them', () => {
+      expect(creationBucket('203.0.113.9')).toBe('203.0.113.9')
+      expect(creationBucket('2001:db8::1')).toBe('2001:db8:0:0::/64')
+      expect(creationBucket('2001:0DB8:0000:0000:ffff::2')).toBe('2001:db8:0:0::/64')
+      expect(creationBucket('2001:db8:1:2:3:4:5:6')).toBe('2001:db8:1:2::/64')
+      expect(creationBucket('::ffff:203.0.113.9')).toBe('203.0.113.9')
+      expect(creationBucket('::1')).toBe('0:0:0:0::/64')
+      // Anything that does not parse is counted as it came.
+      for (const odd of ['unknown', '1:2:3', '1::2::3', 'fe80::1%eth0', 'g::1']) {
+        expect(creationBucket(odd)).toBe(odd)
+      }
     })
 
     it('survives the object being rebuilt, which is what the worker map did not', async () => {
       const { directory, store } = setUp()
       for (let i = 0; i < CAP; i++) await directory.allowCreation('1.2.3.4')
       // A second Directory over the same storage stands for another isolate, or this object
-      // waking after hibernation: the count is in the store, so it is still there.
+      // waking after hibernation: the count is in the store, so it is still there. It hashes as
+      // the first one does, as every copy of the service does, since the key is the hash's output.
       const again = new Directory(
         store,
         () => 'x'.repeat(32),
-        async (t) => t,
+        async (text) => `hash(${text})`,
         () => 1_000_000,
       )
       expect(await again.allowCreation('1.2.3.4')).toBe(false)

@@ -1,4 +1,5 @@
 import type { ServerMessage } from '../src/protocol/messages.ts'
+import type { Budget } from '../src/server/budget.ts'
 import type { Waiting } from '../src/server/queue.ts'
 import type { SeatIdentity } from '../src/server/room.ts'
 
@@ -12,6 +13,8 @@ export interface Attachment {
   identity: SeatIdentity | null
   /** The room this socket opened, so an unstored room can be rebuilt after hibernation. */
   code?: string
+  /** What this socket may still send the room (backlog S20). */
+  budget?: Budget
 }
 
 export interface QueueAttachment extends Waiting {
@@ -25,8 +28,14 @@ export function attachment(ws: WebSocket): Attachment {
   return value ?? { seat: null, identity: null }
 }
 
-export function queueAttachment(ws: WebSocket): QueueAttachment {
-  return ws.deserializeAttachment() as QueueAttachment
+/**
+ * The queue's record for a socket, or null for one that carries none. The queue sets one on every
+ * socket it accepts, but reading a socket without one used to throw inside the alarm, the only
+ * thing that re-arms the queue, so one bad socket left everyone waiting (backlog S22).
+ */
+export function queueAttachment(ws: WebSocket): QueueAttachment | null {
+  const value = ws.deserializeAttachment() as QueueAttachment | null
+  return value && typeof value.accountId === 'string' ? value : null
 }
 
 export function send(ws: WebSocket, message: ServerMessage): void {

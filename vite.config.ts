@@ -1,5 +1,6 @@
 /// <reference types="vitest/config" />
 import { execSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
 
@@ -58,7 +59,12 @@ export default defineConfig({
   define: { __COMMIT__: JSON.stringify(commit()) },
   test: {
     environment: 'node',
-    // The counter worker is standalone, so its test sits beside it rather than under src.
-    include: ['src/**/*.test.{ts,tsx}', 'counter/*.test.ts'],
+    // The two workers keep their own code outside src, so their tests sit beside it.
+    include: ['src/**/*.test.{ts,tsx}', 'counter/*.test.ts', 'server/*.test.ts'],
+    // The objects under server/ import the platform's own module, which exists only inside a
+    // worker; their tests load a stand-in with the same shape instead (backlog Q41).
+    alias: {
+      'cloudflare:workers': fileURLToPath(new URL('./server/testing.ts', import.meta.url)),
+    },
   },
 })

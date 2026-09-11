@@ -2,6 +2,7 @@ import { DurableObject } from 'cloudflare:workers'
 import type { Transfer } from '../src/collection/stakes.ts'
 import type { RngState } from '../src/engine/index.ts'
 import { parseClientMessage, type ServerMessage } from '../src/protocol/messages.ts'
+import { spend } from '../src/server/budget.ts'
 import { readJson, text } from '../src/server/http.ts'
 import { randomToken } from '../src/server/ids.ts'
 import {
@@ -35,6 +36,8 @@ export class MatchRoom extends DurableObject<Env> {
   private room: Room | null = null
   /** The expiry and alarm last written, so an unchanged one is not written again. */
   private written: WrittenRoom | null = null
+  /** The snapshot as last written, so a message that changed nothing writes nothing. */
+  private lastSnapshot: string | null = null
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
@@ -84,14 +87,23 @@ export class MatchRoom extends DurableObject<Env> {
   }
 
   override async webSocketMessage(ws: WebSocket, data: string | ArrayBuffer): Promise<void> {
+    const before = attachment(ws)
+    // Every message spends from the socket's budget before anything else runs, and one past it
+    // is dropped without an answer, since an answer is one more thing to send (backlog S20).
+    const { allowed, budget } = spend(before.budget, Date.now())
+    // An unstored room is gone after hibernation, so it is rebuilt from the code the socket
+    // carries; a room nobody joined has no state to lose by being built again. A seat belongs to
+    // the room that gave it, though, so a socket seated in a room that has since been forgotten
+    // holds no seat in the one built in its place (backlog S19).
+    const rebuilt = this.room === null
+    const held: Attachment = { ...before, budget, seat: rebuilt ? null : before.seat }
+    ws.serializeAttachment(held)
+    if (!allowed) return
     const message = parseClientMessage(typeof data === 'string' ? data : '')
     if (!message) {
       send(ws, { type: 'error', reason: 'That message could not be read.' })
       return
     }
-    const held = attachment(ws)
-    // An unstored room is gone after hibernation, so it is rebuilt from the code the socket
-    // carries. A room nobody joined has no state to lose by being built again.
     const room = this.room ?? (held.code ? (this.room = new Room(held.code, this.seed())) : null)
     if (!room) return
     const out = room.handle(held.seat, message, randomToken, held.identity, Date.now())
@@ -200,8 +212,21 @@ export class MatchRoom extends DurableObject<Env> {
     if (!this.room || now >= expiresAt) {
       // Last chance for a result that could not be reported when it happened.
       if (this.room) await this.report(this.room)
+      // Forgetting a room means its sockets as well. One left open used to rebuild the room from
+      // the code it carries on its next message and write it back with a fresh day, so a single
+      // open tab kept a room for ever (backlog S19). What was written goes too, or the next room
+      // here would take the old alarm for one still armed.
+      for (const socket of this.ctx.getWebSockets()) {
+        try {
+          socket.close(1000, 'This room has expired.')
+        } catch {
+          // Already gone.
+        }
+      }
       await this.ctx.storage.deleteAll()
       this.room = null
+      this.written = null
+      this.lastSnapshot = null
       return
     }
     // The turn clock ran out: forfeit the seat on turn and report it like any other result.
@@ -237,14 +262,18 @@ export class MatchRoom extends DurableObject<Env> {
    */
   private async persist(): Promise<void> {
     if (!this.room) return
-    // The snapshot always changes; the expiry and the alarm almost never do, so they are only
-    // written when they actually move (backlog P5). A steady exchange writes once per message
-    // instead of three times.
+    // The expiry and the alarm are written only when they actually move (backlog P5), and the
+    // snapshot only when it has changed: a message the room refused used to cost a full write of
+    // the match all the same, at whatever rate a client cared to send them (backlog S20).
     const plan = planRoomWrite(this.written, Date.now(), ROOM_TTL_MS, this.room.alarmAt())
-    const entries: Record<string, unknown> = { room: this.room.snapshot() }
+    const snapshot = this.room.snapshot()
+    const text = JSON.stringify(snapshot)
+    const entries: Record<string, unknown> = {}
+    if (text !== this.lastSnapshot) entries['room'] = snapshot
     if (plan.expiresAt !== null) entries['expiresAt'] = plan.expiresAt
-    await this.ctx.storage.put(entries)
+    if (Object.keys(entries).length > 0) await this.ctx.storage.put(entries)
     if (plan.alarm !== null) await this.ctx.storage.setAlarm(plan.alarm)
     this.written = plan.next
+    this.lastSnapshot = text
   }
 }

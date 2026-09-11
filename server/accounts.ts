@@ -246,9 +246,15 @@ export class AccountDirectory extends DurableObject<Env> {
    */
   private async tryPair(): Promise<void> {
     const ratedCount = await this.directory.ratedCount()
-    let sockets = this.ctx.getWebSockets().filter((ws) => !queueAttachment(ws).matched)
+    // A socket carrying no queue record is left out rather than read (backlog S22).
+    let sockets = this.ctx.getWebSockets().filter((ws) => {
+      const held = queueAttachment(ws)
+      return held !== null && !held.matched
+    })
     for (;;) {
-      const entries = sockets.map(queueAttachment)
+      const entries = sockets
+        .map(queueAttachment)
+        .filter((held): held is QueueAttachment => held !== null)
       const pair = pickPair(entries, Date.now(), ratedCount)
       if (!pair) break
       const [first, second] = pair
@@ -283,7 +289,7 @@ export class AccountDirectory extends DurableObject<Env> {
       const paired = new Set([first.accountId, second.accountId])
       for (const ws of sockets) {
         const held = queueAttachment(ws)
-        if (!paired.has(held.accountId)) continue
+        if (!held || !paired.has(held.accountId)) continue
         const index = held.accountId === first.accountId ? 0 : 1
         ws.serializeAttachment({ ...held, matched: true } satisfies QueueAttachment)
         send(ws, {
@@ -298,7 +304,7 @@ export class AccountDirectory extends DurableObject<Env> {
           // Already gone.
         }
       }
-      sockets = sockets.filter((ws) => !paired.has(queueAttachment(ws).accountId))
+      sockets = sockets.filter((ws) => !paired.has(queueAttachment(ws)?.accountId ?? ''))
     }
     if (sockets.length > 0) await this.ctx.storage.setAlarm(Date.now() + QUEUE_TICK_MS)
   }

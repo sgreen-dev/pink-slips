@@ -241,14 +241,21 @@ export class Directory {
    * This lives on the directory rather than in the worker because the worker is many isolates,
    * per colo and short-lived, so a count held in one of them is not a limit at all: retrying
    * lands in a different isolate with an empty count. The directory is one object for the whole
-   * service, so a count kept here is the count. Times older than the window are dropped as they
-   * are read, and an address with none left loses its key, so this grows only with the
-   * addresses that made a player in the last hour.
+   * service, so a count kept here is the count.
+   *
+   * What is kept is a hash of the address's bucket (`creationBucket`), never the address, and
+   * only for the window: every call sweeps out the counts that have run out, so this holds the
+   * addresses that made a player in the last hour and nothing older. This comment promised as
+   * much while nothing ever deleted a key, so one was kept for every address that had ever made
+   * a player, and it was the address itself (backlog S21).
    */
   async allowCreation(address: string): Promise<boolean> {
-    const key = `${CREATIONS}${address}`
     const now = this.now()
     const window = this.t.online.creationWindowMs
+    const key = `${CREATIONS}${await this.hash(`address:${creationBucket(address)}`)}`
+    for (const [held, times] of await this.store.list<number[]>(CREATIONS)) {
+      if (held !== key && !times.some((at) => now - at < window)) await this.store.delete(held)
+    }
     const kept = ((await this.store.get<number[]>(key)) ?? []).filter((at) => now - at < window)
     if (kept.length >= this.t.online.creationsPerWindow) {
       // Rewrite anyway, so the pruning happens even for an address that is being refused.
@@ -763,4 +770,27 @@ export class Directory {
     this.board = null
     await this.store.put(`${ACCOUNT}${account.id}`, account)
   }
+}
+
+/**
+ * The part of an address the new-player limit counts by (backlog S21). An IPv4 address is counted
+ * as it is. An IPv6 client is handed a whole /64 and can take a fresh address inside it for every
+ * request, so it is counted by that /64, written out in full. An IPv4 address carried in IPv6 form
+ * is counted as the IPv4 address it is, and anything that parses as neither is counted as it came.
+ */
+export function creationBucket(address: string): string {
+  if (!address.includes(':')) return address
+  const halves = address.toLowerCase().split('::')
+  if (halves.length > 2) return address
+  const split = (part: string) => (part === '' ? [] : part.split(':'))
+  const head = split(halves[0] ?? '')
+  const tail = halves.length === 2 ? split(halves[1] ?? '') : []
+  const last = [...head, ...tail].at(-1) ?? ''
+  if (last.includes('.')) return last
+  const missing = 8 - head.length - tail.length
+  if (halves.length === 2 ? missing < 1 : missing !== 0) return address
+  const full = [...head, ...Array<string>(missing).fill('0'), ...tail]
+  if (!full.every((group) => /^[0-9a-f]{1,4}$/.test(group))) return address
+  const prefix = full.slice(0, 4).map((group) => parseInt(group, 16).toString(16))
+  return `${prefix.join(':')}::/64`
 }
