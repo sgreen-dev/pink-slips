@@ -27,7 +27,7 @@ import {
 } from './online.ts'
 import { roomLink } from './roomLink.ts'
 import type { OnlineEntry } from './OnlineScreen.tsx'
-import { RaceEndBanner } from './RaceEndBanner.tsx'
+import { captureFate, RaceEndBanner } from './RaceEndBanner.tsx'
 import { ResultScreen } from './ResultScreen.tsx'
 import { beforeStart, soundsBetween } from './sound/events.ts'
 import { useSound } from './sound/useSound.ts'
@@ -428,9 +428,16 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
         onUndo={onUndo}
       />
       {session.raceEnd !== null && (
+        // The other seat's keepsakes are not known in this browser, so a car it keeps in chrome
+        // reads as moving here; the stakes block on the result screen, from the room, is final.
         <RaceEndBanner
           raceEnd={session.raceEnd}
           headline={headline(session.raceEnd.winner)}
+          fate={captureFate(
+            session.raceEnd.capturedCarId,
+            entry.stakes,
+            variantOf(session.raceEnd.capturedCarId) === 'chrome',
+          )}
           onContinue={onContinue}
         />
       )}
