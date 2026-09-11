@@ -61,6 +61,9 @@
 | 42 | Sweep the backlog: security and accessibility | done | 4b3413b |
 | 43 | Sweep the backlog: gameplay, tests and tooling | done | 2f7d5eb |
 | 44 | Random garages | done | 788e3b2 |
+| 45 | Loaner garages cut by strategy | done | 050d69b |
+| 46 | Close the loaner cycle | done | f86787b |
+| 47 | Button form across every screen | done | 0565835 |
 
 ---
 

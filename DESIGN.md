@@ -482,6 +482,10 @@ A headless command, `npm run sim`, that plays CPU against CPU for thousands of m
 - No single-tier garage wins more than 65% against the field
 - A Daily-only garage against a Hyper-only garage lands between 35% and 65%
 - Median match is 25 or fewer turns per player
+- The first player wins between 47% and 55%
+- No single-tier garage wins less than 20% against the field (added in phase 43; not met yet, see backlog G5)
+
+All six live under `sim` in `src/engine/tunables.ts`.
 
 **Known risks the simulator must check first**
 
@@ -552,7 +556,7 @@ Fonts load from Google Fonts. The wordmark and the meter are requested with Goog
 - **Every screen header is the same header.** The brand on the left with the screen's title beside or beneath it, and on the right the two ways off the screen stacked, Back to start above Rules. The deck builder, the online screen and the profile centre their title; the collection tucks its title under the brand. The board is that header with the turn summary in the middle and the speaker in the stack, and its three controls are pinned to the right edge rather than spaced by a summary whose length changes every turn. On the start screen, which has no header, what leaves it sits in its own row below the main action and the utilities in a second row below that, not inside a group of modes, so a screen reader is never told the speaker is a way to play.
 
 
-**Button form** (phase 32): *Button order* above says which button leads and in what order; this says what one looks like, which until now was never written down and so drifted. Three rules.
+**Button form** (phase 47): *Button order* above says which button leads and in what order; this says what one looks like, which until now was never written down and so drifted. Three rules.
 
 - **Three sizes, chosen by the row's job and never by the container it sits in.** `button--big` is a screen's one decision, and every button in that row is big. The default size is an action or a destination in the flow of a screen. `button--small` is a chip, a screen-header control, or a button inside a line of prose. **One row is one size**, and a confirm pair takes the size of the row it covers.
 - **Four backgrounds, chosen by what pressing it does.** `button--primary` is the one action a panel exists for, and while a destructive pair is armed the confirm is that one, so the panel's usual main action goes plain for the moment. A solid ground means the button does something: navigates, saves, buys, confirms, cancels or arms. `button--ghost` is only a button that opens or dismisses a panel of words and changes nothing — Rules, Privacy, Credits, the speaker, and a callout's OK, seven in the whole game. `button--on` is a toggle that is on.

@@ -6,7 +6,7 @@ import { CAR_DETAILS, getCarDetail } from './carDetails.ts'
  * The printed detail lives apart from the roster so it stays out of the first download
  * (backlog P3). Splitting a record is only safe while the two halves cannot drift, so this
  * pins that every car still has its detail and that every field of it is filled in — including
- * the source, which `CLAUDE.md` requires every car's figures to name.
+ * the source, which the repo's rules require every car's figures to name.
  */
 
 describe('car details', () => {

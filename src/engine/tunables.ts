@@ -89,6 +89,25 @@ export const TUNABLES = {
     >,
   },
   /** Online accounts and matchmaking (DESIGN.md 13). */
+  /**
+   * The balance targets `npm run sim` checks (DESIGN.md 7). They were written inline in
+   * `src/sim/run.ts`, though DESIGN.md 7 calls them tunable and section 4 says no number lives
+   * anywhere but here (backlog Q51).
+   */
+  sim: {
+    /** No single-type garage wins more than this against the field. */
+    maxTypeWin: 0.6,
+    /** No single-tier garage wins more than this against the field. */
+    maxTierWin: 0.65,
+    /** Nor less than this: the floor, which today's tiers do not meet (backlog G5). */
+    minTierWin: 0.2,
+    /** A Daily-only garage against a Hyper-only one lands inside this band. */
+    dailyVsHyper: [0.35, 0.65] as readonly [number, number],
+    /** The median match takes this many turns per player, or fewer. */
+    maxMedianTurns: 25,
+    /** The first player wins inside this band: going first is worth something, but not much. */
+    firstPlayer: [0.47, 0.55] as readonly [number, number],
+  },
   online: {
     /** The rating every account starts with. */
     ratingStart: 1000,
