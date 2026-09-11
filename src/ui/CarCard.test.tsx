@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { getCar } from '../data/cars.ts'
 import { CarCard } from './CarCard.tsx'
 import { DetailContext } from './detailContext.ts'
-import { draw, screen } from './testRender.tsx'
+import { draw, fireEvent, screen } from './testRender.tsx'
 
 /**
  * The card every grid, garage and hand is made of, and the first component with a test at all
@@ -72,5 +72,23 @@ describe('a car card', () => {
     screen.getByRole('button', { name: /Details for/ }).click()
     expect(open).toHaveBeenCalledTimes(1)
     expect(onClick).not.toHaveBeenCalled()
+  })
+})
+
+describe('the lean', () => {
+  it('holds while the other classes on the card change under it (backlog U37)', async () => {
+    const { container, rerender } = draw(<CarCard carId={MUSTANG} onClick={vi.fn()} />)
+    const card = container.querySelector<HTMLElement>('.card')
+    if (!card) throw new Error('No card')
+    card.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, width: 100, height: 140, right: 100, bottom: 140, x: 0, y: 0 }) as DOMRect
+    fireEvent.pointerEnter(card, { pointerType: 'mouse' })
+    fireEvent.pointerMove(card, { pointerType: 'mouse', clientX: 80, clientY: 20 })
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    expect(card.hasAttribute('data-tilt')).toBe(true)
+    // Picking the card rewrites its classes; the lean used to be one of them, and went too.
+    rerender(<CarCard carId={MUSTANG} onClick={vi.fn()} selected />)
+    expect(card.classList.contains('card--selected')).toBe(true)
+    expect(card.hasAttribute('data-tilt')).toBe(true)
   })
 })

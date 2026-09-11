@@ -27,7 +27,9 @@ export function CreditsDialog() {
 
   const open = () => {
     dialogRef.current?.showModal()
-    if (state.status !== 'idle') return
+    // A list that loaded, or is loading, is not asked for again. One that failed is, so a dropped
+    // connection on the first open does not cost the list for the rest of the session (Q52).
+    if (state.status === 'loading' || state.status === 'ready') return
     setState({ status: 'loading' })
     void fetch(CREDITS_URL)
       .then((response) => {

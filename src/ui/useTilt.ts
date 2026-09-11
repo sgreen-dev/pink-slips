@@ -8,8 +8,11 @@ import { prefersReducedMotion } from './motion.ts'
  * Everything it sets goes straight onto the element as custom properties, through a ref. Not
  * state: the collection mounts 126 cards at once, and backlog P2 measured a rebuild of that grid
  * at 57 to 73ms on a desktop and three to five times that on a phone, so a render per
- * `pointermove` would spend the whole frame budget on the one card being pointed at. The CSS in
- * `.card--tilt` reads the properties; nothing in React needs to know the card is leaning.
+ * `pointermove` would spend the whole frame budget on the one card being pointed at. The CSS under
+ * `[data-tilt]` reads the properties; nothing in React needs to know the card is leaning. It is an
+ * attribute rather than a class because React writes a card's class attribute whole on every
+ * render, so a class added here was wiped whenever the card's other classes changed and the card
+ * snapped flat mid-lean (backlog U37). React never writes this one.
  *
  * `--rx` and `--ry` are the rotation, `--mx` and `--my` are where in the card the pointer is, as
  * a percentage, which the foil and holo sheets and the glare all point at so the finish agrees
@@ -27,11 +30,7 @@ export interface Tilt {
   onPointerLeave: () => void
 }
 
-/**
- * @param block the class that turns the lean on, `card` or `mod`, since the two components style
- * it under their own name.
- */
-export function useTilt(block: 'card' | 'mod'): Tilt {
+export function useTilt(): Tilt {
   const node = useRef<HTMLElement | null>(null)
   const box = useRef<DOMRect | null>(null)
   const frame = useRef(0)
@@ -49,31 +48,28 @@ export function useTilt(block: 'card' | 'mod'): Tilt {
     box.current = event.currentTarget.getBoundingClientRect()
   }, [])
 
-  const onPointerMove = useCallback(
-    (event: ReactPointerEvent<HTMLElement>) => {
-      if (event.pointerType !== 'mouse' || prefersReducedMotion()) return
-      point.current = { x: event.clientX, y: event.clientY }
-      // One write per frame however many moves arrive in it.
-      if (frame.current) return
-      frame.current = requestAnimationFrame(() => {
-        frame.current = 0
-        const el = node.current
-        const rect = box.current
-        if (!el || !rect || rect.width === 0 || rect.height === 0) return
-        // -0.5 to 0.5 from the middle of the card.
-        const x = (point.current.x - rect.left) / rect.width - 0.5
-        const y = (point.current.y - rect.top) / rect.height - 0.5
-        // Pointer right leans the right edge away, pointer up leans the top edge away, which is
-        // the way a card tips under a finger.
-        el.style.setProperty('--ry', `${(x * MAX_DEG * 2).toFixed(2)}deg`)
-        el.style.setProperty('--rx', `${(-y * MAX_DEG * 2).toFixed(2)}deg`)
-        el.style.setProperty('--mx', `${((x + 0.5) * 100).toFixed(1)}%`)
-        el.style.setProperty('--my', `${((y + 0.5) * 100).toFixed(1)}%`)
-        el.classList.add(`${block}--tilt`)
-      })
-    },
-    [block],
-  )
+  const onPointerMove = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+    if (event.pointerType !== 'mouse' || prefersReducedMotion()) return
+    point.current = { x: event.clientX, y: event.clientY }
+    // One write per frame however many moves arrive in it.
+    if (frame.current) return
+    frame.current = requestAnimationFrame(() => {
+      frame.current = 0
+      const el = node.current
+      const rect = box.current
+      if (!el || !rect || rect.width === 0 || rect.height === 0) return
+      // -0.5 to 0.5 from the middle of the card.
+      const x = (point.current.x - rect.left) / rect.width - 0.5
+      const y = (point.current.y - rect.top) / rect.height - 0.5
+      // Pointer right leans the right edge away, pointer up leans the top edge away, which is
+      // the way a card tips under a finger.
+      el.style.setProperty('--ry', `${(x * MAX_DEG * 2).toFixed(2)}deg`)
+      el.style.setProperty('--rx', `${(-y * MAX_DEG * 2).toFixed(2)}deg`)
+      el.style.setProperty('--mx', `${((x + 0.5) * 100).toFixed(1)}%`)
+      el.style.setProperty('--my', `${((y + 0.5) * 100).toFixed(1)}%`)
+      el.setAttribute('data-tilt', '')
+    })
+  }, [])
 
   const onPointerLeave = useCallback(() => {
     if (frame.current) {
@@ -83,10 +79,10 @@ export function useTilt(block: 'card' | 'mod'): Tilt {
     box.current = null
     const el = node.current
     if (!el) return
-    el.classList.remove(`${block}--tilt`)
+    el.removeAttribute('data-tilt')
     // The properties go too, so the card is back to exactly what the stylesheet says.
     for (const name of ['--rx', '--ry', '--mx', '--my']) el.style.removeProperty(name)
-  }, [block])
+  }, [])
 
   return { ref, onPointerEnter, onPointerMove, onPointerLeave }
 }

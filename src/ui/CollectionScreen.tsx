@@ -47,6 +47,7 @@ import { CarCard } from './CarCard.tsx'
 import { Filter } from './Filter.tsx'
 import { ModCard } from './ModCard.tsx'
 import { PackReveal } from './PackReveal.tsx'
+import { packSummary } from './packSummary.ts'
 import { RulesButton, RulesDialog } from './RulesDialog.tsx'
 import { useSound } from './sound/useSound.ts'
 
@@ -325,11 +326,13 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
             {lapError}
           </p>
         )}
-        {/* Only what changes in answer to something the player did is announced, which is the
-            pack that just opened and the lines under the controls. */}
-        <div aria-live="polite">
-          {opened && <PackReveal pack={opened.pack} fresh={opened.fresh} />}
-        </div>
+        {/* Only what changes in answer to something the player did is announced: a one-line
+            summary of the pack just opened, never the five cards, which read out as some fifty
+            fragments (backlog A8), and the lines under the controls. */}
+        <p className="visually-hidden" role="status">
+          {opened ? packSummary(opened.pack, opened.fresh) : ''}
+        </p>
+        {opened && <PackReveal pack={opened.pack} fresh={opened.fresh} />}
         {(spareCount > 0 || state.credits > 0) && (
           <div className="collection__scrap">
             {/* Credits sit beside the controls that earn and spend them, not up in the summary. */}

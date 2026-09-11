@@ -133,3 +133,27 @@ describe('the collection screen', () => {
     expect(onBack).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('opening a pack on the collection screen', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('announces a one-line summary, not the five cards (backlog A8)', async () => {
+    seed({}, { packs: 1 })
+    open()
+    const button = [...document.querySelectorAll('button')].find((b) =>
+      b.textContent?.startsWith('Open a pack'),
+    )
+    expect(button, 'no open-pack button').toBeTruthy()
+    if (button) fireEvent.click(button)
+    const summary = document.querySelector('.visually-hidden[role="status"]')
+    await vi.waitFor(() =>
+      expect(summary?.textContent).toMatch(/^Pack opened: \d+ cars? and \d+ mods?\. New: /),
+    )
+    // The cards are there for the eye, outside any live region.
+    const reveal = document.querySelector('.collection__reveal')
+    expect(reveal).not.toBeNull()
+    expect(reveal?.closest('[aria-live]')).toBeNull()
+  })
+})

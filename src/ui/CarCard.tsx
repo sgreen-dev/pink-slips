@@ -122,7 +122,7 @@ export const CarCard = memo(function CarCard({
   const car = getCar(carId)
   const variant = useVariant(carId, variantProp)
   const openDetail = useDetail()
-  const tilt = useTilt('card')
+  const tilt = useTilt()
   const [art, setArt] = useState(() => initialArtState(car.imageUrl))
   const frame = typeFrameUrl(car.type)
   const frameStyle = frame ? ({ '--frame': `url(${frame})` } as CSSProperties) : undefined

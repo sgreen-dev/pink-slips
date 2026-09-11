@@ -250,7 +250,12 @@ export function App() {
     <AccountContext value={account}>
       <DetailProvider>
         <Soundtrack kind={screen.kind} />
-        <Suspense fallback={<Loading />}>{page}</Suspense>
+        {/* The page goes inert under the player dialog, as the match and result screens do under
+            theirs, so Tab cannot walk out of a modal into the page it covers (backlog A9). The
+            wrapper is display: contents, so it takes no part in the layout. */}
+        <div className="app__page" inert={Boolean(dialog && ENDPOINT)}>
+          <Suspense fallback={<Loading />}>{page}</Suspense>
+        </div>
       </DetailProvider>
       {dialog && ENDPOINT && (
         <Suspense fallback={null}>
