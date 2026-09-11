@@ -177,7 +177,8 @@ describe('CPU priorities (DESIGN.md section 6)', () => {
       ],
     })
     const wornStaging = { ...worn, phase: { kind: 'staging' as const, pending: [0 as const] } }
-    // Three wear points take the GT-R below the Mustang's 372 ft.
+    // Three wear points take the GT-R below the Mustang's 372 ft, and over a race the Mustang's
+    // top end only widens the gap.
     const wornGtr = readyAdvance({ carId: GTR, fuel: 4, wear: 3, parts: [], tractionShield: false })
     const mustang = readyAdvance({
       carId: MUSTANG,
