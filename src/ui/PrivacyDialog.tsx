@@ -11,7 +11,7 @@ import { useRef } from 'react'
 
 const COUNTED = [
   'A random number saved in this browser. It says you have been here before. It is not your name. Clearing your site data ends it.',
-  'Which screens you opened. How many matches you started and finished.',
+  'Which screens you opened. How many matches you started and finished. Whether you opened a pack, made a room, took a lap or turned on the sound.',
   'If the game breaks, what went wrong, so it can be fixed.',
 ]
 

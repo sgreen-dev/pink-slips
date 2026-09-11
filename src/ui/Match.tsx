@@ -16,6 +16,7 @@ import {
   type PlayerIndex,
 } from '../engine/index.ts'
 import { AccountContext, reportCpuResult } from './account.ts'
+import { count } from './analytics.ts'
 import { Board } from './Board.tsx'
 import { canUndo, reduceSession, startSession } from './celebration.ts'
 import { recordMatch } from './counter.ts'
@@ -134,6 +135,7 @@ export function Match({
     if (winner === null || recorded.current) return
     recorded.current = true
     void recordMatch()
+    count(mode === 'cpu' ? 'match-finish-cpu' : 'match-finish-hotseat')
     const won = winner === HUMAN_SEAT
     if (account) {
       void reportCpuResult(account.endpoint, account.token, mode, won, transfer).then((result) => {
