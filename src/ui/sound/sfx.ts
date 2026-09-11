@@ -18,6 +18,8 @@ export type SoundName =
   | 'sabotage'
   | 'deflect'
   | 'coin'
+  | 'scrap'
+  | 'buy'
   | 'raceEnd'
   | 'matchEnd'
   | 'shuffle'
@@ -35,6 +37,8 @@ export const SOUND_NAMES: readonly SoundName[] = [
   'sabotage',
   'deflect',
   'coin',
+  'scrap',
+  'buy',
   'raceEnd',
   'matchEnd',
   'shuffle',
@@ -271,6 +275,38 @@ export function playEffect(name: SoundName, intensity = 1): void {
       tone({ from: 2093, duration: 0.3, gain: 0.1, at: 0.58 })
       return
     }
+    case 'scrap': {
+      // Spare cards going in and coins coming back: a handful of them landing in a pile. The
+      // gaps close as it goes, the way a poured heap settles, and each coin is a highpassed
+      // tick for the strike with a short metallic ring over it. Pitches are deliberately not a
+      // scale — a pile of coins is not in tune.
+      const coins = [2400, 3100, 2000, 2750, 1750, 2300]
+      coins.forEach((hz, i) => {
+        const at = i * 0.055 - i * i * 0.003
+        burst({ at, duration: 0.02, gain: 0.16, filter: { type: 'highpass', from: 4000 } })
+        tone({ from: hz, type: 'triangle', duration: 0.09, gain: 0.13, at })
+      })
+      // and the pile coming to rest, so it ends on something settled rather than mid-clatter
+      tone({ from: NOTE.c6, type: 'triangle', duration: 0.4, gain: 0.12, at: 0.3 })
+      tone({ from: NOTE.g5, type: 'triangle', duration: 0.45, gain: 0.08, at: 0.32 })
+      return
+    }
+    case 'buy':
+      // A register, in the three parts one actually makes: the key going down, the bell, and
+      // the drawer running out. The bell is two tones a fifth apart because a real one is a
+      // struck bar and not a pure pitch, and the drawer is noise opening up as it travels.
+      burst({ duration: 0.05, gain: 0.22, filter: { type: 'lowpass', from: 1200 } })
+      tone({ from: 180, to: 120, type: 'square', duration: 0.07, gain: 0.14 })
+      tone({ from: 1568, type: 'triangle', duration: 0.55, gain: 0.26, at: 0.07 })
+      tone({ from: 2349, type: 'triangle', duration: 0.5, gain: 0.13, at: 0.075 })
+      burst({
+        at: 0.12,
+        duration: 0.35,
+        gain: 0.1,
+        filter: { type: 'highpass', from: 1500, to: 600 },
+        attack: 0.08,
+      })
+      return
     case 'raceEnd':
       tone({ from: NOTE.c5, duration: 0.18, gain: 0.22 })
       tone({ from: NOTE.e5, duration: 0.18, gain: 0.22, at: 0.14 })
