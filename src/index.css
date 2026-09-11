@@ -1387,16 +1387,6 @@ h2,
     flex-wrap: wrap;
     align-items: center;
   }
-  /* The header wraps on a phone, and the stacked pair came down as a block at the left edge with
-     Rules tucked under Back to start — leaving the title on the row above with nothing beneath
-     it and the whole right half empty. One full-width row instead: the way out on the left, and
-     Rules under the title where the space already was. */
-  .screen__nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-  }
   .builder__title {
     font-size: 1.4rem;
   }
@@ -1677,6 +1667,23 @@ h2,
   display: grid;
   justify-items: end;
   gap: 0.4rem;
+}
+/* On a phone the header wraps, and the stacked pair came down as a block against the left margin
+   with Rules tucked under Back to start — the title on the row above left with nothing beneath
+   it and the right half of the row empty. One full-width row instead: the way out on the left,
+   Rules under the title where the space already was.
+
+   It has to sit here, directly after the rule it overrides, rather than with the other phone
+   rules further up the file. The selector is identical to the base one, so the specificity is
+   identical, and a media query adds none — whichever is written last wins, even at 400px wide.
+   Written earlier, as this first was, it did nothing at all. */
+@media (max-width: 720px) {
+  .screen__nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
 }
 
 /* Matches-played counter */
