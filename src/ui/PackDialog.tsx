@@ -37,18 +37,22 @@ export function PackDialog({ earned, onClose }: PackDialogProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose, remaining])
 
-  // Each pack opened brings the pop-up back to its own top.
+  // The last pack's Open another goes away under the player's focus, and Done's autoFocus counts
+  // only when it mounts, which it already had; so focus is handed over here (backlog A10). A plain
+  // focus() also scrolled the pop-up down to Done, away from the pack just opened (backlog U39), so
+  // the focus moves and the view stays.
+  const done = useRef<HTMLButtonElement | null>(null)
+  useEffect(() => {
+    if (remaining === 0) done.current?.focus({ preventScroll: true })
+  }, [remaining])
+
+  // Each pack opened brings the pop-up back to its own top. Declared after the focus above, so for
+  // the last pack, where both run, this one runs second, even in a browser that ignores
+  // preventScroll.
   const box = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     scrollPanelTop(box.current)
   }, [opened])
-
-  // The last pack's Open another goes away under the player's focus, and Done's autoFocus counts
-  // only when it mounts, which it already had; so focus is handed over here (backlog A10).
-  const done = useRef<HTMLButtonElement | null>(null)
-  useEffect(() => {
-    if (remaining === 0) done.current?.focus()
-  }, [remaining])
 
   const open = async () => {
     const result = await openNext(account)
