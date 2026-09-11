@@ -191,7 +191,8 @@ export function ProfileScreen({ onBack, onShowCode }: ProfileScreenProps) {
             {confirmOut ? (
               <>
                 <span className="online__status">
-                  Sign out of this browser? You will need your recovery code to get this player
+                  Sign out of this browser? Your cards stay with this player, and the browser goes
+                  back to the starter cards. You will need your recovery code to get this player
                   back.
                 </span>
                 <button type="button" className="button" onClick={() => setConfirmOut(false)}>

@@ -89,6 +89,19 @@ export const TUNABLES = {
       Record<Tier, number>
     >,
   },
+  /**
+   * The most a guest's data can carry into a new player on its one claim (DESIGN.md 13, backlog
+   * S25). The service cannot see a guest's history, so these bound what it takes on trust: a few
+   * spares a card past what a deck can use, twenty to forty matches' unopened packs, credits,
+   * counting what the spares would scrap for, worth two Super cars, and three laps, which took
+   * about 1,500 packs in the pack simulator (balance log, 2026-09-08).
+   */
+  claim: {
+    spareCopies: 9,
+    maxPacks: 40,
+    maxCredits: 400,
+    maxLaps: 3,
+  },
   /** Online accounts and matchmaking (DESIGN.md 13). */
   /**
    * The balance targets `npm run sim` checks, and the type band `npm run sim:types` checks

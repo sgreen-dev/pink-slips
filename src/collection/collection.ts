@@ -397,6 +397,64 @@ export function scrapAll(state: CollectionState, t = TUNABLES): CollectionState 
   return { ...state, owned, credits: state.credits + scrapValue(state, t) }
 }
 
+/**
+ * What a claim may carry from a browser into a new player (DESIGN.md 13, backlog S25). The service
+ * cannot see a guest's history, so it takes the browser's word only this far: each card at most the
+ * copies a deck can use and a few spares; finishes no more than the copies they sit on, and
+ * keepsakes no more than the laps; packs and laps capped; and the credits, together with what the
+ * spares would scrap for, held to one budget, credits cut first and then the dearest spares, so
+ * spares claimed now cannot be scrapped past the cap later. A card that is not a card is dropped.
+ */
+export function capClaim(state: CollectionState, t = TUNABLES): CollectionState {
+  const caps = t.claim
+  const owned: Record<string, number> = {}
+  for (const [id, held] of Object.entries(state.owned)) {
+    const useful = usefulCopies(id, t)
+    const keep = useful === 0 ? 0 : Math.min(held, useful + caps.spareCopies)
+    if (keep > 0) owned[id] = keep
+  }
+  const laps = Math.min(state.laps, caps.maxLaps)
+  const left = new Map(Object.entries(owned))
+  const finish = (counts: Collection, limit = Infinity): Record<string, number> => {
+    const out: Record<string, number> = {}
+    for (const id of Object.keys(counts).sort()) {
+      if (Object.keys(out).length >= limit) break
+      const n = Math.min(copiesOwned(counts, id), left.get(id) ?? 0)
+      if (n <= 0) continue
+      out[id] = n
+      left.set(id, (left.get(id) ?? 0) - n)
+    }
+    return out
+  }
+  const chrome = finish(state.variants.chrome, laps)
+  const holo = finish(state.variants.holo)
+  const foil = finish(state.variants.foil)
+  const shaped: CollectionState = {
+    ...state,
+    owned,
+    packs: Math.min(state.packs, caps.maxPacks),
+    variants: { foil, holo, chrome },
+    laps,
+  }
+  const trimmed: Record<string, number> = { ...owned }
+  let over = scrapValue(shaped, t) - caps.maxCredits
+  const spares = [...surplus(shaped, t)]
+    .map(([id, count]) => ({ id, count, each: t.collection.scrapValue[gradeOf(id) ?? 'daily'] }))
+    .sort((a, b) => b.each - a.each || a.id.localeCompare(b.id))
+  for (const spare of spares) {
+    if (over <= 0) break
+    const cut = Math.min(spare.count, Math.ceil(over / spare.each))
+    trimmed[spare.id] = (trimmed[spare.id] ?? 0) - cut
+    over -= cut * spare.each
+  }
+  const spareValue = scrapValue({ ...shaped, owned: trimmed }, t)
+  return {
+    ...shaped,
+    owned: trimmed,
+    credits: Math.min(state.credits, Math.max(0, caps.maxCredits - spareValue)),
+  }
+}
+
 /** What a card costs, or null when it is not a real card. */
 export function cardPrice(id: string, t = TUNABLES): number | null {
   const grade = gradeOf(id)

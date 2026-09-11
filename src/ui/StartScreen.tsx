@@ -111,7 +111,10 @@ export function StartScreen({
           </button>
           {confirmOut ? (
             <>
-              <span className="account__note">You will need your recovery code to come back.</span>
+              <span className="account__note">
+                You will need your recovery code to come back, and this browser goes back to the
+                starter cards.
+              </span>
               <button
                 type="button"
                 className="button button--small"
