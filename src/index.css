@@ -2119,6 +2119,13 @@ h2,
    down at the buttons and hand. */
 .guide {
   position: relative;
+  /* It holds one sentence and sometimes one button, and it is a block in a stretch grid, so
+     without a cap it ran the full 80rem of the board — a line of text adrift in a box eight
+     times its width. 34rem is the width this app already gives a box of prose. Left, not
+     centred: the pointer sits 1.5rem from this box's left edge and has to keep aiming at the
+     first button and the near side of the garage, and it lines up with the prompt above it.
+     No media query needed — on a phone the cap never binds and the box fills the width. */
+  max-width: 34rem;
   padding: 0.6rem 0.8rem;
   border: 2px solid var(--gold);
   border-radius: 0.6rem;
