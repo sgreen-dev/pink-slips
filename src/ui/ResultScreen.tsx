@@ -137,8 +137,11 @@ export function ResultScreen({
           >
             {rematchLabel}
           </button>
+          {/* It says where it goes. This read "New match" and started nothing — both the local
+              and the online paths land on the start screen — and "Back to start" is already what
+              the other four screens call that destination. */}
           <button type="button" className="button button--big" onClick={onNewMatch}>
-            New match
+            Back to start
           </button>
         </div>
         {rematchNote && <p className="result__note">{rematchNote}</p>}
