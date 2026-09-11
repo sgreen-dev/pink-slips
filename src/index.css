@@ -29,6 +29,14 @@
   --font-meter: 'Wallpoet', 'Space Mono', 'Courier New', monospace;
   --font-body: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
+  /* The wordmark's neon, defined once because it is now set in more than one place. Every
+     stop is in `em`, so the same declaration works on the start screen's 4.5rem title and on
+     a 1.6rem header brand without a second set of numbers. */
+  --wordmark-ink: #ffd6ea;
+  --wordmark-glow:
+    0 0 0.05em var(--pink), 0 0 0.15em var(--pink), 0 0 0.35em var(--pink), 0 0 0.7em var(--pink-2),
+    0 0 1.2em var(--pink-2);
+
   color-scheme: dark;
   font-family: var(--font-body);
   background: var(--asphalt);
@@ -725,15 +733,10 @@ h2,
      letterform is held just above the accent so it reads as the hot centre, and every halo
      below it is pink. Five stops, tight to wide: the tight ones give the edge its bloom, the
      wide ones throw colour onto the road behind it. */
-  color: #ffd6ea;
+  color: var(--wordmark-ink);
   letter-spacing: 0.04em;
   line-height: 1.15;
-  text-shadow:
-    0 0 0.05em var(--pink),
-    0 0 0.15em var(--pink),
-    0 0 0.35em var(--pink),
-    0 0 0.7em var(--pink-2),
-    0 0 1.2em var(--pink-2);
+  text-shadow: var(--wordmark-glow);
 }
 .start__tagline {
   color: var(--muted);
@@ -1418,6 +1421,24 @@ h2,
 }
 .log__lines li {
   animation: log-in 0.25s ease-out both;
+}
+
+/* The wordmark in a screen header. The deck builder and the collection carry the same brand
+   element as the board, and it was set in the display face as plain pink text while the start
+   screen's read as neon — the same two words in two different identities. These two take the
+   start screen's treatment. Nothing here sets a size: the glow is entirely in `em`, so it
+   arrives already scaled to whatever the header uses. Scoped rather than applied to
+   `.board__brand` itself, because the third user of that element is the match board, and
+   whether the wordmark should glow while a race is being played is a different question. */
+.builder .board__brand,
+.collection .board__brand {
+  font-family: var(--font-wordmark);
+  font-weight: 400;
+  text-transform: uppercase;
+  /* Monoton is a much wider face than the display one, so it needs less help than 0.08em. */
+  letter-spacing: 0.04em;
+  color: var(--wordmark-ink);
+  text-shadow: var(--wordmark-glow);
 }
 
 /* Matches-played counter */
