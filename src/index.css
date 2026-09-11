@@ -1001,6 +1001,12 @@ h2,
   font-size: 1.3rem;
   letter-spacing: 0.05em;
 }
+/* The chosen garage's name glows gold as well as sitting in the pink frame (backlog U41). Still,
+   not breathing: a choice already made is not a step waiting to be taken. */
+.picker__option--selected .picker__title {
+  color: var(--gold);
+  text-shadow: 0 0 0.5em rgba(242, 193, 78, 0.55);
+}
 .picker__style {
   grid-column: 2;
   color: var(--muted);
