@@ -155,13 +155,17 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
     <VariantContext value={variantOf}>
       <main className="builder">
         <Backdrop image={backdropUrl('builder')} />
-        <header className="builder__header">
+        {/* Three parts, so the title can sit in the true centre: wordmark, title, and the
+            two ways off the screen stacked together. */}
+        <header className="builder__header builder__header--split">
           <span className="board__brand">Pink Slips</span>
           <h1 className="builder__title">Deck builder</h1>
-          <RulesButton dialogRef={rules} label="Rules" small />
-          <button type="button" className="button" onClick={onBack}>
-            Back to start
-          </button>
+          <div className="screen__nav">
+            <button type="button" className="button" onClick={onBack}>
+              Back to start
+            </button>
+            <RulesButton dialogRef={rules} label="Rules" small />
+          </div>
         </header>
 
         <div className="builder__layout">
