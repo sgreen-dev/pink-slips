@@ -161,10 +161,10 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
           <span className="board__brand">Pink Slips</span>
           <h1 className="builder__title">Deck builder</h1>
           <div className="screen__nav">
-            <button type="button" className="button" onClick={onBack}>
+            <button type="button" className="button button--small" onClick={onBack}>
               Back to start
             </button>
-            <RulesButton dialogRef={rules} label="Rules" small />
+            <RulesButton dialogRef={rules} />
           </div>
         </header>
 
@@ -257,7 +257,13 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
             {validation.errors.length === 0 && <p className="builder__ready">Ready to race.</p>}
 
             <div className="builder__actions">
-              <button type="button" className="button button--primary" onClick={() => save(false)}>
+              {/* Plain while a pair is armed: the confirm is the only primary then (DESIGN.md 8,
+                  one primary per panel), so the pink always marks exactly one thing. */}
+              <button
+                type="button"
+                className={`button ${confirmReset || confirmDelete ? '' : 'button--primary'}`}
+                onClick={() => save(false)}
+              >
                 {draft.id ? 'Save changes' : 'Save garage'}
               </button>
               {draft.id && (
@@ -270,11 +276,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
               {confirmReset ? (
                 <span className="board__confirm">
                   Clear the draft?
-                  <button
-                    type="button"
-                    className="button button--ghost"
-                    onClick={() => setConfirmReset(false)}
-                  >
+                  <button type="button" className="button" onClick={() => setConfirmReset(false)}>
                     Keep it
                   </button>
                   <button type="button" className="button button--primary" onClick={reset}>
@@ -284,7 +286,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
               ) : (
                 <button
                   type="button"
-                  className="button button--ghost"
+                  className="button"
                   onClick={() => {
                     setConfirmDelete(false)
                     setConfirmReset(true)
@@ -299,7 +301,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
                     Delete this garage?
                     <button
                       type="button"
-                      className="button button--ghost"
+                      className="button"
                       onClick={() => setConfirmDelete(false)}
                     >
                       Keep it
@@ -311,7 +313,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
                 ) : (
                   <button
                     type="button"
-                    className="button button--ghost"
+                    className="button"
                     onClick={() => {
                       setConfirmReset(false)
                       setConfirmDelete(true)

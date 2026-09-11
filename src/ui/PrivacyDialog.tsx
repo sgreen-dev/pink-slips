@@ -31,7 +31,7 @@ export function PrivacyDialog() {
         className="button button--ghost button--small"
         onClick={() => dialogRef.current?.showModal()}
       >
-        What this counts
+        Privacy
       </button>
       <dialog
         ref={dialogRef}

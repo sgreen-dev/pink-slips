@@ -132,13 +132,13 @@ export function PlayerDialog({
               >
                 {busy ? 'Creating…' : 'Create my player'}
               </button>
-              <button type="button" className="button" onClick={onClose}>
+              <button type="button" className="button button--big" onClick={onClose}>
                 Not now
               </button>
             </div>
             <button
               type="button"
-              className="button button--small button--ghost"
+              className="button button--small"
               onClick={() => {
                 setError(null)
                 setCurrent('recover')
@@ -179,13 +179,13 @@ export function PlayerDialog({
               <button type="submit" className="button button--primary button--big" disabled={busy}>
                 {busy ? 'Looking…' : 'Recover'}
               </button>
-              <button type="button" className="button" onClick={onClose}>
+              <button type="button" className="button button--big" onClick={onClose}>
                 Not now
               </button>
             </div>
             <button
               type="button"
-              className="button button--small button--ghost"
+              className="button button--small"
               onClick={() => {
                 setError(null)
                 setCurrent('create')

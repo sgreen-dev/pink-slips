@@ -517,7 +517,7 @@ A headless command, `npm run sim`, that plays CPU against CPU for thousands of m
 
 | Role | Value |
 |---|---|
-| Table | asphalt `#17171a`, panels `#232327`, lines `#3a3a40` |
+| Table | asphalt `#17171a`, panels `#232327`, a panel lifted for a toggle that is on `#2b2b31`, lines `#3a3a40` |
 | Card stock | cream `#f3e7c9`, stat bands `#e6d7b0`, ink `#2b2118` |
 | Accent | pink `#ff5ca8` for pink slips, prompts, and targets; gold `#f2c14e` for the staged car, fuel, and the distance on the track |
 | Type borders | Sports `#d7263d`, Luxury `#7a3e9d`, Muscle `#e8731c`, JDM `#1e6fd9`, EV `#1fa37a`, Off-road `#8c6b2f` |
@@ -549,7 +549,16 @@ Fonts load from Google Fonts. The wordmark and the meter are requested with Goog
 - **A destructive action confirms on a different button than the one that armed it**, so a second click on the same spot cannot destroy anything. Arming swaps in a pair, a short question, then the way out, then the confirming button, in that order, so the spot the arming button stood on is covered by the way out and never by the destruction: builder Delete and Start empty, collection Scrap and Take the lap, board Exit match, profile Sign out.
 - **A panel's controls line up with the section around them**, and sibling panels agree with each other.
 - **A picker and the button that acts on it share a row**, so the choice and the act read as one control.
-- **Every screen header carries the same things** in the same order: the brand, the title, Rules, and Back to start. What leaves a screen sits in its own row below the main action, not inside a group of modes, so a screen reader is never told the speaker is a way to play.
+- **Every screen header is the same header.** The brand on the left with the screen's title beside or beneath it, and on the right the two ways off the screen stacked, Back to start above Rules. The deck builder, the online screen and the profile centre their title; the collection tucks its title under the brand. The board is that header with the turn summary in the middle and the speaker in the stack, and its three controls are pinned to the right edge rather than spaced by a summary whose length changes every turn. On the start screen, which has no header, what leaves it sits in its own row below the main action and the utilities in a second row below that, not inside a group of modes, so a screen reader is never told the speaker is a way to play.
+
+
+**Button form** (phase 32): *Button order* above says which button leads and in what order; this says what one looks like, which until now was never written down and so drifted. Three rules.
+
+- **Three sizes, chosen by the row's job and never by the container it sits in.** `button--big` is a screen's one decision, and every button in that row is big. The default size is an action or a destination in the flow of a screen. `button--small` is a chip, a screen-header control, or a button inside a line of prose. **One row is one size**, and a confirm pair takes the size of the row it covers.
+- **Four backgrounds, chosen by what pressing it does.** `button--primary` is the one action a panel exists for, and while a destructive pair is armed the confirm is that one, so the panel's usual main action goes plain for the moment. A solid ground means the button does something: navigates, saves, buys, confirms, cancels or arms. `button--ghost` is only a button that opens or dismisses a panel of words and changes nothing — Rules, Privacy, Credits, the speaker, and a callout's OK, seven in the whole game. `button--on` is a toggle that is on.
+- **A row of buttons is spaced `0.4rem`**, or `1rem` when the row is big buttons or when the gap is separating groups rather than buttons. A control and the button that acts on it keep `0.5rem`, since they are one control and not a row.
+
+The class order is `button`, then the look, then the size: `button button--ghost button--small`, never the other way about.
 
 **Mod hints**: during the player's own mod step a faded card in the hand says in one line why it cannot be played (the turn's Boost or Sabotage already used, a Roadblock, a type lock, fuel it cannot pay, no open Part slot); outside the mod step the hand header says when cards play instead. The track lane under each car names what is waiting on its next advance, a Roadblock on its Boosts, and on the player's turn the Boosts they have played with what each does to the coming advance, cleared when the turn passes. An advance's log line ends with what changed the distance, base feet and only the steps that moved the number. A Part chip on a car carries its printed text for hover.
 

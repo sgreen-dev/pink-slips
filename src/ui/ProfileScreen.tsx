@@ -91,13 +91,17 @@ export function ProfileScreen({ onBack, onShowCode }: ProfileScreenProps) {
   return (
     <main className="start profile">
       <Backdrop image={backdropUrl('profile')} />
-      <header className="builder__header">
+      {/* The same header as the deck builder: brand, centred title, and the two ways off the
+          screen stacked on the right (DESIGN.md 8). */}
+      <header className="builder__header builder__header--split">
         <span className="board__brand">Pink Slips</span>
         <h1 className="builder__title">{profile ? profile.name : 'Profile'}</h1>
-        <RulesButton dialogRef={rules} label="Rules" small />
-        <button type="button" className="button" onClick={onBack}>
-          Back to start
-        </button>
+        <div className="screen__nav">
+          <button type="button" className="button button--small" onClick={onBack}>
+            Back to start
+          </button>
+          <RulesButton dialogRef={rules} />
+        </div>
       </header>
       {profile ? (
         <dl className="profile__stats">
@@ -190,11 +194,7 @@ export function ProfileScreen({ onBack, onShowCode }: ProfileScreenProps) {
                   Sign out of this browser? You will need your recovery code to get this player
                   back.
                 </span>
-                <button
-                  type="button"
-                  className="button button--ghost"
-                  onClick={() => setConfirmOut(false)}
-                >
+                <button type="button" className="button" onClick={() => setConfirmOut(false)}>
                   Stay
                 </button>
                 <button type="button" className="button button--primary" onClick={account.signOut}>
@@ -202,11 +202,7 @@ export function ProfileScreen({ onBack, onShowCode }: ProfileScreenProps) {
                 </button>
               </>
             ) : (
-              <button
-                type="button"
-                className="button button--ghost"
-                onClick={() => setConfirmOut(true)}
-              >
+              <button type="button" className="button" onClick={() => setConfirmOut(true)}>
                 Sign out
               </button>
             )}

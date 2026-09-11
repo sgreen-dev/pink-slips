@@ -44,18 +44,25 @@ export function RulesDialog({ dialogRef }: RulesDialogProps) {
 
 interface RulesButtonProps {
   dialogRef: RefObject<HTMLDialogElement | null>
-  label?: string
-  small?: boolean
 }
 
-export function RulesButton({ dialogRef, label = 'How to play', small }: RulesButtonProps) {
+/**
+ * The same button on all six screens, and it takes no props beyond the dialog it opens.
+ *
+ * It used to accept a label and a size, and every caller but one passed the same pair, so the
+ * start screen said "How to play" at full size while the other five said "Rules" at small — one
+ * button with two names and two sizes. There is nothing to choose here: it opens a dialog and
+ * changes nothing, which under DESIGN.md 8 (Button form) is a utility, and a utility is ghost
+ * and small wherever it appears.
+ */
+export function RulesButton({ dialogRef }: RulesButtonProps) {
   return (
     <button
       type="button"
-      className={small ? 'button button--ghost button--small' : 'button button--ghost'}
+      className="button button--ghost button--small"
       onClick={() => dialogRef.current?.showModal()}
     >
-      {label}
+      Rules
     </button>
   )
 }

@@ -28,7 +28,7 @@ export function SoundButton() {
     <div className="sound" ref={root}>
       <button
         type="button"
-        className="button button--small"
+        className="button button--ghost button--small"
         aria-expanded={open}
         aria-label={anyOn ? 'Sound on' : 'Sound off'}
         title="Sound"
