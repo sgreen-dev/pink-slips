@@ -4,7 +4,7 @@ import { sameTierGarages, type GarageSpec } from '../data/garages.ts'
 import { CAR_TYPES, TIERS } from '../data/types.ts'
 import { seedRng, TUNABLES } from '../engine/index.ts'
 import { wilson } from './stats.ts'
-import { checkTypeTargets, formatTypeLabReport, runTypeLab } from './typeLab.ts'
+import { checkTypeTargets, formatTypeLabReport, runTypeLab, typeWarnings } from './typeLab.ts'
 
 /**
  * The type lab (DESIGN.md 7, backlog G20). What is held here is the method, never a verdict: a
@@ -49,6 +49,11 @@ describe('the type lab', () => {
     const targets = checkTypeTargets(runTypeLab(SMALL))
     expect(targets).toHaveLength(CAR_TYPES.length)
     for (const target of targets) expect(target.name).toContain('between 45% and 55%')
+  })
+
+  it('warns about a Pro reading outside the band, and only when Pro played', () => {
+    for (const warning of typeWarnings(runTypeLab(SMALL))) expect(warning).toContain('Pro CPU')
+    expect(typeWarnings(runTypeLab({ ...SMALL, pro: 0 }))).toEqual([])
   })
 })
 
