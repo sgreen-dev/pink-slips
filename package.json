@@ -20,6 +20,7 @@
     "format:check": "prettier --check .",
     "data:report": "node src/data/report.ts",
     "sim": "node src/sim/cli.ts",
+    "sim:types": "node src/sim/cli.ts --types",
     "online:smoke": "node scripts/online-smoke.ts",
     "deploy:check": "node scripts/deploy-check.ts",
     "deploy:rooms": "node scripts/deploy-worker.ts rooms",

@@ -12,7 +12,7 @@ import {
   starterGarage,
   type GarageSpec,
 } from '../data/garages.ts'
-import { analyzeMatch, mean, median, percentile, rate, tally, type Tally } from './stats.ts'
+import { analyzeMatch, mean, median, percentile, rate, tally, wilson, type Tally } from './stats.ts'
 
 /**
  * The headless simulator (DESIGN.md section 7). Plays CPU against CPU across a set of
@@ -248,18 +248,13 @@ export interface TargetResult {
 export function checkTargets(report: SimulationReport): TargetResult[] {
   const goals = TUNABLES.sim
   const percent = (value: number) => `${Math.round(value * 100)}%`
-  const maxType = Math.max(...[...report.byType.values()].map(rate))
   const maxTier = Math.max(...[...report.byTier.values()].map(rate))
   const minTier = Math.min(...[...report.byTier.values()].map(rate))
   const dailyHyper = rate(report.dailyVsHyper)
   const medianTurns = median(report.lengthsRandom)
   const first = rate(report.firstPlayer)
+  // The type band is the type lab's to check (src/sim/typeLab.ts), over ten times these games.
   return [
-    {
-      name: `No single-type garage wins more than ${percent(goals.maxTypeWin)} against the field`,
-      value: pct(maxType),
-      pass: maxType <= goals.maxTypeWin,
-    },
     {
       name: `No single-tier garage wins more than ${percent(goals.maxTierWin)} against the field`,
       value: pct(maxTier),
@@ -308,6 +303,11 @@ function padStart(text: string, width: number): string {
   return ' '.repeat(Math.max(0, width - text.length)) + text
 }
 
+function wholeRange(t: Tally): string {
+  const [from, to] = wilson(t)
+  return Number.isNaN(from) ? '' : `${Math.round(from * 100)}-${Math.round(to * 100)}%`
+}
+
 function tallyLine(label: string, t: Tally, width = 26): string {
   return `${padEnd(label, width)}${padStart(pct(rate(t)), 6)}  (${t.wins}/${t.games})`
 }
@@ -322,9 +322,12 @@ export function formatReport(report: SimulationReport): string {
     `Tunables: K ${TUNABLES.advanceK}, fuel ${Object.values(TUNABLES.fuelCostByTier).join('/')}, wear ${TUNABLES.wearRate}, slots ${TUNABLES.partSlots}/${TUNABLES.partSlotsJdm}`,
   )
 
-  lines.push('', 'Win rate against random garages, by single-type garage')
-  for (const type of CAR_TYPES)
-    lines.push(tallyLine(CAR_TYPE_LABEL[type], report.byType.get(type)!))
+  lines.push('', 'Win rate against random garages, by single-type garage, with the 95% range')
+  for (const type of CAR_TYPES) {
+    const t = report.byType.get(type)!
+    lines.push(`${tallyLine(CAR_TYPE_LABEL[type], t)}  ${wholeRange(t)}`)
+  }
+  lines.push('A quick reading, a few points either way; the type verdict is npm run sim:types.')
 
   lines.push('', 'Win rate against random garages, by single-tier garage')
   for (const tier of TIERS) lines.push(tallyLine(TIER_LABEL[tier], report.byTier.get(tier)!))

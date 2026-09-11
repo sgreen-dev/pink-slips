@@ -64,6 +64,7 @@
 | 45 | Loaner garages cut by strategy | done | 050d69b |
 | 46 | Close the loaner cycle | done | f86787b |
 | 47 | Button form across every screen | done | 0565835 |
+| 48 | Measure the car types | done | 0f59ee0 |
 
 ---
 
