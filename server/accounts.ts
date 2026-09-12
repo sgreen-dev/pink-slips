@@ -197,12 +197,7 @@ export class AccountDirectory extends DurableObject<Env> {
     }
     if (path === '/me/cpu-result' && request.method === 'POST') {
       const body = (await readJson(request)) as Record<string, unknown> | null
-      const result = await this.directory.cpuResult(
-        token,
-        body?.['mode'],
-        body?.['won'],
-        body?.['stakes'],
-      )
+      const result = await this.directory.cpuResult(token, body?.['mode'], body?.['won'])
       return result ? json(result, 200, headers) : text('', 401, headers)
     }
     return text('Not found', 404, headers)

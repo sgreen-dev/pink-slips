@@ -98,7 +98,7 @@ export function ResultScreen({
         )}
         {stakes && (
           <section className="result__stakes">
-            <h2>Stakes</h2>
+            <h2>Pink Slips Mode</h2>
             {isEmptyTransfer(stakes) ? (
               <p>Nothing changed hands. Loaner cars never do.</p>
             ) : (

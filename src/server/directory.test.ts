@@ -656,13 +656,12 @@ describe('stakes on the service', () => {
   const F40 = 'ferrari-f40'
 
   /**
-   * A CPU match runs in the browser, so the service takes the client's word for the result.
-   * These say what that word is worth: packs at one report a minute, losses as reported, and
-   * nothing gained, since stakes need a loaner on the CPU side and no loaner car can change
-   * hands (DESIGN.md 12).
+   * A CPU match runs in the browser, so the service takes the client's word for the result. That
+   * word is worth packs and nothing else: Pink Slips Mode is online only (DESIGN.md 12), so no
+   * report of a match played here can move a card, whatever it claims.
    */
-  it('takes the losses a CPU report claims but never the gains', async () => {
-    const { directory } = setUp()
+  it('pays packs for a CPU report and never moves a card', async () => {
+    const { directory, tick } = setUp()
     const { token } = await directory.createPlayer('Ann')
     await directory.claim(token, {
       collection: {
@@ -675,58 +674,19 @@ describe('stakes on the service', () => {
       } satisfies CollectionState,
       garages: [],
     })
-    const first = await directory.cpuResult(token, 'cpu', true, {
-      gained: [CHIRON, STARTERS[0]?.cars[0] ?? '', 'no-such-car'],
-      lost: [F40],
-    })
-    expect(first?.stakes).toEqual({ gained: [], lost: [F40] })
-    expect(first?.data.collection.owned[CHIRON] ?? 0).toBe(0)
-    expect(first?.data.collection.owned[F40]).toBe(0)
-    // The packs the match really earned still arrive; only the invented cars are dropped.
-    expect(first?.packs).toBe(packsPerCpuWin)
-  })
-
-  it('mints nothing however many cars a report claims, even at a minute apart', async () => {
-    const { directory, tick } = setUp()
-    const { token } = await directory.createPlayer('Ann')
+    const before = (await directory.accountFor(token))?.collection.owned
     const hypers = CARS.filter((car) => car.tier === 'hyper' && !LOANER_CAR_IDS.has(car.id))
       .slice(0, 3)
       .map((car) => car.id)
-    const before = (await directory.accountFor(token))?.collection.owned
+    // The report has nowhere to put a card: `cpuResult` takes the mode and the result and
+    // nothing else, and the route stopped forwarding the transfer a client used to send.
+    expect(hypers).toHaveLength(3)
     for (let attempt = 0; attempt < 5; attempt++) {
-      await directory.cpuResult(token, 'cpu', true, { gained: hypers, lost: [] })
+      expect((await directory.cpuResult(token, 'cpu', true))?.packs).toBe(packsPerCpuWin)
       tick(CPU_RESULT_GAP_MS)
     }
-    const after = await directory.accountFor(token)
-    expect(after?.collection.owned).toEqual(before)
-  })
-
-  it('applies a report once a minute and never for hotseat', async () => {
-    const { directory, tick } = setUp()
-    const { token } = await directory.createPlayer('Ann')
-    await directory.claim(token, {
-      collection: {
-        owned: { ...introCollection(), [CHIRON]: 1, [F40]: 1 },
-        packs: 0,
-        variants: NO_VARIANTS,
-        laps: 0,
-        grantVersion: GRANT_VERSION,
-        credits: 0,
-      } satisfies CollectionState,
-      garages: [],
-    })
-    expect(
-      (await directory.cpuResult(token, 'cpu', false, { gained: [], lost: [CHIRON] }))?.stakes,
-    ).toEqual({ gained: [], lost: [CHIRON] })
-    // Within the minute nothing more is applied, packs or cars.
-    const repeat = await directory.cpuResult(token, 'cpu', false, { gained: [], lost: [F40] })
-    expect(repeat?.stakes).toBeNull()
-    expect(repeat?.data.collection.owned[F40]).toBe(1)
-    tick(CPU_RESULT_GAP_MS)
-    // Hotseat has no stakes, whatever the client sends.
-    const hotseat = await directory.cpuResult(token, 'hotseat', true, { gained: [], lost: [F40] })
-    expect(hotseat?.stakes).toBeNull()
-    expect(hotseat?.data.collection.owned[F40]).toBe(1)
+    expect((await directory.accountFor(token))?.collection.owned).toEqual(before)
+    expect((await directory.accountFor(token))?.collection.packs).toBe(5 * packsPerCpuWin)
   })
 
   /** A player holding these cars on top of the intro set, any of `chrome` as keepsakes. */

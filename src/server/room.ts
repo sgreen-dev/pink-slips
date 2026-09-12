@@ -118,13 +118,14 @@ export const REASONS = {
   illegal: 'That move is not legal right now.',
   over: 'The match is over.',
   nothingToUndo: 'There is no mod play of yours to take back.',
-  stakesOn: 'This room plays for stakes. Turn stakes on to join it.',
-  stakesOff: 'This room does not play for stakes. Turn stakes off to join it.',
-  stakesNeedsPlayer: 'Stakes need a signed-in player on both seats. Create a player first.',
+  stakesOn: 'This room plays Pink Slips Mode. Turn Pink Slips Mode on to join it.',
+  stakesOff: 'This room does not play Pink Slips Mode. Turn Pink Slips Mode off to join it.',
+  stakesNeedsPlayer:
+    'Pink Slips Mode needs a signed-in player on both seats. Create a player first.',
   notOver: 'The match is still running.',
   noRematchRanked: 'A ranked match is not replayed in its room. Queue again.',
   noRematchStakes:
-    'A stakes match is not replayed in its room, since cars changed hands. Make a new room.',
+    'A Pink Slips Mode match is not replayed in its room, since cars changed hands. Make a new room.',
 } as const
 
 function otherSeat(seat: PlayerIndex): PlayerIndex {

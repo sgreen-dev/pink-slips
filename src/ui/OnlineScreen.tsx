@@ -204,7 +204,7 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
           </button>
           <span className="online__status">
             {dealt
-              ? 'Dealt from the whole roster. Not from your collection, so no stakes and no rating.'
+              ? 'Dealt from the whole roster. Not from your collection, so no Pink Slips Mode and no rating.'
               : 'Race something you did not build, in a room with a friend.'}
           </span>
         </div>
@@ -227,7 +227,7 @@ export function OnlineScreen({ endpoint, prefillCode, onPlay, onBack }: OnlineSc
               disabled={dealt !== null}
               onChange={(event) => setStakes(event.target.checked)}
             />
-            Play for stakes
+            Pink Slips Mode
           </label>
           <span className="stakes__note">
             {dealt

@@ -11,7 +11,6 @@ import {
   isEmptyTransfer,
   isStakedCar,
   sanitizeTransfer,
-  stakesAllowed,
   stakesTransfer,
   LOANER_CAR_IDS,
 } from './stakes.ts'
@@ -159,44 +158,5 @@ describe('settling stakes', () => {
     expect(sanitizeRaced({ winner: [F40] })).toBeNull()
     expect(sanitizeRaced({ winner: [1], loser: [] })).toBeNull()
     expect(sanitizeRaced(null)).toBeNull()
-  })
-})
-
-describe('when a match can be played for stakes (DESIGN.md 12)', () => {
-  const cpu = {
-    mode: 'cpu',
-    level: 'street',
-    cpuGarageIsOwn: false,
-    randomGarages: false,
-  } as const
-
-  it('allows a Street or Pro CPU racing a loaner', () => {
-    expect(stakesAllowed(cpu)).toBe(true)
-    expect(stakesAllowed({ ...cpu, level: 'pro' })).toBe(true)
-  })
-
-  it('refuses hotseat, where both players share one collection', () => {
-    expect(stakesAllowed({ ...cpu, mode: 'hotseat' })).toBe(false)
-  })
-
-  it('refuses Rookie, which can be farmed', () => {
-    expect(stakesAllowed({ ...cpu, level: 'rookie' })).toBe(false)
-  })
-
-  // A garage of your own on the CPU side stakes a collection against itself: every car it can
-  // lose is one you already hold, so a win only ever adds a duplicate to scrap.
-  it('refuses a CPU garage the player built from cards they own', () => {
-    expect(stakesAllowed({ ...cpu, cpuGarageIsOwn: true })).toBe(false)
-    expect(stakesAllowed({ ...cpu, level: 'pro', cpuGarageIsOwn: true })).toBe(false)
-  })
-
-  // A dealt garage is not owned, so its cars can be neither won nor lost, exactly as a loaner
-  // car cannot. Without this a win would write cars into a collection that never opened them.
-  it('refuses a garage the game dealt, at every level', () => {
-    expect(stakesAllowed({ ...cpu, randomGarages: true })).toBe(false)
-    expect(stakesAllowed({ ...cpu, level: 'pro', randomGarages: true })).toBe(false)
-    expect(stakesAllowed({ ...cpu, level: 'rookie', randomGarages: true })).toBe(false)
-    // And it is refused on its own, not only alongside the other reasons.
-    expect(stakesAllowed({ ...cpu })).toBe(true)
   })
 })

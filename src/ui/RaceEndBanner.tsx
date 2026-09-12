@@ -9,11 +9,11 @@ function captureLine(name: string, fate: CaptureFate): string {
     case 'match':
       return `${out}.`
     case 'moves':
-      return `${out}, and with stakes on it changes hands for real when the match ends.`
+      return `${out}, and in Pink Slips Mode it changes hands for real when the match ends.`
     case 'loaner':
-      return `${out}. It is a loaner car, so stakes never move it.`
+      return `${out}. It is a loaner car, so Pink Slips Mode never moves it.`
     case 'keepsake':
-      return `${out}. It is a keepsake, so stakes never move it.`
+      return `${out}. It is a keepsake, so Pink Slips Mode never moves it.`
   }
 }
 

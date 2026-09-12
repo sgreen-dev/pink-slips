@@ -30,7 +30,7 @@ export function RandomGarages({ garages, labels, onReroll }: RandomGaragesProps)
       ))}
       <p className="dealt__note">
         Dealt from the whole roster, the same draw the balance runs race. These cars are not in your
-        collection, so this match cannot be played for stakes.
+        collection, so they can be neither won nor lost.
       </p>
       <button type="button" className="button" onClick={onReroll}>
         Deal again
