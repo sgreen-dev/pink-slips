@@ -1,4 +1,3 @@
-import type { Transfer } from '../collection/stakes.ts'
 import { createContext } from 'react'
 import type { Pack } from '../collection/collection.ts'
 import { COLLECTION_KEY, openNextPack, saveCollection } from '../collection/persist.ts'
@@ -276,14 +275,13 @@ export function reportCpuResult(
   token: string,
   mode: 'cpu' | 'hotseat',
   won: boolean,
-  stakes: Transfer | null = null,
   fetcher: Fetcher | undefined = globalThis.fetch,
-): Promise<{ packs: number; stakes: Transfer | null; data: AccountData } | null> {
-  return call<{ packs: number; stakes: Transfer | null; data: AccountData }>(
+): Promise<{ packs: number; data: AccountData } | null> {
+  return call<{ packs: number; data: AccountData }>(
     endpoint,
     '/me/cpu-result',
     token,
-    { method: 'POST', body: JSON.stringify({ mode, won, stakes }) },
+    { method: 'POST', body: JSON.stringify({ mode, won }) },
     fetcher,
   ).then((r) => r.body)
 }

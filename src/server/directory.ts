@@ -22,7 +22,6 @@ import {
 import {
   applyTransfer,
   settleStakes,
-  losesOnly,
   sanitizeTransfer,
   type Transfer,
 } from '../collection/stakes.ts'
@@ -566,43 +565,32 @@ export class Directory {
 
   /**
    * A finished CPU or hotseat match reported by the client. The client could lie, so the
-   * grant is capped at one report a minute; a repeat inside the gap earns nothing.
+   * grant is capped at one report a minute; a repeat inside the gap earns nothing. Packs are all
+   * it can earn: Pink Slips Mode is online only (DESIGN.md 12), where the room holds the match
+   * and the service moves the cars, so nothing a browser says about a CPU match moves a card.
    */
   async cpuResult(
     token: string,
     mode: unknown,
     won: unknown,
-    stakes: unknown = null,
-  ): Promise<{ packs: number; stakes: Transfer | null; data: AccountData } | null> {
+  ): Promise<{ packs: number; data: AccountData } | null> {
     const account = await this.accountFor(token)
     if (!account) return null
     if (mode !== 'cpu' && mode !== 'hotseat') {
-      return { packs: 0, stakes: null, data: this.dataOf(account) }
+      return { packs: 0, data: this.dataOf(account) }
     }
     const now = this.now()
     if (now - account.lastCpuResultAt < CPU_RESULT_GAP_MS) {
-      return { packs: 0, stakes: null, data: this.dataOf(account) }
+      return { packs: 0, data: this.dataOf(account) }
     }
     const packs = packsEarned(mode as Mode, won === true, this.t)
-    // Stakes against the CPU move cars one way only, so only the losses are taken from the
-    // client. Stakes need a loaner garage on the CPU side (DESIGN.md 12), every car in one is
-    // exempt from stakes, and so a won CPU match cannot hand the player a card. A report that
-    // claims otherwise is either an old client or an invention; either way its gains are
-    // dropped rather than minting cards a match could never have produced. Losses stay
-    // trusted, since a client that lies about them only robs itself.
-    const transfer = mode === 'cpu' ? losesOnly(sanitizeTransfer(stakes)) : null
-    const owned = transfer
-      ? // A chrome keepsake never changes hands (DESIGN.md 12), which the guest path has always
-        // honoured and this one did not.
-        applyTransfer(account.collection.owned, transfer, account.collection.variants.chrome)
-      : account.collection.owned
     const next: Account = {
       ...account,
       lastCpuResultAt: now,
-      collection: { ...account.collection, packs: account.collection.packs + packs, owned },
+      collection: { ...account.collection, packs: account.collection.packs + packs },
     }
     await this.save(next)
-    return { packs, stakes: transfer, data: this.dataOf(next) }
+    return { packs, data: this.dataOf(next) }
   }
 
   /**

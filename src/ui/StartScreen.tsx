@@ -1,6 +1,5 @@
 import { useContext, useRef, useState } from 'react'
 import { loadCollection } from '../collection/persist.ts'
-import { stakesAllowed as allowStakes } from '../collection/stakes.ts'
 import { LEVELS, LEVEL_BLURB, LEVEL_LABEL, type Level } from '../cpu/levels.ts'
 import type { MatchConfig } from '../engine/index.ts'
 import { AccountContext } from './account.ts'
@@ -21,13 +20,7 @@ import { SoundButton } from './sound/SoundButton.tsx'
 import { loadGarages } from '../browser/storage.ts'
 
 interface StartScreenProps {
-  onStart: (
-    mode: Mode,
-    config: MatchConfig,
-    names: [string, string],
-    level: Level,
-    stakes: boolean,
-  ) => void
+  onStart: (mode: Mode, config: MatchConfig, names: [string, string], level: Level) => void
   onBuilder: () => void
   onCollection: () => void
   /** Absent when no room service is configured, which hides the online button. */
@@ -56,22 +49,11 @@ export function StartScreen({
   const rules = useRef<HTMLDialogElement>(null)
   const [mode, setMode] = useState<Mode>('cpu')
   const [level, setLevel] = useState<Level>('street')
-  const [stakes, setStakes] = useState(false)
   const [first, setFirst] = useState(0)
   const [second, setSecond] = useState(1)
   // A garage the game deals rather than one that is owned (DESIGN.md 5). Null when off; a
   // reroll takes a new seed and deals both sides again, so the match stays symmetric.
   const [dealt, setDealt] = useState<[GarageSpec, GarageSpec] | null>(null)
-  // A garage of your own on the CPU side stakes your collection against itself: every car you
-  // win is a car you already hold, so a win only ever adds a duplicate. That is the same reason
-  // hotseat cannot play for stakes (DESIGN.md 12), so a loaner is what the CPU has to race.
-  const cpuGarageIsYours = options[second]?.custom === true
-  const canStake = allowStakes({
-    mode,
-    level,
-    cpuGarageIsOwn: cpuGarageIsYours,
-    randomGarages: dealt !== null,
-  })
   const [confirmOut, setConfirmOut] = useState(false)
   const labels: [string, string] =
     mode === 'cpu' ? ['Your garage', 'CPU garage'] : ['Player 1 garage', 'Player 2 garage']
@@ -91,7 +73,6 @@ export function StartScreen({
         ? [account?.data.profile.name ?? 'Player', `${LEVEL_LABEL[level]} CPU`]
         : ['Player 1', 'Player 2'],
       level,
-      canStake && stakes,
     )
   }
   return (
@@ -189,28 +170,6 @@ export function StartScreen({
             </button>
           ))}
           <span className="start__level-note">{LEVEL_BLURB[level]}</span>
-        </div>
-      )}
-      {mode === 'cpu' && (
-        <div className="stakes">
-          <label className="stakes__toggle">
-            <input
-              type="checkbox"
-              checked={canStake && stakes}
-              disabled={!canStake}
-              onChange={(event) => setStakes(event.target.checked)}
-            />
-            Play for stakes
-          </label>
-          <span className="stakes__note">
-            {canStake
-              ? 'Captured cars change hands for real, both ways. Loaner cars never do.'
-              : dealt
-                ? 'Dealt garages are not owned, so their cars can be neither won nor lost.'
-                : cpuGarageIsYours && mode === 'cpu' && level !== 'rookie'
-                  ? 'Stakes need a loaner on the CPU side. Your own garage would only win you cards you already hold.'
-                  : 'Stakes need the Street or Pro CPU.'}
-          </span>
         </div>
       )}
       {/* The control sits with the pickers it replaces, since it acts on them (DESIGN.md 8). */}

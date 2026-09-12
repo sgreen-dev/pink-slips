@@ -1,13 +1,7 @@
 import { useCallback, useContext, useEffect, useReducer, useRef, useState } from 'react'
 import { packsEarned } from '../collection/collection.ts'
 import type { Level } from '../cpu/index.ts'
-import { addPacks, loadCollection, saveCollection } from '../collection/persist.ts'
-import {
-  applyTransfer,
-  EMPTY_TRANSFER,
-  stakesTransfer,
-  type Transfer,
-} from '../collection/stakes.ts'
+import { addPacks, loadCollection } from '../collection/persist.ts'
 import {
   currentPlayer,
   isOver,
@@ -18,7 +12,7 @@ import {
 import { AccountContext, reportCpuResult } from './account.ts'
 import { count } from './analytics.ts'
 import { Board } from './Board.tsx'
-import { canUndo, captureFate, reduceSession, startSession } from './celebration.ts'
+import { canUndo, reduceSession, startSession } from './celebration.ts'
 import { recordMatch } from './counter.ts'
 import { Guide } from './Guide.tsx'
 import { guideStep, guideSteps, loadGuideDone, saveGuideDone } from './guide.ts'
@@ -46,8 +40,6 @@ interface MatchProps {
   names: readonly [string, string]
   /** CPU difficulty; ignored in hotseat. */
   level: Level
-  /** Captured cars change hands for real at the end (DESIGN.md 12); CPU matches only. */
-  stakes: boolean
   onRematch: () => void
   onNewMatch: () => void
   /** Leaves the match without finishing it; nothing is counted. */
@@ -59,18 +51,11 @@ interface MatchProps {
  * hotseat hand-over, and the selection.
  */
 /**
- * Stores what a guest's finished match earned: the packs, and the cars stakes moved. Returns
- * false when the browser refused either write, so the result screen can say the earnings will
- * not survive a refresh.
+ * Stores the packs a guest's finished match earned. Returns false when the browser refused the
+ * write, so the result screen can say the earnings will not survive a refresh.
  */
-async function settleGuest(mode: Mode, won: boolean, transfer: Transfer | null): Promise<boolean> {
-  let stored = addPacks(packsEarned(mode, won)).saved
-  if (transfer) {
-    const current = loadCollection()
-    const owned = applyTransfer(current.owned, transfer, current.variants.chrome)
-    stored = saveCollection({ ...current, owned }) && stored
-  }
-  return stored
+async function settleGuest(mode: Mode, won: boolean): Promise<boolean> {
+  return addPacks(packsEarned(mode, won)).saved
 }
 
 export function Match({
@@ -79,7 +64,6 @@ export function Match({
   seed,
   names,
   level,
-  stakes,
   onRematch,
   onNewMatch,
   onExit,
@@ -127,10 +111,6 @@ export function Match({
   }, [cpu, state, raceEnd, seed, level])
 
   const winner = isOver(state)
-  // Under stakes the human seat's transfer is a pure read of the finished state.
-  const transfer: Transfer | null =
-    stakes && cpu && winner !== null ? stakesTransfer(state)[HUMAN_SEAT] : null
-  const [serverSettled, setServerSettled] = useState<Transfer | null>(null)
   useEffect(() => {
     if (winner === null || recorded.current) return
     recorded.current = true
@@ -138,21 +118,20 @@ export function Match({
     count(mode === 'cpu' ? 'match-finish-cpu' : 'match-finish-hotseat')
     const won = winner === HUMAN_SEAT
     if (account) {
-      void reportCpuResult(account.endpoint, account.token, mode, won, transfer).then((result) => {
+      void reportCpuResult(account.endpoint, account.token, mode, won).then((result) => {
         if (!result) return
         account.update(result.data)
         setGranted(result.packs)
-        setServerSettled(result.stakes)
       })
     } else {
-      // A guest's packs and captured cars live only in this browser, so a refused write means
-      // the result screen would be showing something that will not be there next time. The
-      // writes are synchronous; the notice is set from a callback, as the account branch does.
-      void settleGuest(mode, won, transfer).then((stored) => {
+      // A guest's packs live only in this browser, so a refused write means the result screen
+      // would be showing something that will not be there next time. The write is synchronous;
+      // the notice is set from a callback, as the account branch does.
+      void settleGuest(mode, won).then((stored) => {
         if (!stored) setUnstored(true)
       })
     }
-  }, [winner, mode, account, transfer])
+  }, [winner, mode, account])
   const earned =
     winner === null ? 0 : account ? (granted ?? 0) : packsEarned(mode, winner === HUMAN_SEAT)
 
@@ -171,13 +150,6 @@ export function Match({
           storageWarning={
             unstored
               ? 'This browser is blocking storage, so what this match earned will be gone next time you open the game.'
-              : null
-          }
-          stakes={
-            stakes && cpu
-              ? account
-                ? (serverSettled ?? EMPTY_TRANSFER)
-                : (transfer ?? EMPTY_TRANSFER)
               : null
           }
           onRematch={onRematch}
@@ -247,11 +219,9 @@ export function Match({
         <RaceEndBanner
           raceEnd={raceEnd}
           headline={headline(raceEnd.winner)}
-          fate={captureFate(
-            raceEnd.capturedCarId,
-            stakes && cpu,
-            variantOf(raceEnd.capturedCarId) === 'chrome',
-          )}
+          // A local match plays for nothing: the car it takes sits out the rest of the match
+          // and stays in the collection, since Pink Slips Mode is online only (DESIGN.md 12).
+          fate="match"
           note={step === 'finish' ? guideSteps().finish.text : undefined}
           onContinue={
             step === 'finish'

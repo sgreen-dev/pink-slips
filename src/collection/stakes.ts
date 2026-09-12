@@ -4,10 +4,11 @@ import { TUNABLES, type MatchState, type PlayerIndex } from '../engine/index.ts'
 import { grant, type Collection } from './collection.ts'
 
 /**
- * Stakes (DESIGN.md 12): with the toggle on, every pink slip taken during a match changes
- * hands for real when it ends. The captor's collection gains a copy of the car and the owner's
- * loses one, whoever won the match. Loaner cars are exempt both ways, so a collection can never
- * be emptied. These are the pure pieces; the browser, the directory, and the room apply them.
+ * Pink Slips Mode (DESIGN.md 12), called stakes in the code: with it on, every pink slip taken
+ * during a match changes hands for real when it ends. The captor's collection gains a copy of the
+ * car and the owner's loses one, whoever won the match. Loaner cars are exempt both ways, so a
+ * collection can never be emptied. It is an online mode, so the room and the directory apply
+ * these; a CPU or hotseat match never moves a card.
  */
 
 export interface Transfer {
@@ -33,44 +34,9 @@ export function isStakedCar(id: string): boolean {
   return CAR_IDS.has(id) && !LOANER_CAR_IDS.has(id)
 }
 
-/**
- * Whether a match can be played for stakes (DESIGN.md 12). Stakes move cars between two
- * collections, so they need two: hotseat shares one and is refused, Rookie is refused because
- * it can be farmed, and a garage of the player's own on the CPU side is refused because every
- * car it could lose is a car the player already holds, so a win would only add a duplicate.
- *
- * Random garages are refused for the reason loaner cars are exempt: they are not owned. Their
- * cars are ordinary roster cars, so nothing here would treat them as free, and beating a random
- * garage holding three Hypers would write those cars into a collection that never opened them
- * while the other side, owning none of it, lost nothing.
- */
-export function stakesAllowed(opts: {
-  mode: 'cpu' | 'hotseat'
-  level: 'rookie' | 'street' | 'pro'
-  /** True when the CPU's garage is one the player built from cards they own. */
-  cpuGarageIsOwn: boolean
-  /** True when either side is racing a garage the game dealt rather than one that is owned. */
-  randomGarages: boolean
-}): boolean {
-  return (
-    opts.mode === 'cpu' && opts.level !== 'rookie' && !opts.cpuGarageIsOwn && !opts.randomGarages
-  )
-}
-
 /** The cars in a list that stakes can move, capped at the pink slips one match can hold. */
 function staked(ids: readonly string[]): string[] {
   return ids.filter(isStakedCar).slice(0, TUNABLES.pinkSlipsToWin)
-}
-
-/**
- * The same transfer with nothing gained. A CPU match runs in the browser, so the service takes
- * its word for the result; this is what keeps that word from being worth cards. Stakes against
- * the CPU need a loaner garage on its side and every loaner car is exempt, so a real CPU match
- * never moves a car to the player and only the losses are worth reading (DESIGN.md 12).
- */
-export function losesOnly(transfer: Transfer | null): Transfer | null {
-  if (!transfer) return null
-  return { gained: [], lost: transfer.lost }
 }
 
 /**

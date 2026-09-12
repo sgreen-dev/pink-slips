@@ -56,12 +56,12 @@ describe('the race-end banner', () => {
     expect(text).not.toMatch(/changes hands/)
   })
 
-  it('says so when stakes will move the car', () => {
+  it('says so when Pink Slips Mode will move the car', () => {
     expect(line('moves')).toMatch(/changes hands for real when the match ends\.$/)
   })
 
-  it('says a loaner car or a keepsake stays put under stakes', () => {
-    expect(line('loaner')).toMatch(/loaner car, so stakes never move it\.$/)
-    expect(line('keepsake')).toMatch(/keepsake, so stakes never move it\.$/)
+  it('says a loaner car or a keepsake stays put in Pink Slips Mode', () => {
+    expect(line('loaner')).toMatch(/loaner car, so Pink Slips Mode never moves it\.$/)
+    expect(line('keepsake')).toMatch(/keepsake, so Pink Slips Mode never moves it\.$/)
   })
 })
