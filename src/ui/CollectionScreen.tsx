@@ -7,6 +7,7 @@ import {
   copiesOwned,
   usefulCopies,
   cardPrice,
+  gradeOf,
   isComplete,
   ownedCount,
   scrapValue,
@@ -123,16 +124,38 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   // rebuilt when the picker beside it changes, which is the whole cost of choosing a card to buy.
   const missing = useMemo(
     () =>
-      ALL_CARD_IDS.filter((id) => copiesOwned(owned, id) < usefulCopies(id))
-        .map((id) => ({
-          id,
-          name: nameOfCard(id),
-          held: copiesOwned(owned, id),
-          price: cardPrice(id) ?? 0,
-        }))
-        .sort((a, b) => a.price - b.price || a.name.localeCompare(b.name)),
+      ALL_CARD_IDS.filter((id) => copiesOwned(owned, id) < usefulCopies(id)).map((id) => ({
+        id,
+        name: nameOfCard(id),
+        held: copiesOwned(owned, id),
+        price: cardPrice(id) ?? 0,
+        kind: CAR_BY_ID.has(id) ? ('car' as const) : ('mod' as const),
+        grade: gradeOf(id) ?? ('daily' as const),
+      })),
     [owned],
   )
+  // The picker shows the list in sections, cars first and then mods, each section one grade
+  // with its price in the heading, so a row is just the card's name. One flat list of "name,
+  // dash, number" was the phone's whole picker sheet, and the number was a price only if you
+  // knew (backlog U45).
+  const buyGroups = useMemo(() => {
+    const groups: { key: string; label: string; cards: typeof missing }[] = []
+    for (const kind of ['car', 'mod'] as const) {
+      for (const grade of TIERS) {
+        const cards = missing
+          .filter((card) => card.kind === kind && card.grade === grade)
+          .sort((a, b) => a.name.localeCompare(b.name))
+        if (cards.length === 0) continue
+        const price = cards[0].price
+        groups.push({
+          key: `${kind}-${grade}`,
+          label: `${TIER_LABEL[grade]} ${kind === 'car' ? 'cars' : 'mods'} · ${price} credits`,
+          cards,
+        })
+      }
+    }
+    return groups
+  }, [missing])
   const applyCollection = (next: CollectionState) => {
     setState(next)
     setConfirmScrap(false)
@@ -351,11 +374,15 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
                   Buy{' '}
                   <select value={wanted} onChange={(event) => setWanted(event.target.value)}>
                     <option value="">a card you do not own</option>
-                    {missing.map((card) => (
-                      <option key={card.id} value={card.id}>
-                        {card.name}
-                        {card.held > 0 ? ` (have ${card.held})` : ''} — {card.price}
-                      </option>
+                    {buyGroups.map((group) => (
+                      <optgroup key={group.key} label={group.label}>
+                        {group.cards.map((card) => (
+                          <option key={card.id} value={card.id}>
+                            {card.name}
+                            {card.held > 0 ? ` (have ${card.held})` : ''}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </label>
