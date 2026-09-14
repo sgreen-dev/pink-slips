@@ -1997,9 +1997,34 @@ h2,
   margin: 0;
   font-size: 0.9rem;
 }
+/* The buy picker wears the app's own dark control rather than the browser's grey default, and
+   its list is sectioned by grade with the price in each heading (see buyGroups in
+   CollectionScreen). The phone's picker sheet cannot be styled, but it does honour the
+   sections, so the same headings show there. */
 .collection__buy select {
   margin-left: 0.3rem;
   max-width: 18rem;
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+  color: #fff;
+  background: var(--asphalt-3);
+  border: 2px solid var(--line);
+  border-radius: 0.4rem;
+}
+.collection__buy select:focus-visible {
+  outline: none;
+  border-color: var(--pink);
+}
+.collection__buy optgroup {
+  color: var(--muted);
+  font-style: normal;
+  font-weight: 700;
+  background: var(--asphalt-2);
+}
+.collection__buy option {
+  color: #fff;
+  font-weight: 400;
+  background: var(--asphalt-3);
 }
 .collection__row {
   display: flex;

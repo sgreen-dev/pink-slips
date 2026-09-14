@@ -2,6 +2,10 @@
 
 Every change to Pink Slips, by the day it landed. Dates are commit dates, newest first. Each line ends with the commit that made the change, so anything here can be traced in the history. A phase entry names its phase from `BUILD_PLAN.md`; the commit that marks a phase done is listed with it. Every commit adds a line here under its day.
 
+## 2026-09-14
+
+- The list of cards you can buy on the collection screen is now in sections (backlog U45). It had been one long list of "name, dash, number" from cheapest up, which on a phone is exactly what the picker sheet shows and nothing more. Now cars come first and mods after, each grade is a section with its price in the heading, so a row is just the card's name in alphabetical order, and on the desktop the control matches the rest of the screen. (HASH)
+
 ## 2026-09-11
 
 - Playing for stakes is now an online mode called **Pink Slips Mode**, and the CPU setup has lost the toggle (backlog U44). Against the CPU it was a bet you could only lose: the CPU has to race a loaner garage, and loaner cars can be neither won nor lost, so there was never anything to win there, while your own cars could go. The start screen still said cars change hands "both ways". Online it is a real bet, two collections and both players agreeing to it, so that is where it stays; the online toggle, the room's messages and the result screen now use the new name. A CPU match earns its packs and nothing else. (576c72c)
