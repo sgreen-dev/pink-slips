@@ -145,11 +145,11 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         const cards = missing
           .filter((card) => card.kind === kind && card.grade === grade)
           .sort((a, b) => a.name.localeCompare(b.name))
-        if (cards.length === 0) continue
-        const price = cards[0].price
+        const first = cards[0]
+        if (!first) continue
         groups.push({
           key: `${kind}-${grade}`,
-          label: `${TIER_LABEL[grade]} ${kind === 'car' ? 'cars' : 'mods'} · ${price} credits`,
+          label: `${TIER_LABEL[grade]} ${kind === 'car' ? 'cars' : 'mods'} · ${first.price} credits`,
           cards,
         })
       }
