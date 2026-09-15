@@ -4,7 +4,7 @@ Every change to Pink Slips, by the day it landed. Dates are commit dates, newest
 
 ## 2026-09-14
 
-- A fix to the buy picker sections, which went to main with a type error the deploy build caught: the heading's price was read from a section's first card in a way the compiler could not see was safe. No change to what the player sees. (96c211a)
+- A fix to the buy picker sections, which went to main with a type error the deploy build caught: the heading's price was read from a section's first card in a way the compiler could not see was safe. No change to what the player sees. (e224989)
 - The list of cards you can buy on the collection screen is now in sections (backlog U45). It had been one long list of "name, dash, number" from cheapest up, which on a phone is exactly what the picker sheet shows and nothing more. Now cars come first and mods after, each grade is a section with its price in the heading, so a row is just the card's name in alphabetical order, and on the desktop the control matches the rest of the screen. (fd1fd18)
 
 ## 2026-09-11
