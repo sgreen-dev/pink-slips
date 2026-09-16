@@ -25,6 +25,16 @@ describe('the pack pop-up', () => {
     localStorage.clear()
   })
 
+  it('calls one pack "it" and more than one "them" (backlog U48)', () => {
+    seed(1)
+    const one = draw(<PackDialog earned={1} onClose={vi.fn()} />)
+    expect(one.container.textContent).toContain('Open it now, or find it later')
+    one.unmount()
+    seed(2)
+    const two = draw(<PackDialog earned={2} onClose={vi.fn()} />)
+    expect(two.container.textContent).toContain('Open them now, or find them later')
+  })
+
   it('hands focus to Done when the last pack is opened', async () => {
     seed(1)
     draw(<PackDialog earned={1} onClose={vi.fn()} />)

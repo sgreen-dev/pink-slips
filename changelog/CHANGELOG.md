@@ -2,6 +2,10 @@
 
 Every change to Pink Slips, by the day it landed. Dates are commit dates, newest first. Each line ends with the commit that made the change, so anything here can be traced in the history. A phase entry names its phase from `BUILD_PLAN.md`; the commit that marks a phase done is listed with it. Every commit adds a line here under its day.
 
+## 2026-09-16
+
+- A polish pass for the people now playing (backlog A12, A13, U46 to U49). The main button on every screen was white on pink, too faint to read comfortably, and so were the pink badges on cards and the small family line on mod cards; their labels are dark now, and the mod lines darker. **Start the match** sat three phone screens down, below both garage lists, while the first button on the screen only picked the mode, so it now waits at the bottom of the screen until the page scrolls down to it. When a browser refused to copy the room link or the recovery code, the button just stayed as it was, which looked like it had worked; it now says so and how to copy it by hand, and on a phone the room's button is Share link and opens the share sheet. The collection and the deck builder can show only the cards you own, or only the ones you do not, so a new collection is no longer a long scroll of greyed-out cards. One pack is "it" rather than "them", the builder says "pick" rather than "click", and a card's info button is a little bigger to tap. (31a9ad7)
+
 ## 2026-09-14
 
 - A fix to the buy picker sections, which went to main with a type error the deploy build caught: the heading's price was read from a section's first card in a way the compiler could not see was safe. No change to what the player sees. (e224989)

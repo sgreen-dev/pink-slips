@@ -200,9 +200,14 @@ export function StartScreen({
           <GaragePicker label={labels[1]} options={options} value={second} onChange={setSecond} />
         </div>
       )}
-      <button type="button" className="button button--primary button--big" onClick={start}>
-        Start the match
-      </button>
+      {/* Held at the bottom of the screen until the page reaches it (backlog U46). Below eight
+          rows of garages it sat three phone screens down, so a first visit met Play the CPU, a
+          mode that was already on, and a tap on it that did nothing. */}
+      <div className="start__go">
+        <button type="button" className="button button--primary button--big" onClick={start}>
+          Start the match
+        </button>
+      </div>
       {/* Two rows, not one. These seven used to share a single wrapping row at two sizes and two
           backgrounds, which is why nothing in it read as related to anything else. Split by what
           they do: where you can go, then the things that only open a panel of words. Both are

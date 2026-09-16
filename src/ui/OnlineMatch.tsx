@@ -12,7 +12,7 @@ import {
 import { EMPTY_TRANSFER, type Transfer } from '../collection/stakes.ts'
 import { AccountContext, fetchMe } from './account.ts'
 import { count } from './analytics.ts'
-import { copyText } from './clipboard.ts'
+import { sendLink, type Sent } from './clipboard.ts'
 import { Board } from './Board.tsx'
 import { recordMatch } from './counter.ts'
 import { NO_SELECTION, type Selection } from './interaction.ts'
@@ -88,7 +88,14 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
   const [seatUnstored, setSeatUnstored] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [settled, setSettled] = useState<Transfer | null>(null)
-  const [copied, setCopied] = useState(false)
+  const [sent, setSent] = useState<Sent | null>(null)
+  // A touch screen with a share sheet sends the link through it; anything else copies it.
+  const [shares] = useState(
+    () =>
+      typeof navigator.share === 'function' &&
+      typeof matchMedia === 'function' &&
+      matchMedia('(hover: none)').matches,
+  )
   // Leave during a started match concedes, behind a confirm.
   const [conceding, setConceding] = useState(false)
   // Mod plays sent this step and not yet taken back; the room is the judge, this only shows the button.
@@ -248,8 +255,13 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
 
   if (view === null || seat === null) {
     const link = roomLink(session.code, window.location)
-    const copy = async () => {
-      setCopied(await copyText(link))
+    const send = async () => {
+      setSent(
+        await sendLink(
+          { url: link, title: 'Pink Slips', text: `Race me in Pink Slips. Room ${session.code}.` },
+          shares,
+        ),
+      )
     }
     const status =
       session.status !== 'open'
@@ -276,14 +288,23 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
         )}
         <div className="online__actions">
           {!ranked && (
-            <button type="button" className="button button--primary" onClick={() => void copy()}>
-              {copied ? 'Link copied' : 'Copy link'}
+            <button type="button" className="button button--primary" onClick={() => void send()}>
+              {sent === 'copied' ? 'Link copied' : shares ? 'Share link' : 'Copy link'}
             </button>
           )}
           <button type="button" className="button" onClick={onLeave}>
             Leave
           </button>
         </div>
+        {/* The button used to stay as it was when the browser refused the clipboard, which read
+            as copied (backlog U47). */}
+        {sent === 'failed' && (
+          <p className="online__error" role="status">
+            {shares
+              ? 'The link could not be shared or copied. Press and hold it above to copy it.'
+              : 'The link could not be copied. Select it above to copy it.'}
+          </p>
+        )}
         <p className="online__status" role="status">
           {status}
         </p>

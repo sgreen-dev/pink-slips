@@ -94,3 +94,64 @@ describe('leaving an online match', () => {
     expect(room.concede).toHaveBeenCalledTimes(1)
   })
 })
+
+/** A friend room nobody else has joined yet, on a desktop browser: the link and its button. */
+function waiting(): void {
+  draw(
+    <OnlineMatch
+      endpoint="http://127.0.0.1:8787"
+      entry={{
+        code: 'ABCDEF',
+        name: 'Ann',
+        garage: null,
+        token: null,
+        ticket: null,
+        stakes: false,
+      }}
+      onLeave={vi.fn()}
+      onAgain={vi.fn()}
+    />,
+  )
+  act(() => room.handlers?.onStatus('open'))
+}
+
+/**
+ * Sending the room link (backlog U47). When the browser refused the clipboard the button stayed
+ * "Copy link", which reads as done, and the friend never got the link.
+ */
+describe('sending the room link', () => {
+  function clipboard(writeText: (text: string) => Promise<void>): void {
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+  }
+
+  it('says the link was copied when it was', async () => {
+    const copied: string[] = []
+    clipboard(async (text) => void copied.push(text))
+    waiting()
+    fireEvent.click(document.querySelector<HTMLElement>('.online__actions .button--primary')!)
+    await vi.waitFor(() =>
+      expect(document.querySelector('.online__actions .button--primary')?.textContent).toBe(
+        'Link copied',
+      ),
+    )
+    expect(copied).toHaveLength(1)
+    expect(copied[0]).toContain('ABCDEF')
+    expect(document.querySelector('.online__error')).toBeNull()
+  })
+
+  it('says so when the browser will not copy it, and how to copy it by hand', async () => {
+    clipboard(async () => {
+      throw new Error('NotAllowedError')
+    })
+    waiting()
+    fireEvent.click(document.querySelector<HTMLElement>('.online__actions .button--primary')!)
+    await vi.waitFor(() =>
+      expect(document.querySelector('.online__error')?.textContent).toContain(
+        'could not be copied',
+      ),
+    )
+    expect(document.querySelector('.online__actions .button--primary')?.textContent).toBe(
+      'Copy link',
+    )
+  })
+})

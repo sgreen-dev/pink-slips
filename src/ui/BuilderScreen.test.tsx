@@ -84,8 +84,20 @@ describe('the deck builder', () => {
 
   it('marks a card the player does not own', () => {
     seed({ 'ford-mustang-gt': 1 })
-    open()
-    expect(screen.getAllByText('Not owned').length).toBeGreaterThan(0)
+    const { container } = open()
+    const badges = [...container.querySelectorAll('.browse__grid .card__badge')]
+    expect(badges.some((b) => b.textContent === 'Not owned')).toBe(true)
+  })
+
+  it('narrows the grid to the cards a garage can use (backlog U49)', () => {
+    seed({ 'ford-mustang-gt': 1, 'mazda-rx-7': 1 })
+    const { container } = open()
+    const names = () =>
+      [...container.querySelectorAll('.browse__grid .card__name')].map((n) => n.textContent)
+    expect(names()).toHaveLength(CARS.length)
+    const group = screen.getByRole('group', { name: 'Cards' })
+    fireEvent.click([...group.querySelectorAll('button')].find((b) => b.textContent === 'Owned')!)
+    expect(new Set(names())).toEqual(new Set(['Ford Mustang GT', 'Mazda RX-7']))
   })
 
   it('goes back when the header asks it to', () => {

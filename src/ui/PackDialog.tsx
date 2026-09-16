@@ -86,7 +86,11 @@ export function PackDialog({ earned, onClose }: PackDialogProps) {
             {iconUrl('pack') && (
               <img className="packs__emblem" src={iconUrl('pack') ?? ''} alt="" />
             )}
-            <p className="raceend__line">Open them now, or find them later in the Collection.</p>
+            <p className="raceend__line">
+              {earned === 1
+                ? 'Open it now, or find it later in the Collection.'
+                : 'Open them now, or find them later in the Collection.'}
+            </p>
           </>
         )}
         <p className="raceend__tally">

@@ -43,7 +43,7 @@ import {
   type Tier,
 } from '../data/types.ts'
 import { TUNABLES } from '../engine/index.ts'
-import { FAMILY_LABEL } from './builder.ts'
+import { FAMILY_LABEL, HELD_OPTIONS, heldMatches, type Held } from './builder.ts'
 import { CarCard } from './CarCard.tsx'
 import { Filter } from './Filter.tsx'
 import { ModCard } from './ModCard.tsx'
@@ -84,6 +84,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const [type, setType] = useState<CarType | 'all'>('all')
   const [tier, setTier] = useState<Tier | 'all'>('all')
   const [family, setFamily] = useState<ModFamily | 'all'>('all')
+  const [held, setHeld] = useState<Held | 'all'>('all')
   // Shown once to a collection that was rebased onto the intro set (DESIGN.md 12).
   const [rebased, setRebased] = useState(() => rebaseNoticePending())
 
@@ -248,13 +249,19 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
   const cars = useMemo(
     () =>
       CARS.filter(
-        (car) => (type === 'all' || car.type === type) && (tier === 'all' || car.tier === tier),
+        (car) =>
+          (type === 'all' || car.type === type) &&
+          (tier === 'all' || car.tier === tier) &&
+          heldMatches(held, owned, car.id),
       ),
-    [type, tier],
+    [type, tier, held, owned],
   )
   const mods = useMemo(
-    () => MODS.filter((mod) => family === 'all' || mod.family === family),
-    [family],
+    () =>
+      MODS.filter(
+        (mod) => (family === 'all' || mod.family === family) && heldMatches(held, owned, mod.id),
+      ),
+    [family, held, owned],
   )
   const { packsPerMatch, packsPerCpuWin } = TUNABLES.collection
 
@@ -500,10 +507,13 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
           Cards you do not own yet are dimmed. Counts show your copies.
         </p>
 
+        {/* Not "Show": that is already the name of the Cars and Mods pair above. */}
+        <Filter label="Cards" value={held} options={HELD_OPTIONS} onChange={setHeld} />
         {tab === 'cars' ? (
           <>
             <Filter label="Type" value={type} options={TYPE_OPTIONS} onChange={setType} />
             <Filter label="Tier" value={tier} options={TIER_OPTIONS} onChange={setTier} />
+            {cars.length === 0 && <p className="builder__hint">No cars match these filters.</p>}
             <div className="browse__grid">
               {cars.map((car) => {
                 const have = copiesOwned(owned, car.id)
@@ -523,6 +533,7 @@ export function CollectionScreen({ onBack }: CollectionScreenProps) {
         ) : (
           <>
             <Filter label="Family" value={family} options={FAMILY_OPTIONS} onChange={setFamily} />
+            {mods.length === 0 && <p className="builder__hint">No mods match these filters.</p>}
             <div className="browse__grid">
               {mods.map((mod) => {
                 const have = copiesOwned(owned, mod.id)
