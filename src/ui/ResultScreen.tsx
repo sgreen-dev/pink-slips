@@ -91,7 +91,7 @@ export function ResultScreen({
                 className="button button--small"
                 onClick={() => setDismissed(false)}
               >
-                Open packs
+                {(waiting ?? packsEarned) === 1 ? 'Open the pack' : 'Open packs'}
               </button>
             )}
           </p>

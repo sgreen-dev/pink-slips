@@ -111,6 +111,37 @@ describe('the collection screen', () => {
     expect(screen.queryByRole('group', { name: 'Tier' })).toBeNull()
   })
 
+  it('shows only what is owned, or only what is not, in both grids (backlog U49)', () => {
+    seed({ 'ford-mustang-gt': 1, 'mazda-rx-7': 2, 'turbo-kit': 1 })
+    open()
+    const cards = (name: string) => {
+      const group = screen.getByRole('group', { name: 'Cards' })
+      return [...group.querySelectorAll('button')].find((b) => b.textContent?.trim() === name)!
+    }
+    fireEvent.click(cards('Owned'))
+    expect(new Set(shown())).toEqual(new Set(['Ford Mustang GT', 'Mazda RX-7']))
+    fireEvent.click(cards('Not owned'))
+    expect(shown()).toHaveLength(CARS.length - 2)
+    expect(shown()).not.toContain('Ford Mustang GT')
+    // The same choice holds on the mods grid.
+    fireEvent.click(screen.getByRole('button', { name: `Mods (1/${MODS.length})` }))
+    expect(shown()).toHaveLength(MODS.length - 1)
+    fireEvent.click(cards('Owned'))
+    expect(shown()).toEqual(['Turbo Kit'])
+    fireEvent.click(cards('All'))
+    expect(shown()).toHaveLength(MODS.length)
+  })
+
+  it('says so when the filters leave nothing to show', () => {
+    seed({ 'ford-mustang-gt': 1 })
+    open()
+    fireEvent.click(tier('Ultra Rare'))
+    const group = screen.getByRole('group', { name: 'Cards' })
+    fireEvent.click([...group.querySelectorAll('button')].find((b) => b.textContent === 'Owned')!)
+    expect(shown()).toHaveLength(0)
+    expect(screen.getByText('No cars match these filters.')).toBeTruthy()
+  })
+
   it('marks a card the player does not own, in words as well as in colour', () => {
     seed({ 'ford-mustang-gt': 1 })
     open()

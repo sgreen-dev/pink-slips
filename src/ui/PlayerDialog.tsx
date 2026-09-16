@@ -36,7 +36,9 @@ export function PlayerDialog({
   const [entered, setEntered] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  // Null until Copy is pressed; false when the browser refused, which has to be said, since a
+  // button that stays "Copy" reads as done and this code is shown only once (backlog U47).
+  const [copied, setCopied] = useState<boolean | null>(null)
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -226,6 +228,11 @@ export function PlayerDialog({
                 I saved it
               </button>
             </div>
+            {copied === false && (
+              <p className="builder__notice" role="status">
+                This browser would not copy the code. Write it down before you close this.
+              </p>
+            )}
           </div>
         )}
         {error && (

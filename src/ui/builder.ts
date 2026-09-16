@@ -20,6 +20,23 @@ export const FAMILY_LABEL: Readonly<Record<ModFamily, string>> = {
   sabotage: 'Sabotage',
 }
 
+/**
+ * The owned-or-not filter over the builder's and the collection's grids (backlog U49). A new
+ * collection holds 8 of 126 cars, so either grid was a phone's long scroll of dimmed cards to find
+ * the few a garage can use.
+ */
+export type Held = 'owned' | 'missing'
+
+export const HELD_OPTIONS: ReadonlyArray<[Held, string]> = [
+  ['owned', 'Owned'],
+  ['missing', 'Not owned'],
+]
+
+/** Whether a card passes the filter: every card under All, else by whether a copy is held. */
+export function heldMatches(held: Held | 'all', collection: Collection, id: string): boolean {
+  return held === 'all' || copiesOwned(collection, id) > 0 === (held === 'owned')
+}
+
 export function emptyDraft(): GarageDraft {
   return { id: null, name: 'My garage', cars: [], deck: [] }
 }

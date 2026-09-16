@@ -18,6 +18,9 @@ import {
 import { TUNABLES } from '../engine/index.ts'
 import {
   FAMILY_LABEL,
+  HELD_OPTIONS,
+  heldMatches,
+  type Held,
   addCar,
   addMod,
   canAddCar,
@@ -69,6 +72,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
   const [type, setType] = useState<CarType | 'all'>('all')
   const [tier, setTier] = useState<Tier | 'all'>('all')
   const [family, setFamily] = useState<ModFamily | 'all'>('all')
+  const [held, setHeld] = useState<Held | 'all'>('all')
   const [notice, setNotice] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
@@ -85,13 +89,19 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
   const cars = useMemo(
     () =>
       CARS.filter(
-        (car) => (type === 'all' || car.type === type) && (tier === 'all' || car.tier === tier),
+        (car) =>
+          (type === 'all' || car.type === type) &&
+          (tier === 'all' || car.tier === tier) &&
+          heldMatches(held, owned, car.id),
       ),
-    [type, tier],
+    [type, tier, held, owned],
   )
   const mods = useMemo(
-    () => MODS.filter((mod) => family === 'all' || mod.family === family),
-    [family],
+    () =>
+      MODS.filter(
+        (mod) => (family === 'all' || mod.family === family) && heldMatches(held, owned, mod.id),
+      ),
+    [family, held, owned],
   )
   const options = useMemo(() => garageOptions(saved), [saved])
   const savedName = draft.id ? (saved.find((g) => g.id === draft.id)?.name ?? null) : null
@@ -202,7 +212,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
                 ),
               )}
             </div>
-            <p className="builder__hint">Click a car in the garage to remove it.</p>
+            <p className="builder__hint">Pick a car in the garage to remove it.</p>
 
             <h2 className="builder__section">
               Deck {draft.deck.length}/{TUNABLES.modDeckSize}
@@ -364,6 +374,7 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
               </button>
             </div>
 
+            <Filter label="Cards" value={held} options={HELD_OPTIONS} onChange={setHeld} />
             {tab === 'cars' ? (
               <>
                 <Filter
@@ -379,8 +390,9 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
                   onChange={setTier}
                 />
                 <p className="builder__hint">
-                  Click a car to add it to the garage. Cars you do not own yet are dimmed.
+                  Pick a car to add it to the garage. Cars you do not own yet are dimmed.
                 </p>
+                {cars.length === 0 && <p className="builder__hint">No cars match these filters.</p>}
                 <div className="browse__grid">
                   {cars.map((car) => {
                     const inGarage = draft.cars.includes(car.id)
@@ -410,9 +422,10 @@ export function BuilderScreen({ onBack }: BuilderScreenProps) {
                   onChange={setFamily}
                 />
                 <p className="builder__hint">
-                  Click a mod to add a copy to the deck, up to the copies you own and at most{' '}
+                  Pick a mod to add a copy to the deck, up to the copies you own and at most{' '}
                   {TUNABLES.maxCopiesPerMod}, or {TUNABLES.maxCopiesPerRareMod} of a rare mod.
                 </p>
+                {mods.length === 0 && <p className="builder__hint">No mods match these filters.</p>}
                 <div className="browse__grid">
                   {mods.map((mod) => {
                     const count = counts.get(mod.id) ?? 0

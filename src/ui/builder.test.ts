@@ -14,6 +14,8 @@ import {
   removeCar,
   removeMod,
   validateDraft,
+  heldMatches,
+  HELD_OPTIONS,
 } from './builder.ts'
 import {
   clearDraft,
@@ -247,5 +249,27 @@ describe('ownership', () => {
     if (!option) throw new Error('No starter option')
     const config = { players: [{ garage: option.cars, deck: option.deck }] }
     expect(Object.keys(config.players[0] ?? {})).toEqual(['garage', 'deck'])
+  })
+})
+
+describe('the owned-or-not filter (backlog U49)', () => {
+  const held = { 'ford-mustang-gt': 2, 'mazda-rx-7': 0 }
+
+  it('passes every card under All', () => {
+    for (const id of ['ford-mustang-gt', 'mazda-rx-7', 'honda-civic-si']) {
+      expect(heldMatches('all', held, id)).toBe(true)
+    }
+  })
+
+  it('splits by whether a copy is held, and a count of zero is not held', () => {
+    expect(heldMatches('owned', held, 'ford-mustang-gt')).toBe(true)
+    expect(heldMatches('missing', held, 'ford-mustang-gt')).toBe(false)
+    expect(heldMatches('owned', held, 'mazda-rx-7')).toBe(false)
+    expect(heldMatches('missing', held, 'mazda-rx-7')).toBe(true)
+    expect(heldMatches('missing', held, 'honda-civic-si')).toBe(true)
+  })
+
+  it('offers both choices, beside the All the filter row adds', () => {
+    expect(HELD_OPTIONS.map(([key]) => key)).toEqual(['owned', 'missing'])
   })
 })

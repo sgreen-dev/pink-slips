@@ -14,6 +14,11 @@
   --muted: #a8a49c;
   --pink: #ff5ca8;
   --pink-2: #d63d85;
+  /* Hover on a pink button lightens rather than darkens, so its dark label keeps its contrast. */
+  --pink-lit: #ff7db9;
+  /* The label on anything filled pink. White on this pink is 2.9:1, under what a label needs
+     (4.5:1); the table's asphalt is 6.3:1 (backlog A12). */
+  --on-pink: var(--asphalt);
   --gold: #f2c14e;
   --type-sports: #d7263d;
   --type-luxury: #7a3e9d;
@@ -24,6 +29,12 @@
   --part: #6b7f99;
   --boost: #2e9e5b;
   --sabotage: #c0392b;
+  /* The family colours darkened toward the card ink, for the small family line printed on the
+     cream card and for the white text on a Part chip. The borders keep the brighter three; as
+     text, those were 3.3, 2.8 and 4.4 to 1 on cream (backlog A12). */
+  --part-ink: #5b6879;
+  --boost-ink: #2d7244;
+  --sabotage-ink: #aa3528;
   /* Five roles, not three (DESIGN.md 8). The wordmark and the scoreboard were being done by
      the display and stat faces, which is why the title could only ever look like a big button. */
   --font-wordmark: 'Monoton', 'Bebas Neue', Impact, cursive;
@@ -125,11 +136,11 @@ h2,
 .button--primary {
   background: var(--pink);
   border-color: var(--pink);
-  color: #fff;
+  color: var(--on-pink);
 }
 .button--primary:hover:not(:disabled) {
-  background: var(--pink-2);
-  border-color: var(--pink-2);
+  background: var(--pink-lit);
+  border-color: var(--pink-lit);
 }
 /* A toggle that is on: a tab, a filter chip, a level. Distinct from the main action. */
 .button--on {
@@ -335,7 +346,7 @@ h2,
   text-shadow: 0 0 0.3em var(--pink);
 }
 .chip {
-  background: var(--part);
+  background: var(--part-ink);
   color: #fff;
   font-size: 0.7em;
   padding: 0.1em 0.4em;
@@ -344,14 +355,14 @@ h2,
   white-space: nowrap;
 }
 .chip--shield {
-  background: var(--boost);
+  background: var(--boost-ink);
 }
 .card__badge {
   position: absolute;
   top: -0.6em;
   left: 0.5em;
   background: var(--pink);
-  color: #fff;
+  color: var(--on-pink);
   font-family: var(--font-display);
   font-size: 0.9em;
   letter-spacing: 0.05em;
@@ -459,18 +470,21 @@ h2,
 }
 .mod--part {
   --family: var(--part);
+  --family-ink: var(--part-ink);
 }
 .mod--boost {
   --family: var(--boost);
+  --family-ink: var(--boost-ink);
 }
 .mod--sabotage {
   --family: var(--sabotage);
+  --family-ink: var(--sabotage-ink);
 }
 .mod__family {
   font-family: var(--font-mono);
   font-size: 0.7em;
   text-transform: uppercase;
-  color: var(--family);
+  color: var(--family-ink, var(--ink));
   font-weight: 700;
 }
 .mod__name {
@@ -546,8 +560,9 @@ h2,
   font-family: var(--font-meter);
   font-size: 0.65rem;
   /* The ruler along the track, not the readout: dim gold and no glow, so it belongs to the
-     same board as the lane numbers without competing with the one that actually changes. */
-  color: rgb(242 193 78 / 55%);
+     same board as the lane numbers without competing with the one that actually changes. Dim,
+     not faint: 55% was 3.8:1 on the panel, and 65% is 4.8:1 (backlog A12). */
+  color: rgb(242 193 78 / 65%);
 }
 .lane {
   --lane-color: var(--pink);
@@ -876,6 +891,24 @@ h2,
   gap: 0.4rem;
   /* Tight under the row above, so the two read as one footer and not two separate things. */
   margin: 0.4rem auto 0;
+}
+
+/* The start screen's one decision, held at the bottom of the screen while the garages scroll
+   past and settling into its place once the page reaches it (backlog U46). The strip is as wide
+   as the page but lets taps through to the cards under it; only the button takes them. */
+.start__go {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding: 0.75rem 0 calc(0.75rem + env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+.start__go .button {
+  pointer-events: auto;
+  /* Lifted off whatever card it is passing over, since the strip itself is clear. */
+  box-shadow:
+    0 0.25rem 0.9rem rgb(0 0 0 / 55%),
+    0 0 0 0.2rem rgb(23 23 26 / 70%);
 }
 
 /* Where the start screen can take you. */
@@ -2095,6 +2128,11 @@ h2,
   word-break: break-all;
   color: var(--muted);
 }
+/* One tap selects the whole link, for a browser that will neither share nor copy it (U47). */
+.online__link code {
+  user-select: all;
+  -webkit-user-select: all;
+}
 .online__actions {
   display: flex;
   flex-wrap: wrap;
@@ -2528,19 +2566,21 @@ h2,
   display: inline-flex;
   flex: 0 0 auto;
 }
+/* 1.5rem is 24px on a phone, the smallest a tap target should be; at 1.35rem it was 22px
+   (backlog A13). */
 .card__info,
 .mod__info {
   position: absolute;
   top: -0.25rem;
   right: -0.25rem;
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 1.5rem;
+  height: 1.5rem;
   padding: 0;
   border: 0;
   border-radius: 50%;
   background: rgb(0 0 0 / 65%);
   color: #fff;
-  font: 700 0.8rem/1.35rem var(--font-mono);
+  font: 700 0.8rem/1.5rem var(--font-mono);
   text-align: center;
   cursor: pointer;
   opacity: 0.55;
