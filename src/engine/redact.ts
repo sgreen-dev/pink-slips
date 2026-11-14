@@ -1,3 +1,4 @@
+import { HIDDEN_CARD, isHidden } from './hidden.ts'
 import { otherPlayer } from './match.ts'
 import { ZERO_RNG } from './rng.ts'
 import type { MatchState, PlayerIndex, PlayerState } from './types.ts'
@@ -11,7 +12,7 @@ import type { MatchState, PlayerIndex, PlayerState } from './types.ts'
  * the random state is zeroed so the future cannot be simulated.
  */
 
-export const HIDDEN_CARD = '?'
+export { HIDDEN_CARD, isHidden }
 
 export function redact(state: MatchState, viewer: PlayerIndex): MatchState {
   const opponent = otherPlayer(viewer)
@@ -28,9 +29,4 @@ export function redact(state: MatchState, viewer: PlayerIndex): MatchState {
   }
   const players: MatchState['players'] = viewer === 0 ? [own, theirs] : [theirs, own]
   return { ...state, players, rng: ZERO_RNG }
-}
-
-/** True when a card id stands for a hidden card in a view. */
-export function isHidden(cardId: string): boolean {
-  return cardId === HIDDEN_CARD
 }

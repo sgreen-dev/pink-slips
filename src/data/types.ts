@@ -128,8 +128,12 @@ export type ModEffect =
   /** Place this many additional fuel tokens this turn. */
   | { kind: 'extraFuelPlacement'; count: number }
   | { kind: 'draw'; count: number }
-  /** Search your deck for a card of this family, put it in hand, shuffle. */
-  | { kind: 'searchDeck'; family: ModFamily; count: number }
+  /**
+   * Search your deck for a card of this family, put it in hand, shuffle. The play names one
+   * card, so one is all a search can fetch; the type says so, and a card asking for more will
+   * not compile rather than quietly fetch one.
+   */
+  | { kind: 'searchDeck'; family: ModFamily; count: 1 }
   /** The opponent cannot play a Boost on their next turn. */
   | { kind: 'blockBoost' }
 
