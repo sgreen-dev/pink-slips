@@ -45,12 +45,13 @@ export function seedRng(seed: number): RngState {
 export function rngFromHex(hex: string): RngState {
   const clean = hex.replace(/[^0-9a-fA-F]/g, '')
   const words: number[] = []
-  for (let i = 0; i < 4; i++) {
-    const part = clean.slice(i * 8, i * 8 + 8)
-    words.push(part.length === 8 ? parseInt(part, 16) >>> 0 : 0)
+  for (let i = 0; i < 4 && i * 8 + 8 <= clean.length; i++) {
+    words.push(parseInt(clean.slice(i * 8, i * 8 + 8), 16) >>> 0)
   }
   if (words.every((w) => w === 0)) return seedRng(clean.length)
-  return [words[0] ?? 0, words[1] ?? 0, words[2] ?? 0, words[3] ?? 0]
+  // Words the string was too short to give come from splitmix32 over the ones it did give.
+  const pad = seedRng(words.reduce((mix, w) => (Math.imul(mix, 31) + w) >>> 0, clean.length))
+  return [words[0] ?? pad[0], words[1] ?? pad[1], words[2] ?? pad[2], words[3] ?? pad[3]]
 }
 
 /** Returns a uniform 32-bit unsigned integer and the next state. */

@@ -143,11 +143,6 @@ function newTurn(player: PlayerIndex, number: number, boostBlocked: boolean): Tu
 }
 
 /**
- * Starts a match. A number seed names a run and is what the tests and the simulator use; a
- * state is what a real match is given, since a number is only 32 bits of choice however wide
- * the generator behind it (DESIGN.md 13).
- */
-/**
  * Whether an action leaves the last mod play takeable back (DESIGN.md 3.2). It lives here
  * because three places answer it -- the hotseat and CPU screens, the online screens, and the
  * room -- and when they were three copies they drifted: the screens kept the stack through the
@@ -165,6 +160,11 @@ export function isModPlay(action: Action): boolean {
   return action.type === 'playPart' || action.type === 'playBoost' || action.type === 'playSabotage'
 }
 
+/**
+ * Starts a match. A number seed names a run and is what the tests and the simulator use; a
+ * state is what a real match is given, since a number is only 32 bits of choice however wide
+ * the generator behind it (DESIGN.md 13).
+ */
 export function createMatch(config: MatchConfig, seed: number | RngState): MatchState {
   validatePlayerConfig(config.players[0], 'Player 1')
   validatePlayerConfig(config.players[1], 'Player 2')
@@ -435,10 +435,13 @@ export function isOver(state: MatchState): PlayerIndex | null {
  * returned unchanged.
  */
 export function concede(state: MatchState, player: PlayerIndex): MatchState {
+  return giveUp(state, player, 'concede')
+}
+
+function giveUp(state: MatchState, player: PlayerIndex, kind: 'concede' | 'timeout'): MatchState {
   if (state.phase.kind === 'over') return state
-  const winner = otherPlayer(player)
-  const next: MatchState = { ...state, phase: { kind: 'over', winner } }
-  return withLog(next, { kind: 'concede', player })
+  const next: MatchState = { ...state, phase: { kind: 'over', winner: otherPlayer(player) } }
+  return withLog(next, { kind, player })
 }
 
 /**
@@ -447,10 +450,7 @@ export function concede(state: MatchState, player: PlayerIndex): MatchState {
  * action: only the room calls it, from its alarm. An over match is returned unchanged.
  */
 export function forfeit(state: MatchState, player: PlayerIndex): MatchState {
-  if (state.phase.kind === 'over') return state
-  const winner = otherPlayer(player)
-  const next: MatchState = { ...state, phase: { kind: 'over', winner } }
-  return withLog(next, { kind: 'timeout', player })
+  return giveUp(state, player, 'timeout')
 }
 
 /** Draws up to `count` cards, reshuffling the discard pile into the deck when it runs out. */
