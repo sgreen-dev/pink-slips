@@ -338,7 +338,7 @@ Players alternate. A turn has four steps in this order.
 
 The first player skips the Advance step on their first turn.
 
-A mod played this turn can be taken back until the mod step ends or the player advances, in every mode. The take-back restores the state from before the play exactly, card, fuel, parts, and log included; it is a convenience of the screens and the room, not an engine action.
+A mod played this turn can be taken back until the mod step ends or the player advances, in every mode. The take-back restores the state from before the play exactly, card, fuel, parts, and log included; it is a convenience of the screens and the room, not an engine action. The one exception is a mod that shows the player something hidden, which is any mod that draws cards or flips a coin: once it is played it stays played, and so does every mod played before it that step, since taking any of them back would return the cards or the coin with the player already knowing them. A deck search can still be taken back, because the player could already see what the deck holds.
 
 ### 3.3 Advance
 

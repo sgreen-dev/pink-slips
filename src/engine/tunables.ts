@@ -102,7 +102,6 @@ export const TUNABLES = {
     maxCredits: 400,
     maxLaps: 3,
   },
-  /** Online accounts and matchmaking (DESIGN.md 13). */
   /**
    * The balance targets `npm run sim` checks, and the type band `npm run sim:types` checks
    * (DESIGN.md 7). They were written inline in `src/sim/run.ts`, though DESIGN.md 7 calls them
@@ -126,6 +125,7 @@ export const TUNABLES = {
     /** The first player wins inside this band: going first is worth something, but not much. */
     firstPlayer: [0.47, 0.55] as readonly [number, number],
   },
+  /** Online accounts and matchmaking (DESIGN.md 13). */
   online: {
     /** The rating every account starts with. */
     ratingStart: 1000,

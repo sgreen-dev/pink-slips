@@ -1,5 +1,5 @@
 import { getCar } from '../data/cars.ts'
-import { getMod } from '../data/mods.ts'
+import { getMod, modRarity } from '../data/mods.ts'
 import type { Car } from '../data/types.ts'
 import { TUNABLES } from './tunables.ts'
 import type { CarState, WindowedBonus } from './types.ts'
@@ -16,7 +16,9 @@ export function partSlots(car: Car): number {
 
 /** Copies of a mod one deck may hold: rare mods are capped lower (DESIGN.md 2.5, 3.1). */
 export function copyLimit(modId: string): number {
-  return getMod(modId).rarity === 'rare' ? TUNABLES.maxCopiesPerRareMod : TUNABLES.maxCopiesPerMod
+  return modRarity(getMod(modId)) === 'rare'
+    ? TUNABLES.maxCopiesPerRareMod
+    : TUNABLES.maxCopiesPerMod
 }
 
 export function openSlots(state: CarState): number {

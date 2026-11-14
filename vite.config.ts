@@ -60,6 +60,10 @@ export default defineConfig({
   define: { __COMMIT__: JSON.stringify(commit()) },
   test: {
     environment: 'node',
+    // Node 25 and later define their own localStorage, which is undefined without a storage file
+    // and hides the one the browser-like test environment provides. Turning it off leaves the
+    // environment's in place; Node 24 accepts the flag and behaves as before.
+    execArgv: ['--no-experimental-webstorage'],
     // The workers and the scripts keep their own code outside src, so their tests sit beside it.
     include: [
       'src/**/*.test.{ts,tsx}',
