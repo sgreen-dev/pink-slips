@@ -1,5 +1,6 @@
 import { getCar } from '../data/cars.ts'
 import { getMod, MOD_BY_ID } from '../data/mods.ts'
+import { isHidden } from './hidden.ts'
 import type { Mod, ModEffect } from '../data/types.ts'
 import { computeAdvance, windowApplies } from './advance.ts'
 import {
@@ -332,6 +333,8 @@ function modActions(state: MatchState, player: PlayerIndex): Action[] {
   const stagedType = getCar(staged.carId).type
   const actions: Action[] = []
   for (const modId of new Set(p.hand)) {
+    // A view shows the other seat's hand as hidden cards; nothing can be said about playing them.
+    if (isHidden(modId)) continue
     const mod = getMod(modId)
     switch (mod.family) {
       case 'part':
@@ -356,7 +359,28 @@ function modActions(state: MatchState, player: PlayerIndex): Action[] {
   return actions
 }
 
+/**
+ * States are never changed after they are made, so the answer for one is worked out once and
+ * kept for as long as the state itself is. The CPU and the simulators ask for the legal actions
+ * and then apply one of them, which used to work the whole list out a second time.
+ */
+const legalCache = new WeakMap<MatchState, [Action[] | undefined, Action[] | undefined]>()
+
+function cachedLegalActions(state: MatchState, player: PlayerIndex): readonly Action[] {
+  let entry = legalCache.get(state)
+  if (!entry) {
+    entry = [undefined, undefined]
+    legalCache.set(state, entry)
+  }
+  return (entry[player] ??= enumerateLegalActions(state, player))
+}
+
+/** Every action the player may take now. The list is the caller's own to sort or change. */
 export function legalActions(state: MatchState, player: PlayerIndex): Action[] {
+  return [...cachedLegalActions(state, player)]
+}
+
+function enumerateLegalActions(state: MatchState, player: PlayerIndex): Action[] {
   const { phase } = state
   switch (phase.kind) {
     case 'over':
@@ -406,8 +430,11 @@ function canonical(action: Action): string {
 }
 
 export function isLegal(state: MatchState, action: Action): boolean {
+  const legal = cachedLegalActions(state, action.player)
+  // An action taken straight from the list needs no comparing.
+  if (legal.includes(action)) return true
   const wanted = canonical(action)
-  return legalActions(state, action.player).some((legal) => canonical(legal) === wanted)
+  return legal.some((candidate) => canonical(candidate) === wanted)
 }
 
 // Apply

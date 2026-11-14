@@ -73,4 +73,20 @@ describe('redact', () => {
       }
     }
   })
+
+  // The other seat's hand is hidden in a view, so its mod plays cannot be listed; asking used to
+  // throw on the first hidden card instead of answering with what can be known.
+  it('lists the other seat without its hidden cards, instead of throwing', () => {
+    for (let seed = 20; seed < 26; seed++) {
+      for (const state of statesAlong(seed)) {
+        for (const viewer of [0, 1] as const) {
+          const other = viewer === 0 ? 1 : 0
+          const known = legalActions(state, other).filter((action) => !('modId' in action))
+          const seen = legalActions(redact(state, viewer), other)
+          expect(seen.filter((action) => !('modId' in action))).toEqual(known)
+          expect(seen.some((action) => action.type.startsWith('play'))).toBe(false)
+        }
+      }
+    }
+  })
 })
