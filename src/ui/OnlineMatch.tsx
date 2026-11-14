@@ -5,6 +5,7 @@ import {
   currentPlayer,
   isModPlay,
   isOver,
+  keepsTakeBack,
   type Action,
   type MatchState,
   type PlayerIndex,
@@ -357,8 +358,10 @@ export function OnlineMatch({ endpoint, entry, onLeave, onAgain }: OnlineMatchPr
     client.current?.act(action)
     setSelection(NO_SELECTION)
     setOptions(null)
-    const open = view.phase.kind === 'turn' && view.turn.step === 'mods'
-    setUndoable(isModPlay(action) && open ? undoable + 1 : 0)
+    // The same rule the room follows (DESIGN.md 3.2): a play that draws or flips a coin clears
+    // the count, and the fuel Extra Tank owes leaves it as it is.
+    if (!keepsTakeBack(view, action)) setUndoable(0)
+    else if (isModPlay(action)) setUndoable(undoable + 1)
   }
   const onUndo = () => {
     client.current?.undo()

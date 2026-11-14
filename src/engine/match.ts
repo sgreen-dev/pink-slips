@@ -151,8 +151,19 @@ function newTurn(player: PlayerIndex, number: number, boostBlocked: boolean): Tu
  */
 export function keepsTakeBack(state: MatchState, action: Action): boolean {
   if (state.phase.kind !== 'turn' || state.turn.step !== 'mods') return false
-  // A mod play, or the fuel placement Extra Tank owes inside the step, which does not end it.
-  return isModPlay(action) || action.type === 'fuel'
+  // A play that shows the player something hidden ends every take-back, its own and the ones
+  // before it: restoring any earlier state would put the cards or the coin back with the player
+  // already knowing them.
+  if (action.type === 'playPart' || action.type === 'playBoost' || action.type === 'playSabotage') {
+    return !revealsHidden(getMod(action.modId).effects)
+  }
+  // The fuel placement Extra Tank owes inside the step, which does not end it.
+  return action.type === 'fuel'
+}
+
+/** True when playing these effects draws cards or flips a coin. */
+function revealsHidden(effects: readonly ModEffect[]): boolean {
+  return effects.some((effect) => effect.kind === 'draw' || effect.kind === 'coinFlip')
 }
 
 /** True for the three actions that put a mod on the table. */

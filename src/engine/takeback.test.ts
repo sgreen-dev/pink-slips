@@ -28,6 +28,35 @@ describe('what keeps a mod takeable back (DESIGN.md 3.2)', () => {
     }
   })
 
+  // Taking these back would return the cards or the coin with the player already knowing them,
+  // and so would taking back anything played before them in the step.
+  it('drops it for a mod that draws cards or flips a coin', () => {
+    // Fuel on the staged car, since Nitrous Shot costs one, and a deck for Pit Crew to draw from.
+    const state = scenario({
+      players: [
+        {
+          cars: [{ id: MIATA, fuel: 2 }, GR86],
+          hand: ['pit-crew', 'nitrous-shot', 'overdrive', 'oil-slick'],
+          deck: ['turbo-kit', 'power-shift'],
+        },
+        { cars: ['porsche-911-carrera-s', 'lotus-emira'] },
+      ],
+    })
+    for (const modId of ['pit-crew', 'nitrous-shot', 'overdrive', 'oil-slick']) {
+      const action = legalActions(state, 0).find((a) => 'modId' in a && a.modId === modId)
+      if (!action) throw new Error(`no play of ${modId} available`)
+      expect(keepsTakeBack(state, action), modId).toBe(false)
+    }
+  })
+
+  // The player can already see what their deck holds, so a search shows nothing new.
+  it('keeps it for a deck search', () => {
+    const state = inMods(['sponsor'])
+    const action = legalActions(state, 0).find((a) => 'modId' in a && a.modId === 'sponsor')
+    if (!action) throw new Error('no play of sponsor available')
+    expect(keepsTakeBack(state, action)).toBe(true)
+  })
+
   // Extra Tank owes a fuel placement inside the mod step, and the step has not ended.
   it('keeps it through a fuel placement inside the mod step', () => {
     const state = inMods(['extra-tank'])
